@@ -1739,3 +1739,5 @@
 "pet.editor.missing" = "This pet is no longer available.";
 "pet.editor.missing_owner" = "This client is no longer available.";
 "pet.editor.removed_checkin" = "Restore this pet before starting a new session.";
+
+"new_client.duplicate_name" = "A client with this full name already exists. Edit the existing client to add pets or update their information.";

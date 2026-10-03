@@ -1752,3 +1752,5 @@
 "pet.editor.missing" = "Esta mascota ya no está disponible.";
 "pet.editor.missing_owner" = "Este cliente ya no está disponible.";
 "pet.editor.removed_checkin" = "Restaura esta mascota antes de iniciar una nueva sesión.";
+
+"new_client.duplicate_name" = "Ya existe un cliente con este nombre completo. Edita el cliente existente para agregar mascotas o actualizar su información.";

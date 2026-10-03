@@ -19,7 +19,7 @@ private final class ClientListEventTaskOwner {
 @Observable
 @MainActor
 final class ClientsViewModel {
-    enum Filter: String, CaseIterable {
+    enum Filter: String, CaseIterable, Sendable {
         case all = "All"
         case active = "Active"
         case overdue = "Overdue"
@@ -39,7 +39,7 @@ final class ClientsViewModel {
         }
     }
 
-    enum SortOption: String, CaseIterable {
+    enum SortOption: String, CaseIterable, Sendable {
         case lastName = "Last Name"
         case firstName = "First Name"
         case petName = "Pet's Name"
@@ -77,8 +77,6 @@ final class ClientsViewModel {
 
     var sortOption: SortOption = .lastName {
         didSet {
-            inProgressClients = sortClients(inProgressClients)
-            otherClients = sortClients(otherClients)
             fetchClients()
         }
     }
@@ -135,8 +133,9 @@ final class ClientsViewModel {
     // MARK: - Data Fetching
     private func scheduleFetch() {
         searchTask?.cancel()
+        if searchText.trimmed.isEmpty { fetchClients(); return }
         searchTask = Task { [weak self] in
-            try? await Task.sleep(for: .milliseconds(300)) // Debounce search
+            try? await Task.sleep(for: .milliseconds(180)) // Debounce search
             guard !Task.isCancelled else { return }
             self?.fetchClients()
         }
@@ -156,29 +155,22 @@ final class ClientsViewModel {
         refreshTask = Task { [weak self] in
             guard let self else { return }
             do {
-                // 1. Fetch Active/In-Progress Clients
-                let inProgressIDs = try await repository.fetchActiveClients(query: trimmedSearch)
-                guard !Task.isCancelled else { return }
-                
-                var seen: Set<UUID> = []
-                var inProgress = inProgressIDs.compactMap { self.modelContext.model(for: $0) as? Client }
-                    .filter { seen.insert($0.uuid).inserted }
-
-                // 2. Fetch Others based on filter.
-                // Collect every page before publishing so filters and sorting
-                // always see the full book, including clients past row 1000.
-                var pageIDs: [PersistentIdentifier] = []
-                var hasMore = true
-                while hasMore {
-                    let (ids, more) = try await repository.fetchInactiveClients(
-                        query: trimmedSearch, limit: Self.clientListFetchLimit, offset: pageIDs.count
-                    )
+                if let presentation = try await repository.fetchClientPresentation(query: trimmedSearch, filter: selectedFilter, sort: sortOption) {
                     guard !Task.isCancelled else { return }
-                    pageIDs += ids
-                    hasMore = more && !ids.isEmpty
+                    self.inProgressClients = presentation.groups.active.compactMap { self.modelContext.model(for: $0) as? Client }
+                    self.otherClients = presentation.groups.inactive.compactMap { self.modelContext.model(for: $0) as? Client }
+                    self.needsAttentionClients = presentation.needsAttention.compactMap { self.modelContext.model(for: $0) as? Client }
+                    self.fetchOffset = self.otherClients.count
+                    self.canLoadMore = false
+                    self.isLoadingMore = false
+                    return
                 }
-
-                var others = pageIDs.compactMap { self.modelContext.model(for: $0) as? Client }
+                let groups = try await repository.fetchClientGroups(query: trimmedSearch)
+                guard !Task.isCancelled else { return }
+                var seen: Set<UUID> = []
+                var inProgress = groups.active.compactMap { self.modelContext.model(for: $0) as? Client }
+                    .filter { seen.insert($0.uuid).inserted }
+                var others = groups.inactive.compactMap { self.modelContext.model(for: $0) as? Client }
                     .filter { seen.insert($0.uuid).inserted }
 
                 // Apply Smart Filters
@@ -252,6 +244,7 @@ final class ClientsViewModel {
     /// filter/sort change) and any Load More. Lets tests read the lists
     /// without sleeping.
     func waitForPendingFetch() async {
+        await searchTask?.value
         await refreshTask?.value
         await loadMoreTask?.value
     }

@@ -23,6 +23,8 @@ final class ClientsUITests: XCTestCase {
         ]
         app.launchEnvironment["PAWTRACKR_UI_TESTING"] = "1"
         app.launchEnvironment["PAWTRACKR_UI_TESTING_PREMIUM"] = "1"
+        // The prior debug session may have persisted the Clients tab.
+        app.launchEnvironment["PAWTRACKR_UI_START_TAB"] = "dashboard"
         app.launch()
     }
 

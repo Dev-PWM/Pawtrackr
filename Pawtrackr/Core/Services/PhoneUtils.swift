@@ -41,6 +41,14 @@ public enum PhoneUtils {
         return String(mapped.filter(\.isNumber))
     }
 
+    /// Returns the digit-only lookup key, excluding extensions and the optional
+    /// NANP country code. Keeps partial/legacy numbers searchable without changing them.
+    public static func searchKey(_ input: String) -> String {
+        let (main, _) = splitExtension(from: input)
+        let digits = normalize(main)
+        return digits.count == 11 && digits.first == "1" ? String(digits.dropFirst()) : digits
+    }
+
     /// Performs a plausibility check for a US (NANP) phone number.
     /// It accepts 10 digits, or 11 digits starting with "1". It enforces NANP rules where the area and exchange codes cannot start with 0 or 1.
     /// - Parameter input: The phone number string to validate.

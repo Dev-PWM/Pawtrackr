@@ -84,6 +84,8 @@ final class NewClientViewModel {
         isSaving = true
         appError = nil
         createdClientID = nil
+        duplicateClientID = nil
+        showDuplicateAlert = false
 
         defer { isSaving = false }
 
@@ -93,22 +95,8 @@ final class NewClientViewModel {
 
             let e164 = PhoneUtils.toE164(phone)
             Logger.newClient.info("createClient: normalizedPhonePresent=\((e164 != nil), privacy: .public); checking duplicates")
-            if let e164, let existing = try await repository.findClient(byPhone: e164) {
-                Logger.newClient.info("createClient: duplicate found")
-                duplicateClientID = existing
-                showDuplicateAlert = true
-                fieldErrors[.phone] = NSLocalizedString(
-                    "new_client.duplicate_phone",
-                    value: "A client with this phone number already exists.",
-                    comment: ""
-                )
-                appError = .validation(.custom(message: NSLocalizedString(
-                    "new_client.duplicate_phone",
-                    value: "A client with this phone number already exists.",
-                    comment: ""
-                )))
-                HapticManager.notify(.error)
-                return .duplicateFound
+            if let match = try await repository.findDuplicateClient(firstName: first.capitalizedName, lastName: last.capitalizedName, phone: e164 ?? "") {
+                return reportDuplicate(match)
             }
 
             let newPets = pets.compactMap { tp -> NewPetData? in
@@ -150,6 +138,8 @@ final class NewClientViewModel {
             HapticManager.notify(.success)
             Logger.newClient.info("createClient: returning .created")
             return .created
+        } catch let error as ClientDuplicateError {
+            return reportDuplicate(error.match)
         } catch let error as ValidationError {
             Logger.newClient.error("createClient: validation failed: \(error.localizedDescription, privacy: .public)")
             self.appError = .validation(error)
@@ -162,6 +152,24 @@ final class NewClientViewModel {
             HapticManager.notify(.error)
             return .failed
         }
+    }
+
+    /// Leaves the form intact and identifies the existing owner when either exact key matches.
+    private func reportDuplicate(_ match: ClientDuplicateMatch) -> CreateClientOutcome {
+        duplicateClientID = match.id
+        showDuplicateAlert = true
+        let message: String
+        if match.reason == .phone {
+            message = AppLocalization.localized("new_client.duplicate_phone", value: "A client with this phone number already exists.")
+            fieldErrors[.phone] = message
+        } else {
+            message = AppLocalization.localized("new_client.duplicate_name", value: "A client with this full name already exists. Edit the existing client to add pets or update their information.")
+            fieldErrors[.first] = message
+            fieldErrors[.last] = message
+        }
+        appError = .validation(.custom(message: message))
+        HapticManager.notify(.error)
+        return .duplicateFound
     }
 
     private func validate() throws {

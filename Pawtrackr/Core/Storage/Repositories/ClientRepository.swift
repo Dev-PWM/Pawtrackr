@@ -35,6 +35,9 @@ protocol ClientRepositoryProtocol: Sendable {
     func fetchActiveClients(query: String) async throws -> [PersistentIdentifier]
     func fetchInactiveClients(query: String, limit: Int, offset: Int) async throws -> ([PersistentIdentifier], Bool)
     func findClient(byPhone phone: String) async throws -> PersistentIdentifier?
+    func findDuplicateClient(firstName: String, lastName: String, phone: String) async throws -> ClientDuplicateMatch?
+    func fetchClientGroups(query: String) async throws -> ClientListGroups
+    func fetchClientPresentation(query: String, filter: ClientsViewModel.Filter, sort: ClientsViewModel.SortOption) async throws -> ClientListPresentation?
     func createClient(
         firstName: String,
         lastName: String,
@@ -49,112 +52,171 @@ protocol ClientRepositoryProtocol: Sendable {
     func deleteClient(id: PersistentIdentifier) async throws
 }
 
+struct ClientListGroups: Sendable {
+    let active: [PersistentIdentifier]
+    let inactive: [PersistentIdentifier]
+}
+
+struct ClientListPresentation: Sendable {
+    let groups: ClientListGroups
+    let needsAttention: [PersistentIdentifier]
+}
+
+extension ClientRepositoryProtocol {
+    /// Custom repositories can retain the model-based presentation fallback.
+    func fetchClientPresentation(query: String, filter: ClientsViewModel.Filter, sort: ClientsViewModel.SortOption) async throws -> ClientListPresentation? { nil }
+
+    /// Keeps test/custom repositories compatible while the production store uses indexed names.
+    func findDuplicateClient(firstName: String, lastName: String, phone: String) async throws -> ClientDuplicateMatch? {
+        guard !phone.isEmpty, let id = try await findClient(byPhone: phone) else { return nil }
+        return ClientDuplicateMatch(id: id, reason: .phone)
+    }
+
+    /// Collects a full list for repositories that expose only the original paged interface.
+    func fetchClientGroups(query: String) async throws -> ClientListGroups {
+        let active = try await fetchActiveClients(query: query)
+        var inactive: [PersistentIdentifier] = []
+        var more = true
+        while more {
+            let page = try await fetchInactiveClients(query: query, limit: 1000, offset: inactive.count)
+            try Task.checkCancellation()
+            inactive += page.0
+            more = page.1 && !page.0.isEmpty
+        }
+        return ClientListGroups(active: active, inactive: inactive)
+    }
+}
+
 @ModelActor
 final actor ClientRepository: ClientRepositoryProtocol {
 
-    /// Matches the complete candidate set before paging, including pet and phone queries.
+    private var cachedSearchBook: (revision: UInt64, locale: String, book: ClientSearchBook)?
+
+    /// Loads a consistent value snapshot; any completed local save invalidates it.
+    private func searchBook() async throws -> ClientSearchBook {
+        while true {
+            try Task.checkCancellation()
+            let revision = ClientStoreRevision.shared.current
+            let locale = Locale.current.identifier
+            if let cachedSearchBook, cachedSearchBook.revision == revision, cachedSearchBook.locale == locale {
+                return cachedSearchBook.book
+            }
+            let book = try await ClientBackgroundQuery.run(container: modelContainer) { context in
+                let activeIDs = try Self.activeClientIDs(in: context)
+                var descriptor = FetchDescriptor<Client>(sortBy: [SortDescriptor(\.lastName), SortDescriptor(\.firstName)])
+                descriptor.relationshipKeyPathsForPrefetching = [\Client.pets]
+                var records: [ClientSearchRecord] = []
+                for (index, client) in try context.fetch(descriptor).enumerated() {
+                    if index.isMultiple(of: 128) { try Task.checkCancellation() }
+                    records.append(ClientSearchRecord(client))
+                }
+                return ClientSearchBook(records: records, activeIDs: activeIDs)
+            }
+            guard ClientStoreRevision.shared.current == revision, Locale.current.identifier == locale else { continue }
+            cachedSearchBook = (revision, locale, book)
+            return book
+        }
+    }
+
+    /// Matches the full value snapshot before paging; there is no candidate cap.
     func fetchClients(query: String, limit: Int, offset: Int) async throws -> [PersistentIdentifier] {
-        let trimmed = query.trimmed
-        let context = ModelContext(modelContainer)
-        var descriptor = FetchDescriptor<Client>(sortBy: [SortDescriptor(\.lastName), SortDescriptor(\.firstName)])
-        if trimmed.isEmpty {
-            descriptor.fetchOffset = max(0, offset)
-            descriptor.fetchLimit = max(0, limit)
-            return try context.fetch(descriptor).map(\.persistentModelID)
+        guard limit > 0 else { return [] }
+        let search = ClientSearchQuery(query)
+        let book = try await searchBook()
+        return try await ClientBackgroundQuery.values {
+            var matches: [PersistentIdentifier] = []
+            for (index, record) in book.records.enumerated() {
+                if index.isMultiple(of: 128) { try Task.checkCancellation() }
+                if search.matches(record) { matches.append(record.id) }
+            }
+            return Array(matches.dropFirst(max(0, offset)).prefix(limit))
         }
-        let filtered = try context.fetch(descriptor).filter { Self.matches(client: $0, query: trimmed) }
-        return Array(filtered.dropFirst(max(0, offset)).prefix(max(0, limit))).map(\.persistentModelID)
     }
 
-    private func activeClientIDs() throws -> Set<PersistentIdentifier> {
-        let freshContext = ModelContext(modelContext.container)
-        var activeVisitDesc = FetchDescriptor<Visit>(
-            predicate: #Predicate { $0.endedAt == nil }
-        )
-        activeVisitDesc.relationshipKeyPathsForPrefetching = [\Visit.pet]
-        let activeVisits = try freshContext.fetch(activeVisitDesc)
-        return Set(activeVisits.compactMap { $0.pet?.owner?.persistentModelID })
+    /// Gets all matching active/inactive owners from one snapshot and one candidate pass.
+    func fetchClientGroups(query: String) async throws -> ClientListGroups {
+        let search = ClientSearchQuery(query)
+        let book = try await searchBook()
+        return try await ClientBackgroundQuery.values {
+            var active: [PersistentIdentifier] = []
+            var inactive: [PersistentIdentifier] = []
+            for (index, record) in book.records.enumerated() {
+                if index.isMultiple(of: 128) { try Task.checkCancellation() }
+                guard search.matches(record) else { continue }
+                if book.activeIDs.contains(record.id) { active.append(record.id) }
+                else { inactive.append(record.id) }
+            }
+            return ClientListGroups(active: active, inactive: inactive)
+        }
     }
 
+    /// Filters, deduplicates and sorts value records before the UI hydrates models.
+    func fetchClientPresentation(query: String, filter: ClientsViewModel.Filter, sort: ClientsViewModel.SortOption) async throws -> ClientListPresentation? {
+        let search = ClientSearchQuery(query)
+        let book = try await searchBook()
+        return try await ClientBackgroundQuery.values {
+            let now = Date()
+            var seen: Set<UUID> = []
+            var active: [ClientSearchRecord] = []
+            var inactive: [ClientSearchRecord] = []
+            for (index, record) in book.records.enumerated() {
+                if index.isMultiple(of: 128) { try Task.checkCancellation() }
+                guard search.matches(record), seen.insert(record.ordering.uuid).inserted else { continue }
+                let isActive = book.activeIDs.contains(record.id)
+                let attention = record.attentionDueAt.map { now > $0 } ?? false
+                switch filter {
+                case .all: break
+                case .active: guard isActive else { continue }
+                case .overdue: guard !isActive && attention else { continue }
+                case .missingInfo: guard record.incomplete else { continue }
+                }
+                if isActive { active.append(record) } else { inactive.append(record) }
+            }
+            let orderedActive = active.sorted { ClientListOrdering.precedes($0.ordering, $1.ordering, by: sort) }
+            let orderedInactive = inactive.sorted { ClientListOrdering.precedes($0.ordering, $1.ordering, by: sort) }
+            let attention = orderedInactive.filter { $0.attentionDueAt.map { now > $0 } ?? false }.map(\.id)
+            return ClientListPresentation(groups: ClientListGroups(active: orderedActive.map(\.id), inactive: orderedInactive.map(\.id)), needsAttention: attention)
+        }
+    }
+
+    /// Returns every active owner, without truncating sessions at an arbitrary limit.
+    private static func activeClientIDs(in context: ModelContext) throws -> Set<PersistentIdentifier> {
+        var descriptor = FetchDescriptor<Visit>(predicate: #Predicate { $0.endedAt == nil })
+        descriptor.relationshipKeyPathsForPrefetching = [\Visit.pet]
+        return Set(try context.fetch(descriptor).compactMap { $0.pet?.owner?.persistentModelID })
+    }
+
+    /// Retains the original repository interface for callers needing only the active group.
     func fetchActiveClients(query: String) async throws -> [PersistentIdentifier] {
-        let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
-        let activeIDs = try activeClientIDs()
-        if activeIDs.isEmpty { return [] }
-
-        let freshContext = ModelContext(modelContainer)
-        var results: [Client] = []
-        for id in activeIDs {
-            if let client = freshContext.model(for: id) as? Client {
-                results.append(client)
-            }
-        }
-
-        if !trimmed.isEmpty {
-            results = results.filter { Self.matches(client: $0, query: trimmed) }
-        }
-        let sorted = results.sorted { $0.sortKeyMostRecentVisit > $1.sortKeyMostRecentVisit }
-        return sorted.map { $0.persistentModelID }
+        try await fetchClientGroups(query: query).active
     }
 
-    /// Pages after excluding active owners and matching all search tokens.
+    /// Pages only after active-owner exclusion and strict multi-field matching.
     func fetchInactiveClients(query: String, limit: Int, offset: Int) async throws -> ([PersistentIdentifier], Bool) {
-        let trimmed = query.trimmed
-        let activeIDs = try activeClientIDs()
-        let context = ModelContext(modelContainer)
-        let descriptor = FetchDescriptor<Client>(sortBy: [SortDescriptor(\.lastName), SortDescriptor(\.firstName)])
-        let inactive = try context.fetch(descriptor)
-            .filter { !activeIDs.contains($0.persistentModelID) }
-            .filter { trimmed.isEmpty || Self.matches(client: $0, query: trimmed) }
-        let start = min(max(0, offset), inactive.count)
-        let page = Array(inactive.dropFirst(start).prefix(max(0, limit)))
-        return (page.map(\.persistentModelID), start + page.count < inactive.count)
+        let ids = try await fetchClientGroups(query: query).inactive
+        let start = min(max(0, offset), ids.count)
+        let page = Array(ids.dropFirst(start).prefix(max(0, limit)))
+        return (page, start + page.count < ids.count)
     }
 
-    /// Uses the same normalized token matcher for every repository query path.
-    private static func matches(client: Client, query: String) -> Bool {
-        client.matches(searchQuery: query)
-    }
-
-    /// Removes the optional US country code for legacy phone duplicate checks.
-    private static func canonicalPhoneDigits(_ value: String) -> String {
-        let digits = PhoneUtils.normalize(value)
-        return digits.count == 11 && digits.first == "1" ? String(digits.dropFirst()) : digits
-    }
-
+    /// Looks up a phone using its indexed digit-only key, including legacy formatted numbers.
     func findClient(byPhone phone: String) async throws -> PersistentIdentifier? {
-        let lookupPhone = phone.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !lookupPhone.isEmpty else { return nil }
-
-        // Try the input as-given first (handles canonical E.164 stored phones).
-        let exact = FetchDescriptor<Client>(predicate: #Predicate<Client> { client in
-            client.phone == lookupPhone
-        })
-        if let hit = try modelContext.fetch(exact).first {
-            return hit.persistentModelID
+        try await ClientCreationCoordinator.shared.prepare(container: modelContainer)
+        let digits = PhoneUtils.searchKey(phone)
+        guard !digits.isEmpty else { return nil }
+        return try await ClientBackgroundQuery.run(container: modelContainer) { context in
+            var descriptor = FetchDescriptor<Client>(predicate: #Predicate { $0.phoneDigits == digits })
+            descriptor.fetchLimit = 1
+            return try context.fetch(descriptor).first?.persistentModelID
         }
+    }
 
-        // Fall back to normalizing the lookup so we still match clients whose
-        // stored phone couldn't be parsed into E.164 at write time.
-        guard let normalized = PhoneUtils.toE164(lookupPhone) else {
-            return nil
+    /// Performs the same duplicate lookup used inside the final creation transaction.
+    func findDuplicateClient(firstName: String, lastName: String, phone: String) async throws -> ClientDuplicateMatch? {
+        try await ClientCreationCoordinator.shared.prepare(container: modelContainer)
+        return try await ClientBackgroundQuery.run(container: modelContainer) { context in
+            try ClientDuplicateLookup.find(in: context, firstName: firstName, lastName: lastName, phone: phone)
         }
-        if normalized != lookupPhone {
-            let normalizedDescriptor = FetchDescriptor<Client>(predicate: #Predicate<Client> { client in
-                client.phone == normalized
-            })
-            if let hit = try modelContext.fetch(normalizedDescriptor).first {
-                return hit.persistentModelID
-            }
-        }
-
-        let phonesDescriptor = FetchDescriptor<Client>(predicate: #Predicate<Client> { client in
-            client.phone != nil
-        })
-        let normalizedLookupDigits = Self.canonicalPhoneDigits(normalized)
-        return try modelContext.fetch(phonesDescriptor).first { client in
-            guard let storedPhone = client.phone else { return false }
-            return Self.canonicalPhoneDigits(storedPhone) == normalizedLookupDigits
-        }?.persistentModelID
     }
 
     func createClient(
@@ -167,47 +229,10 @@ final actor ClientRepository: ClientRepositoryProtocol {
         pets: [NewPetData],
         contacts: [NewContactData]
     ) async throws -> PersistentIdentifier {
-        let client = Client(firstName: firstName, lastName: lastName)
-        client.setPhone(phone)
-        client.setEmail(email)
-        client.setAddress(address)
-        client.setPhotoData(photoData)
-        modelContext.insert(client)
-        
-        for pd in pets {
-            let pet = Pet(name: pd.name, species: pd.species, gender: pd.gender)
-            pet.breed = pd.breed
-            pet.color = pd.color
-            pet.setPhotoData(pd.photoData)
-            pet.updateThumbnail()
-            pet.notes = pd.health
-            pet.behaviorTags = pd.behaviorTags
-            pet.birthdate = pd.birthdate
-            pet.owner = client
-            modelContext.insert(pet)
-        }
-        
-        var emergencyContacts: [EmergencyContact] = []
-        for cd in contacts {
-            let contact = EmergencyContact(name: cd.name, relation: cd.relation, phone: cd.phone)
-            contact.owner = client
-            modelContext.insert(contact)
-            emergencyContacts.append(contact)
-        }
-        client.emergencyContacts = emergencyContacts
-        
-        modelContext.insert(AppNotification(
-            title: AppLocalization.localized("clients.notification.client_created_title", value: "Client Created"),
-            message: client.fullName,
-            sourceKey: "client-created-\(client.uuid)"
+        try await ClientCreationCoordinator.shared.create(container: modelContainer, input: ClientCreationInput(
+            firstName: firstName, lastName: lastName, phone: phone, email: email, address: address,
+            photoData: photoData, pets: pets, contacts: contacts
         ))
-        do { try modelContext.save() }
-        catch { modelContext.rollback(); throw error }
-        // The setters above indexed the client before its pets were attached,
-        // and each pet before it had an owner. Index the saved state so the
-        // client shows its pets and each pet is found by the owner's phone.
-        SpotlightIndexer.shared.scheduleIndex(client: client, includingPets: true)
-        return client.persistentModelID
     }
 
     func saveClient(id: PersistentIdentifier, firstName: String, lastName: String, phone: String, email: String) async throws {

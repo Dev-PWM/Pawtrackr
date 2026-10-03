@@ -13,7 +13,7 @@ import SwiftData
 
 @Model
 final class Client {
-    #Index<Client>([\.lastName, \.firstName], [\.lastVisitDate])
+    #Index<Client>([\.lastName, \.firstName], [\.lastVisitDate], [\.phoneDigits], [\.normalizedNameKey], [\.searchKeysVersion])
 
     // MARK: - Identity & Timestamps
     // Initializers overwrite these persisted defaults when creating records.
@@ -26,6 +26,9 @@ final class Client {
     var firstName: String = ""
     var lastName: String = ""
     var phone: String?
+    var phoneDigits: String = ""
+    var normalizedNameKey: String = ""
+    var searchKeysVersion: Int = 0
     var email: String?
     var address: String?
     var primaryContactInfo: String?
@@ -51,6 +54,7 @@ final class Client {
         self.lastName = TextInputLimits.clamped(lastName, to: TextInputLimits.name)
         self.phone = TextInputLimits.clampedOptional(phone, to: TextInputLimits.phone)
         self.email = TextInputLimits.clampedOptional(email, to: TextInputLimits.email)?.lowercased()
+        refreshSearchKeys()
         updatePrimaryContact()
     }
 
@@ -97,14 +101,16 @@ final class Client {
     // the edit-conflict check on the others.
     func setFirstName(_ value: String) {
         let newValue = TextInputLimits.clamped(value, to: TextInputLimits.name)
-        guard firstName != newValue else { return }
+        guard firstName != newValue else { refreshSearchKeys(); return }
         firstName = newValue
+        refreshSearchKeys()
         didUpdate(ownerDetailsChanged: true)
     }
     func setLastName(_ value: String) {
         let newValue = TextInputLimits.clamped(value, to: TextInputLimits.name)
-        guard lastName != newValue else { return }
+        guard lastName != newValue else { refreshSearchKeys(); return }
         lastName = newValue
+        refreshSearchKeys()
         didUpdate(ownerDetailsChanged: true)
     }
     func setPhone(_ value: String?) {
@@ -118,8 +124,9 @@ final class Client {
         } else {
             newValue = nil
         }
-        guard phone != newValue else { return }
+        guard phone != newValue else { refreshSearchKeys(); return }
         phone = newValue
+        refreshSearchKeys()
         updatePrimaryContact()
         didUpdate(ownerDetailsChanged: true)
     }
@@ -130,6 +137,22 @@ final class Client {
         email = newValue
         updatePrimaryContact()
         didUpdate()
+    }
+
+    /// Repairs derived lookup keys without treating store maintenance as an owner edit.
+    func refreshSearchKeys() {
+        let digits = PhoneUtils.searchKey(phone ?? "")
+        let name = Self.nameLookupKey(firstName: firstName, lastName: lastName)
+        if phoneDigits != digits { phoneDigits = digits }
+        if normalizedNameKey != name { normalizedNameKey = name }
+        if searchKeysVersion != 1 { searchKeysVersion = 1 }
+    }
+
+    /// Produces a locale-stable exact full-name key, ignoring accents and extra spaces.
+    static func nameLookupKey(firstName: String, lastName: String) -> String {
+        (firstName + " " + lastName).split(whereSeparator: \.isWhitespace)
+            .joined(separator: " ")
+            .folding(options: [.caseInsensitive, .diacriticInsensitive], locale: Locale(identifier: "en_US_POSIX"))
     }
     func setAddress(_ value: String?) {
         let trimmed = TextInputLimits.clampedOptional(value, to: TextInputLimits.address)
