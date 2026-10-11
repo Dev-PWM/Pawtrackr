@@ -742,8 +742,7 @@ struct InsightsView: View {
                             let period = vm.revenuePeriodDays
                             do {
                                 let exports = try await vm.makeReportExports(
-                                    businessName: appSettings.businessName,
-                                    currencySymbol: appSettings.currencySymbol
+                                    businessName: appSettings.businessName
                                 )
                                 // The period changed while it was being made.
                                 if vm.revenuePeriodDays == period {

@@ -102,6 +102,12 @@ final actor CheckoutTransactionActor {
             } else if request.selectedLoyaltyReward != nil {
                 throw AppError.database(AppLocalization.localized("loyalty.error.insufficient", value: "Insufficient loyalty points"))
             } else { reward = nil }
+            if let reward, !reward.isApplicable(to: request.amount) {
+                throw AppError.validation(.custom(message: AppLocalization.localized(
+                    "checkout.loyalty.credit_exceeds_total",
+                    value: "This visit total is below the reward's full credit. Choose another reward or keep the points."
+                )))
+            }
             let credit = reward?.creditDiscount(on: request.amount) ?? .zero
             let finalTotal = max(.zero, request.amount.roundedMoney() - credit).roundedMoney()
             if let expected = request.expectedPaymentAmount, expected.roundedMoney() != finalTotal {

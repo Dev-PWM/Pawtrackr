@@ -1,8 +1,9 @@
 import SwiftUI
 
-/// Optional redemption at final review. All choices belong to the checkout view model.
-struct CheckoutLoyaltyReviewCard: View {
+/// Optional redemption beside payment entry. All choices belong to the checkout view model.
+struct CheckoutLoyaltyPaymentCard: View {
     @Bindable var viewModel: CheckoutViewModel
+    let onChoose: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
@@ -47,7 +48,7 @@ struct CheckoutLoyaltyReviewCard: View {
                     .accessibilityIdentifier("checkout.loyalty.kept")
             }
             Button {
-                viewModel.isChoosingLoyaltyReward = true
+                onChoose()
             } label: {
                 HStack {
                     Text(AppLocalization.localized("checkout.loyalty.choose", value: "Choose a reward"))
@@ -85,6 +86,7 @@ struct CheckoutRewardSelectionView: View {
     @Environment(\.dismiss) private var dismiss
     let points: Int
     let rewards: [LoyaltyReward]
+    let subtotal: Decimal
     let onChoose: (LoyaltyReward) -> Void
 
     var body: some View {
@@ -114,7 +116,11 @@ struct CheckoutRewardSelectionView: View {
                                 .pressScaleStyle()
                                 .accessibilityLabel(String(format: AppLocalization.localized("checkout.loyalty.select_fmt", value: "Select %@"), LoyaltyRewardCatalog.displayTitle(for: reward)))
                                 .accessibilityIdentifier("checkout.reward.\(reward.id)")
-                                .disabled(!reward.isRedeemable(with: points))
+                                .disabled(!reward.isRedeemable(with: points) || !reward.isApplicable(to: subtotal))
+                            }
+                            if reward.isRedeemable(with: points), !reward.isApplicable(to: subtotal) {
+                                Text(AppLocalization.localized("checkout.loyalty.credit_exceeds_total", value: "This visit total is below the reward's full credit. Choose another reward or keep the points."))
+                                    .font(.caption).foregroundStyle(.secondary)
                             }
                         }
                         .padding(20)

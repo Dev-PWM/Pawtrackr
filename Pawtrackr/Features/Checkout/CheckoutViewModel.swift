@@ -159,11 +159,15 @@ final class CheckoutViewModel {
     var isChoosingLoyaltyReward = false
     private var loyaltyContainer: ModelContainer?
 
-    var loyaltyCredit: Decimal { selectedLoyaltyReward?.creditDiscount(on: servicesTotalDecimal) ?? .zero }
+    var loyaltyCredit: Decimal {
+        guard let selectedLoyaltyReward, selectedLoyaltyReward.isApplicable(to: servicesTotalDecimal) else { return .zero }
+        return selectedLoyaltyReward.creditDiscount(on: servicesTotalDecimal)
+    }
     var paymentTotalDecimal: Decimal { max(.zero, servicesTotalDecimal - loyaltyCredit).roundedMoney() }
     var isLoyaltySelectionValid: Bool {
         guard let selectedLoyaltyReward else { return true }
         return !isLoadingLoyalty && loyaltyError == nil && loyaltyPoints >= selectedLoyaltyReward.pointCost
+            && selectedLoyaltyReward.isApplicable(to: servicesTotalDecimal)
             && loyaltyRewards.contains { $0.id == selectedLoyaltyReward.id && $0.pointCost == selectedLoyaltyReward.pointCost
                 && $0.style == selectedLoyaltyReward.style && $0.checkoutCreditAmount == selectedLoyaltyReward.checkoutCreditAmount }
     }

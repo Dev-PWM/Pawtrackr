@@ -88,14 +88,8 @@ final class ClientInputBoundsTests: XCTestCase {
             settings.contains(".textLengthLimit($appSettings.businessName, to: TextInputLimits.name)"),
             "Settings business name must clamp pasted text."
         )
-        XCTAssertTrue(
-            settings.contains(".textLengthLimit($appSettings.currencySymbol, to: TextInputLimits.shortText)"),
-            "Settings currency symbol must clamp pasted text before persistence sanitization."
-        )
-        XCTAssertTrue(
-            settings.contains(".textLengthLimit($appSettings.deviceName, to: TextInputLimits.shortText)"),
-            "Settings device name must clamp pasted text before CloudKit presence updates."
-        )
+        XCTAssertFalse(settings.contains("$appSettings.currencySymbol"), "Currency stays saved but is no longer edited in Business settings.")
+        XCTAssertFalse(settings.contains("$appSettings.deviceName"), "Workstation settings are removed.")
 
         XCTAssertTrue(
             checkout.contains(".textLengthLimit($notesEditorText, to: TextInputLimits.notes)"),

@@ -19,18 +19,12 @@ final class AppSettingsInputBoundsTests: XCTestCase {
 
         settings.businessName = String(repeating: "Downtown Grooming ", count: 20)
         settings.currencySymbol = String(repeating: "USD", count: 20)
-        settings.deviceName = String(repeating: "Front Desk iPad ", count: 20)
 
         XCTAssertLessThanOrEqual(settings.businessName.count, TextInputLimits.name)
         XCTAssertLessThanOrEqual(settings.currencySymbol.count, 3)
-        XCTAssertLessThanOrEqual(settings.deviceName.count, TextInputLimits.shortText)
         XCTAssertLessThanOrEqual(
             UserDefaults.standard.string(forKey: AppSettingsKeys.businessName)?.count ?? 0,
             TextInputLimits.name
-        )
-        XCTAssertLessThanOrEqual(
-            UserDefaults.standard.string(forKey: AppSettingsKeys.deviceName)?.count ?? 0,
-            TextInputLimits.shortText
         )
     }
 
@@ -38,7 +32,6 @@ final class AppSettingsInputBoundsTests: XCTestCase {
         [
             AppSettingsKeys.businessName,
             AppSettingsKeys.currencySymbol,
-            AppSettingsKeys.deviceName,
             AppSettingsKeys.appLanguageOverride,
             AppSettingsKeys.isLockEnabled,
             AppSettingsKeys.isBiometricLockEnabled,

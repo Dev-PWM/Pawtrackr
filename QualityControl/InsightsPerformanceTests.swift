@@ -42,7 +42,7 @@ final class InsightsPerformanceTests: XCTestCase {
         let start = CFAbsoluteTimeGetCurrent()
         
         // Trigger async report generation
-        let exports = try await vm.makeReportExports(businessName: "Test Salon", currencySymbol: "$")
+        let exports = try await vm.makeReportExports(businessName: "Test Salon")
         let data = exports.pdf.pdfData
         
         let end = CFAbsoluteTimeGetCurrent()

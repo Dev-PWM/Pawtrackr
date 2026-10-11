@@ -3,12 +3,13 @@ import SwiftUI
 
 @MainActor
 struct ClientLoyaltyView: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     let client: Client
     @Query private var ledgerEntries: [LoyaltyLedgerEntry]
     @Query(sort: \LoyaltyRewardTemplate.sortOrder) private var templates: [LoyaltyRewardTemplate]
     @Query(sort: \LoyaltyConfig.createdAt) private var configs: [LoyaltyConfig]
-    @State private var showRewards = false
     @State private var showAllActivity = false
+    @State private var displayedProgress = 0.0
     @State private var loyaltyBalance: LoyaltyBalanceState
 
     init(client: Client) {
@@ -23,7 +24,15 @@ struct ClientLoyaltyView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 32) {
                 balance
-                if let reward = featuredReward { rewardProgress(reward) }
+                if let reward = nextReward ?? catalog.last {
+                    rewardProgress(reward, allUnlocked: nextReward == nil)
+                } else {
+                    Label(AppLocalization.localized("loyalty.client.rewards_paused", value: "Rewards are unavailable right now. Saved points remain in this account."), systemImage: "gift")
+                        .font(.subheadline).foregroundStyle(.secondary)
+                        .padding(20)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(DS.ColorToken.surface, in: RoundedRectangle(cornerRadius: 18))
+                }
                 activity
                 Text(AppLocalization.localized("loyalty.client.automatic_note", value: "Points arrive automatically after a completed, paid visit. Each award stays linked to the pet’s visit history."))
                     .font(.footnote).foregroundStyle(.secondary)
@@ -38,8 +47,10 @@ struct ClientLoyaltyView: View {
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
         #endif
-        .sheet(isPresented: $showRewards) { RewardsCatalogView(client: client) }
         .loyaltyBalanceTracking(loyaltyBalance, clientUUID: client.uuid)
+        .onAppear { updateProgress(animated: true) }
+        .onChange(of: loyaltyBalance.points) { _, _ in updateProgress(animated: true) }
+        .onChange(of: catalog.map { "\($0.id):\($0.pointCost)" }) { _, _ in updateProgress(animated: true) }
     }
 
     private var catalog: [LoyaltyReward] {
@@ -47,9 +58,8 @@ struct ClientLoyaltyView: View {
             .sorted { $0.pointCost < $1.pointCost }
     }
 
-    private var featuredReward: LoyaltyReward? {
-        catalog.last { $0.isRedeemable(with: loyaltyBalance.points) }
-            ?? catalog.first { $0.pointCost > loyaltyBalance.points }
+    private var nextReward: LoyaltyReward? {
+        catalog.first { $0.pointCost > loyaltyBalance.points }
     }
 
     private var balance: some View {
@@ -64,22 +74,6 @@ struct ClientLoyaltyView: View {
             Text(loyaltyBalance.tier.displayName).font(.caption).foregroundStyle(DS.ColorToken.primary)
             Text(AppLocalization.localized("loyalty.points.keep_note", value: "Use points when you choose. They never expire, and there’s no balance limit."))
                 .font(.subheadline).foregroundStyle(.secondary)
-            if !catalog.isEmpty {
-                Button { showRewards = true } label: {
-                    HStack {
-                        Text(AppLocalization.localized("loyalty.client.browse_rewards", value: "Explore rewards"))
-                        Spacer()
-                        Image(systemName: "arrow.up.right")
-                    }
-                    .font(.subheadline.weight(.semibold))
-                    .padding(.vertical, 14).padding(.horizontal, 18)
-                    .foregroundStyle(.white)
-                    .background(DS.ColorToken.primary, in: Capsule())
-                }
-                .buttonStyle(.plain).pressScaleStyle(hapticsEnabled: true)
-                .accessibilityLabel(AppLocalization.localized("loyalty.client.browse_rewards", value: "Explore rewards"))
-                .accessibilityIdentifier("clientLoyalty.redeemRewards")
-            }
         }
         .padding(24)
         .background(DS.ColorToken.surface, in: RoundedRectangle(cornerRadius: 24))
@@ -87,29 +81,39 @@ struct ClientLoyaltyView: View {
     }
 
     /// One reward milestone replaces the tier ladder and multiple progress cards.
-    private func rewardProgress(_ reward: LoyaltyReward) -> some View {
-        let ready = reward.isRedeemable(with: loyaltyBalance.points)
+    private func rewardProgress(_ reward: LoyaltyReward, allUnlocked: Bool) -> some View {
         return VStack(alignment: .leading, spacing: 12) {
-            Text(ready
-                 ? AppLocalization.localized("loyalty.client.reward_ready", value: "A reward is waiting")
+            Text(allUnlocked
+                 ? AppLocalization.localized("loyalty.client.all_unlocked", value: "All rewards unlocked")
                  : AppLocalization.localized("loyalty.client.next_reward", value: "Your next thank-you"))
                 .font(.caption.weight(.medium)).foregroundStyle(.secondary)
             HStack(alignment: .top, spacing: 12) {
                 Image(systemName: "gift").foregroundStyle(DS.ColorToken.primary).font(.title3)
                 VStack(alignment: .leading, spacing: 4) {
                     Text(LoyaltyRewardCatalog.displayTitle(for: reward)).font(.headline)
-                    Text(ready
-                         ? AppLocalization.localized("loyalty.client.ready_detail", value: "Choose it from rewards whenever you’re ready.")
+                    Text(allUnlocked
+                         ? AppLocalization.localized("loyalty.client.keep_growing", value: "Every reward is available. Points keep accumulating until the client chooses one at checkout.")
                          : String(format: AppLocalization.localized("loyalty.client.remaining_fmt", value: "%@ to go. Keep visiting; we’ll keep count."), LoyaltyCopy.points(max(0, reward.pointCost - loyaltyBalance.points))))
                         .font(.footnote).foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }
-            ProgressView(value: min(1, max(0, Double(loyaltyBalance.points) / Double(max(1, reward.pointCost)))))
+            ProgressView(value: displayedProgress)
                 .tint(DS.ColorToken.primary)
                 .accessibilityLabel(LoyaltyRewardCatalog.displayTitle(for: reward))
+                .accessibilityValue(String(format: AppLocalization.localized("loyalty.client.progress_value_fmt", value: "%1$d of %2$d points"), min(loyaltyBalance.points, reward.pointCost), reward.pointCost))
         }
         .accessibilityIdentifier("clientLoyalty.rewardProgress")
+    }
+
+    private func updateProgress(animated: Bool) {
+        guard let reward = nextReward ?? catalog.last else { displayedProgress = 0; return }
+        let target = nextReward == nil ? 1.0 : min(1, max(0, Double(loyaltyBalance.points) / Double(max(1, reward.pointCost))))
+        if animated && MotionGovernor.shouldAnimate(reduceMotion: reduceMotion) {
+            withAnimation(MotionSystem.snappy) { displayedProgress = target }
+        } else {
+            displayedProgress = target
+        }
     }
 
     private var activity: some View {
@@ -133,12 +137,15 @@ struct ClientLoyaltyView: View {
                     }
                 }
                 if ledgerEntries.count > 6 && !showAllActivity {
-                    Button(AppLocalization.localized("loyalty.client.all_activity", value: "See all activity")) { showAllActivity = true }
+                    Button(AppLocalization.localized("loyalty.client.all_activity", value: "See all activity")) {
+                        withAnimation(MotionSystem.resolved(MotionSystem.snappy, reduceMotion: reduceMotion)) { showAllActivity = true }
+                    }
                         .font(.subheadline).pressScaleStyle()
                         .accessibilityLabel(AppLocalization.localized("loyalty.client.all_activity", value: "See all activity"))
                 }
             }
         }
+        .animation(MotionSystem.resolved(MotionSystem.snappy, reduceMotion: reduceMotion), value: ledgerEntries.count)
     }
 }
 

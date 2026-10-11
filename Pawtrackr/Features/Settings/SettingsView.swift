@@ -41,9 +41,9 @@ enum SettingSection: String, CaseIterable, Identifiable {
     var subtitle: String {
         switch self {
         case .business:
-            return settingsLocalized("settings.section.business.subtitle", value: "Branding and receipt defaults used across checkout, exports, and customer-facing paperwork.")
+            return settingsLocalized("settings.section.business.subtitle", value: "Your salon name on receipts, exports, and the dashboard.")
         case .preferences:
-            return settingsLocalized("settings.section.preferences.subtitle", value: "Tune the app for this workstation, from launch behavior to appearance and feedback.")
+            return settingsLocalized("settings.section.preferences.subtitle", value: "Choose how the app opens, looks, and responds.")
         case .loyalty:
             return settingsLocalized("settings.section.loyalty.subtitle", value: "Visits earn points automatically. Choose the rewards your salon offers.")
         case .security:
@@ -51,7 +51,7 @@ enum SettingSection: String, CaseIterable, Identifiable {
         case .dataExport:
             return settingsLocalized("settings.section.export.subtitle", value: "Export operational data for reporting, backup review, or handoff outside Pawtrackr.")
         case .help:
-            return settingsLocalized("settings.section.help.subtitle", value: "Support tools and quick recovery guidance for day-to-day salon operation.")
+            return settingsLocalized("settings.section.help.subtitle", value: "A quick guide to the controls and everyday work in Pawtrackr.")
         case .about:
             return settingsLocalized("settings.section.about.subtitle", value: "Version details, guided setup, and the protected fresh-start control.")
         }
@@ -490,7 +490,7 @@ private struct SettingsDetailView: View {
         case .dataExport: DataExportSectionView(modelContext: modelContext) {
             storeRestoreClientCount = (try? modelContext.fetchCount(FetchDescriptor<Client>())) ?? 0
         }
-        case .help: HelpSectionView(modelContext: modelContext)
+        case .help: HelpSectionView()
         case .about: AboutSectionView(
             showWipeConfirm: $showWipeConfirm,
             tourProgress: appSettings.tourProgress,
@@ -683,82 +683,47 @@ private struct DataExportSectionView: View {
 }
 
 private struct HelpSectionView: View {
-    let modelContext: ModelContext
-    @State private var isPreparingReport = false
-    @State private var supportMessage: String?
-
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: .leading, spacing: 20) {
             CardView {
-                Label(settingsLocalized("settings.help.support_title", value: "Support Toolkit"), systemImage: "lifepreserver")
+                Label(settingsLocalized("settings.help.navigation_title", value: "Find your way"), systemImage: "square.grid.2x2.fill")
                     .font(.headline)
-
-                Text(settingsLocalized(
-                    "settings.help.support_detail",
-                    value: "Collect a local support report before troubleshooting records, exports, or device setup."
-                ))
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
-
-                Button {
-                    Task { await copySupportReport() }
-                } label: {
-                    Label(settingsLocalized("settings.help.copy_report", value: "Copy Support Report"), systemImage: "doc.on.doc")
-                }
-                .buttonStyle(.borderedProminent)
-                .disabled(isPreparingReport)
-
-                if isPreparingReport {
-                    ProgressView(settingsLocalized("settings.help.preparing_report", value: "Preparing report..."))
-                }
-
-                if let supportMessage {
-                    Text(supportMessage)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
+                HelpTopicRow(icon: "square.grid.2x2.fill", title: settingsLocalized("settings.help.dashboard_title", value: "Dashboard"), detail: settingsLocalized("settings.help.dashboard_detail", value: "See today's visits, quick actions, and items that need attention."))
+                HelpTopicRow(icon: "person.3.fill", title: settingsLocalized("settings.help.clients_title", value: "Clients & pets"), detail: settingsLocalized("settings.help.clients_detail", value: "Search or filter clients, open a profile for contacts and pet notes, and use the pet card for check-in, checkout, or history."))
+                HelpTopicRow(icon: "chart.bar.fill", title: settingsLocalized("settings.help.insights_title", value: "Insights"), detail: settingsLocalized("settings.help.insights_detail", value: "Review visits, revenue, services, and payment trends. Choose a period before exporting a report."))
+                HelpTopicRow(icon: "gear", title: settingsLocalized("settings.help.settings_title", value: "Settings"), detail: settingsLocalized("settings.help.settings_detail", value: "Change preferences and security, manage rewards, or open Data Export and Help."))
             }
-
             CardView {
+                Label(settingsLocalized("settings.help.daily_title", value: "A visit from start to finish"), systemImage: "pawprint.fill")
+                    .font(.headline)
+                HelpTopicRow(icon: "play.fill", title: settingsLocalized("settings.help.checkin_title", value: "Check in"), detail: settingsLocalized("settings.help.checkin_detail", value: "Start a pet's visit from its client profile. Notes and care alerts stay with that pet."))
+                HelpTopicRow(icon: "stop.fill", title: settingsLocalized("settings.help.checkout_title", value: "Check out"), detail: settingsLocalized("settings.help.checkout_detail", value: "Choose services, add notes or photos, then enter the amount and payment method. Review the final total before confirming."))
+                HelpTopicRow(icon: "creditcard.fill", title: settingsLocalized("settings.help.payment_title", value: "Payment controls"), detail: settingsLocalized("settings.help.payment_detail", value: "Cash, debit, credit, and Zelle record how the visit was paid. Enter a reference when the selected method asks for one."))
+                HelpTopicRow(icon: "sparkles", title: settingsLocalized("settings.help.loyalty_title", value: "Points & rewards"), detail: settingsLocalized("settings.help.loyalty_detail", value: "Completed paid visits add points automatically. At payment, choose one available reward or keep points for later. Credits lower the bill; VIP is provided by the salon and recorded with the visit."))
+            }
+            CardView {
+                Label(settingsLocalized("settings.help.data_title", value: "Your records"), systemImage: "internaldrive.fill")
+                    .font(.headline)
                 HelpTopicRow(
                     icon: "internaldrive.fill",
                     title: settingsLocalized("settings.help.local_storage_title", value: "Local Storage"),
                     detail: settingsLocalized(
                         "settings.help.local_storage_detail",
-                        value: "Client records, visits, payments, and photos stay on this device. Keep exports in a safe place, and use Data Export to review and restore available on-device backups."
+                        value: "Client records, visits, payments, and photos stay on this device. Protect the device and keep a separate copy of important exports."
                     )
                 )
                 HelpTopicRow(
                     icon: "square.and.arrow.up",
-                    title: settingsLocalized("settings.help.exports_title", value: "Exports & Backups"),
+                    title: settingsLocalized("settings.help.exports_title", value: "CSV exports"),
                     detail: settingsLocalized(
                         "settings.help.exports_detail",
-                        value: "Use Data Export to create client or visit CSV files before major cleanup, migrations, or support sessions."
+                        value: "Data Export creates readable client or visit CSV files for review or handoff. A CSV is not a restorable app backup."
                     )
                 )
+                HelpTopicRow(icon: "arrow.counterclockwise", title: settingsLocalized("settings.help.backups_title", value: "Backups & restore"), detail: settingsLocalized("settings.help.backups_detail", value: "Data Export also lets you inspect available on-device store backups and restore one when needed. A restore replaces the active store only after preserving the current files."))
+                HelpTopicRow(icon: "lock.shield.fill", title: settingsLocalized("settings.help.security_title", value: "Security"), detail: settingsLocalized("settings.help.security_detail", value: "Use Settings › Security to manage the app PIN, biometric unlock, and automatic locking."))
             }
         }
-    }
-
-    @MainActor
-    private func copySupportReport() async {
-        isPreparingReport = true
-        defer { isPreparingReport = false }
-
-        let report = await SupportService.shared.generateReport(context: modelContext)
-        copyToClipboard(report.content)
-        supportMessage = settingsLocalized("settings.help.report_copied", value: "Support report copied.")
-    }
-
-    private func copyToClipboard(_ text: String) {
-        #if os(iOS)
-        UIPasteboard.general.string = text
-        #elseif os(macOS)
-        NSPasteboard.general.clearContents()
-        NSPasteboard.general.setString(text, forType: .string)
-        #endif
     }
 }
 
@@ -828,8 +793,9 @@ private struct HelpTopicRow: View {
         HStack(alignment: .top, spacing: 12) {
             Image(systemName: icon)
                 .font(.title3)
-                .foregroundStyle(.blue)
+                .foregroundStyle(DS.ColorToken.primary)
                 .frame(width: 28)
+                .accessibilityHidden(true)
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(title)
@@ -841,6 +807,7 @@ private struct HelpTopicRow: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+        .accessibilityElement(children: .combine)
     }
 }
 
@@ -863,36 +830,7 @@ private struct BusinessSectionView: View {
                         .textLengthLimit($appSettings.businessName, to: TextInputLimits.name)
                 }
             }
-
-            CardView {
-                SettingsCardHeader(
-                    title: settingsLocalized("settings.business.receipts_title", value: "Money & Receipts"),
-                    detail: settingsLocalized("settings.business.receipts_detail", value: "Keep currency short and familiar so totals stay readable in checkout and PDF receipts.")
-                )
-
-                SettingsLabeledField(
-                    title: settingsLocalized("settings.business.currency_symbol", value: "Currency Symbol"),
-                    systemImage: "dollarsign.circle.fill"
-                ) {
-                    TextField(settingsLocalized("settings.business.currency_placeholder", value: "$"), text: $appSettings.currencySymbol)
-                        .textFieldStyle(.roundedBorder)
-                        .textLengthLimit($appSettings.currencySymbol, to: TextInputLimits.shortText)
-                }
-
-                SettingsSmartStatusRow(
-                    title: settingsLocalized("settings.business.preview_title", value: "Receipt Preview"),
-                    value: businessPreview,
-                    systemImage: "doc.text.magnifyingglass",
-                    tint: DS.ColorToken.info
-                )
-            }
         }
-    }
-
-    private var businessPreview: String {
-        let name = appSettings.businessName.trimmingCharacters(in: .whitespacesAndNewlines)
-        let currency = appSettings.currencySymbol.trimmingCharacters(in: .whitespacesAndNewlines)
-        return "\(name.isEmpty ? settingsLocalized("settings.business.unnamed", value: "Unnamed salon") : name) - \(currency.isEmpty ? "$" : currency)0.00"
     }
 }
 
@@ -937,29 +875,6 @@ private struct PreferencesSectionView: View {
                     value: launchSummary,
                     systemImage: "sparkle.magnifyingglass",
                     tint: DS.ColorToken.primary
-                )
-            }
-
-            CardView {
-                SettingsCardHeader(
-                    title: settingsLocalized("settings.preferences.device_title", value: "This Workstation"),
-                    detail: settingsLocalized("settings.preferences.device_detail", value: "A clear device name helps identify this workstation in local support reports.")
-                )
-
-                SettingsLabeledField(
-                    title: settingsLocalized("settings.preferences.device_name", value: "Device Name"),
-                    systemImage: "iphone.gen3"
-                ) {
-                    TextField(settingsLocalized("settings.preferences.device_name_placeholder", value: "Reception iPad"), text: $appSettings.deviceName)
-                        .textFieldStyle(.roundedBorder)
-                        .textLengthLimit($appSettings.deviceName, to: TextInputLimits.shortText)
-                }
-
-                SettingsSmartStatusRow(
-                    title: settingsLocalized("settings.preferences.device_status", value: "Device Label"),
-                    value: deviceNameSummary,
-                    systemImage: "tag.fill",
-                    tint: appSettings.deviceName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? DS.ColorToken.warning : DS.ColorToken.info
                 )
             }
 
@@ -1013,17 +928,6 @@ private struct PreferencesSectionView: View {
         )
     }
 
-    private var deviceNameSummary: String {
-        let trimmed = appSettings.deviceName.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else {
-            return settingsLocalized("settings.preferences.device_name_missing", value: "Add a name to identify this workstation in support reports.")
-        }
-
-        return String(
-            format: settingsLocalized("settings.preferences.device_name_report_fmt", value: "%@ will appear in local support reports."),
-            trimmed
-        )
-    }
 }
 
 private struct SecuritySectionView: View {

@@ -258,19 +258,9 @@
 "settings.export.preparing" = "Preparando exportación...";
 "settings.export.share_fmt" = "Compartir %@";
 "settings.export.failed_fmt" = "Error al exportar: %@";
-"settings.help.support_title" = "Herramientas de soporte";
-"settings.help.support_detail" = "Recopila un informe local de soporte antes de resolver problemas con registros, exportaciones o la configuración del dispositivo.";
-"settings.help.copy_report" = "Copiar reporte de soporte";
-"settings.help.preparing_report" = "Preparando reporte...";
-"settings.help.report_copied" = "Reporte de soporte copiado.";
-"settings.help.exports_title" = "Exportaciones y respaldos";
-"settings.help.exports_detail" = "Usa Exportar datos para crear archivos CSV de clientes o visitas antes de limpiezas, migraciones o sesiones de soporte.";
 "settings.business.name" = "Nombre del negocio";
-"settings.business.currency_symbol" = "Símbolo de moneda";
 "settings.preferences.appearance" = "Apariencia";
 "settings.preferences.default_launch" = "Pestaña inicial";
-"settings.preferences.device_name" = "Nombre del dispositivo";
-"settings.preferences.device_name_placeholder" = "iPad de recepción";
 "settings.preferences.brand_color" = "Color de marca";
 "settings.preferences.brand_color_hex" = "Hex del color de marca";
 "settings.preferences.haptics" = "Respuesta háptica";
@@ -1318,21 +1308,12 @@
 "dashboard.activity.no_devices" = "Aún no hay dispositivos";
 "dashboard.activity.events_waiting" = "Aún no hay registros";
 "dashboard.activity.last_event_fmt" = "Último evento %@";
-"settings.preferences.device_status" = "Etiqueta del dispositivo";
-"settings.preferences.device_name_missing" = "Añade un nombre para identificar esta estación de trabajo en los informes de soporte.";
 "common.never" = "Nunca";
-"settings.business.currency_placeholder" = "$";
 "settings.business.identity_detail" = "Este nombre aparece en los recibos, las exportaciones y el panel.";
 "settings.business.identity_title" = "Identidad del salón";
 "settings.business.name_placeholder" = "Mi salón de mascotas";
-"settings.business.preview_title" = "Vista previa del recibo";
-"settings.business.receipts_detail" = "Usa un símbolo de moneda corto y conocido para que los totales se lean bien en el cobro y en los recibos PDF.";
-"settings.business.receipts_title" = "Dinero y recibos";
-"settings.business.unnamed" = "Salón sin nombre";
 "settings.preferences.branding_detail" = "El color de acento cambia la app al instante. La respuesta háptica se nota en toques y confirmaciones en los dispositivos compatibles.";
 "settings.preferences.branding_title" = "Marca y respuesta";
-"settings.preferences.device_detail" = "Un nombre claro ayuda a identificar esta estación de trabajo en los informes locales de soporte.";
-"settings.preferences.device_title" = "Este equipo";
 "settings.preferences.experience_detail" = "Elige cómo se abre Pawtrackr y qué idioma y apariencia usa.";
 "settings.preferences.experience_title" = "Experiencia de la app";
 "settings.preferences.launch_summary" = "Inicio";
@@ -1341,11 +1322,11 @@
 "settings.preferences.media_mode" = "Modo de medios";
 "settings.preferences.media_originals" = "Conservar los originales en este dispositivo";
 "settings.section.about.subtitle" = "Detalles de la versión, la configuración guiada y el control protegido para empezar de cero.";
-"settings.section.business.subtitle" = "Marca y valores de los recibos que se usan en el cobro, las exportaciones y los documentos para clientes.";
+"settings.section.business.subtitle" = "El nombre de tu salón en recibos, exportaciones y el panel.";
 "settings.section.export.subtitle" = "Exporta los datos del negocio para informes, revisiones o para usarlos fuera de Pawtrackr.";
-"settings.section.help.subtitle" = "Herramientas de soporte y guía rápida de recuperación para el día a día del salón.";
+"settings.section.help.subtitle" = "Una guía rápida de los controles y las tareas diarias de Pawtrackr.";
 "settings.section.loyalty.subtitle" = "Las visitas suman puntos automáticamente. Elige las recompensas que ofrece tu salón.";
-"settings.section.preferences.subtitle" = "Ajusta la app para esta estación de trabajo, desde el comportamiento al iniciar hasta la apariencia y las respuestas de interacción.";
+"settings.section.preferences.subtitle" = "Elige cómo se abre, se ve y responde la app.";
 "settings.section.security.subtitle" = "Protege los registros de clientes con PIN, desbloqueo biométrico y bloqueo automático.";
 "emergency_contact.validation.name_required" = "Agrega un nombre para este contacto o borra el teléfono.";
 "emergency_contact.validation.name_missing" = "Agrega un nombre para este contacto.";
@@ -1392,11 +1373,8 @@
 "onboarding.role.front_desk.title" = "Recepción o groomer";
 "onboarding.role.front_desk.subtitle" = "Registro de entrada, cobro, notas de seguridad, contactos y trabajo en curso.";
 "onboarding.loyalty_sim.title" = "Puntos de lealtad";
-"onboarding.loyalty_sim.reward.visit_credit_5" = "Crédito de $5 para una visita";
-"onboarding.loyalty_sim.reward.visit_credit_10" = "Crédito de $10 para una visita";
-"onboarding.loyalty_sim.reward.addon_discount_15" = "15% de descuento en un complemento";
-"onboarding.loyalty_sim.reward.groom_credit_20" = "Crédito de $20 en grooming";
-"onboarding.loyalty_sim.reward.basic_groom_credit" = "Crédito para un grooming básico gratis";
+"onboarding.loyalty_sim.reward.visit_credit_10" = "Crédito de $10 para el salón";
+"onboarding.loyalty_sim.reward.groom_credit_20" = "Crédito de $20 para el salón";
 "loyalty.reset_ladder.title" = "¿Restablecer las recompensas a la escalera de descuentos?";
 "loyalty.reset_ladder.action" = "Restablecer escalera de descuentos";
 "loyalty.reset_ladder.message" = "Esto reemplaza las plantillas de recompensas actuales por las cinco recompensas predeterminadas de crédito y descuento. Los saldos de puntos de los clientes no cambian.";
@@ -1447,7 +1425,6 @@
 "loyalty.client.top_tier_accessibility_fmt" = "Nivel %@, nivel máximo";
 "loyalty.client.rewards_paused_settings" = "Las recompensas están en pausa en los ajustes de lealtad";
 "loyalty.client.points_until_fmt" = "Faltan %1$d puntos para %2$@";
-"loyalty.client.all_unlocked" = "Todas las recompensas activas están desbloqueadas";
 "loyalty.client.coach.paused_title" = "Recompensas en pausa";
 "loyalty.client.coach.ready_title" = "Lista para recompensar";
 "loyalty.client.coach.next_title_fmt" = "Siguiente: %@";
@@ -1483,17 +1460,6 @@
 "loyalty.adjust.title" = "Ajustar puntos";
 "loyalty.adjust.saving" = "Guardando";
 "loyalty.adjust.apply" = "Aplicar";
-"loyalty.catalog.section" = "Recompensas";
-"loyalty.catalog.paused_title" = "Recompensas en pausa";
-"loyalty.catalog.paused_detail" = "Puedes volver a activar las recompensas en los ajustes de lealtad.";
-"loyalty.catalog.title" = "Catálogo de recompensas";
-"loyalty.catalog.available_balance" = "Saldo disponible";
-"loyalty.catalog.redeem_hint" = "Canjea las recompensas de lealtad disponibles";
-"loyalty.catalog.balance_accessibility_fmt" = "Saldo disponible, %d puntos";
-"loyalty.catalog.redeem" = "Canjear";
-"loyalty.catalog.locked" = "Bloqueada";
-"loyalty.catalog.reward_accessibility_fmt" = "%1$@, %2$@";
-"loyalty.catalog.redeemed_fmt" = "Canjeado: %@";
 "loyalty.settings.pro_title" = "Pawtrackr Pro";
 "loyalty.settings.pro_detail" = "La configuración de lealtad está disponible con acceso Pro activo.";
 "loyalty.settings.earning_rules" = "Reglas para ganar puntos";
@@ -1644,7 +1610,7 @@
 "loyalty.preview.earn_flat_off" = "Por ahora los cobros no suman puntos: la regla es 0 puntos por visita.";
 "loyalty.preview.tiers_fmt" = "Los puntos ganados en el cobro suben de nivel al cliente: Plata con %1$@, Oro con %2$@ y Platino con %3$@. Cada nivel multiplica los puntos de cada visita. Gastar puntos nunca baja el nivel.";
 "loyalty.preview.rebook_fmt" = "Una visita que suma puntos gana %1$@ más cuando la última visita del cliente terminó hace %2$d días o menos.";
-"loyalty.preview.redeem" = "Para canjear, abre Lealtad y recompensas en el perfil del cliente y elige una recompensa. Sus puntos se descuentan del saldo. Luego entrega tú la recompensa, por ejemplo como descuento en el cobro.";
+"loyalty.preview.redeem" = "Elige una recompensa disponible en el paso Pago o guarda los puntos. Los créditos reducen el total automáticamente; tu salón entrega el paquete VIP.";
 "loyalty.preview.redeem_paused" = "Las recompensas están en pausa, así que por ahora no se pueden canjear puntos. Los clientes conservan su saldo.";
 "loyalty.preview.rewards_starter" = "Recompensas iniciales";
 "loyalty.preview.rewards_salon" = "Tus recompensas";
@@ -1655,8 +1621,6 @@
 "loyalty.preview.rules_saved" = "Estas son las reglas actuales de tu salón. El cobro da los puntos con esta misma cuenta.";
 "loyalty.preview.rules_default" = "Estas son las reglas predeterminadas. El cobro da los puntos con esta misma cuenta, y puedes cambiar las reglas en Ajustes > Lealtad.";
 "settings.help.local_storage_title" = "Almacenamiento local";
-"settings.help.local_storage_detail" = "Los registros de clientes, visitas, pagos y fotos permanecen en este dispositivo. Guarda las exportaciones en un lugar seguro y usa Exportación de datos para revisar y restaurar los respaldos disponibles en el dispositivo.";
-"settings.preferences.device_name_report_fmt" = "%@ aparecerá en los informes locales de soporte.";
 "media.client_photo" = "foto de perfil del cliente";
 "media.pet_photo" = "foto de perfil de la mascota";
 "media.visit_before_photo" = "foto de antes de la visita";
@@ -1785,12 +1749,8 @@
 
 "new_client.duplicate_name" = "Ya existe un cliente con este nombre completo. Edita el cliente existente para agregar mascotas o actualizar su información.";
 
-"loyalty.catalog.simple_hint" = "Los créditos se aplican al finalizar la visita. Los servicios del salón se pueden canjear aquí. Guarda tus puntos todo el tiempo que quieras.";
-"loyalty.catalog.confirm_title" = "¿Usar esta recompensa?";
 
-"loyalty.catalog.confirm_fmt" = "%1$@ utiliza %2$@. Aplica la recompensa en el salón después de canjearla.";
 
-"loyalty.catalog.more_fmt" = "Faltan %@";
 
 "loyalty.client.automatic_note" = "Los puntos se añaden automáticamente tras una visita completada y pagada. Cada recompensa queda vinculada al historial de visitas de la mascota.";
 
@@ -1798,7 +1758,6 @@
 
 "loyalty.client.balance_caption" = "Un pequeño agradecimiento por cada visita.";
 
-"loyalty.client.browse_rewards" = "Explorar recompensas";
 
 "loyalty.client.reward_ready" = "Te espera una recompensa";
 
@@ -1886,7 +1845,42 @@
 
 "loyalty.points.keep_note" = "Usa los puntos cuando quieras. Nunca vencen y no hay límite de saldo.";
 
-"loyalty.journey.choice_note" = "Al finalizar, elige una recompensa o guarda los puntos para otra visita. Los créditos reducen el total automáticamente. Los puntos guardados nunca vencen.";
+"loyalty.journey.choice_note" = "En el paso Pago, elige una recompensa o guarda los puntos para otra visita. Los créditos reducen el total automáticamente. Los puntos nunca vencen.";
+
+"onboarding.loyalty_sim.reward.vip_spa" = "Paquete VIP de spa";
+"checkout.loyalty.selected" = "Recompensa elegida";
+"checkout.loyalty.subtotal" = "Antes de la recompensa";
+"checkout.loyalty.credit_exceeds_total" = "El total de esta visita es menor que el valor completo del crédito. Elige otra recompensa o guarda los puntos.";
+"loyalty.client.all_unlocked" = "Todas las recompensas disponibles";
+"loyalty.client.keep_growing" = "Todas las recompensas están disponibles. Los puntos siguen acumulándose hasta que el cliente elija una al cobrar.";
+"loyalty.client.progress_value_fmt" = "%1$d de %2$d puntos";
+"loyalty.client.rewards_paused" = "Las recompensas no están disponibles ahora. Los puntos guardados permanecen en esta cuenta.";
+"settings.help.navigation_title" = "Encuentra lo que necesitas";
+"settings.help.dashboard_title" = "Panel";
+"settings.help.dashboard_detail" = "Consulta las visitas de hoy, las acciones rápidas y lo que necesita atención.";
+"settings.help.clients_title" = "Clientes y mascotas";
+"settings.help.clients_detail" = "Busca o filtra clientes, abre un perfil para ver contactos y notas, y usa la tarjeta de la mascota para registrar entrada, salida o historial.";
+"settings.help.insights_title" = "Estadísticas";
+"settings.help.insights_detail" = "Revisa visitas, ingresos, servicios y formas de pago. Elige un período antes de exportar un informe.";
+"settings.help.settings_title" = "Configuración";
+"settings.help.settings_detail" = "Cambia preferencias y seguridad, administra recompensas o abre Exportar datos y Ayuda.";
+"settings.help.daily_title" = "Una visita de principio a fin";
+"settings.help.checkin_title" = "Registrar entrada";
+"settings.help.checkin_detail" = "Inicia la visita de una mascota desde el perfil del cliente. Las notas y alertas de cuidado quedan con la mascota.";
+"settings.help.checkout_title" = "Registrar salida";
+"settings.help.checkout_detail" = "Elige servicios, agrega notas o fotos y luego ingresa el importe y la forma de pago. Revisa el total final antes de confirmar.";
+"settings.help.payment_title" = "Controles de pago";
+"settings.help.payment_detail" = "Efectivo, débito, crédito y Zelle registran cómo se pagó la visita. Ingresa una referencia cuando se solicite.";
+"settings.help.loyalty_title" = "Puntos y recompensas";
+"settings.help.loyalty_detail" = "Las visitas completadas y pagadas suman puntos automáticamente. Al cobrar, elige una recompensa o guarda los puntos. Los créditos reducen el total; el salón entrega el paquete VIP y lo registra con la visita.";
+"settings.help.data_title" = "Tus registros";
+"settings.help.local_storage_detail" = "Los registros de clientes, visitas, pagos y fotos permanecen en este dispositivo. Protégelo y guarda una copia separada de las exportaciones importantes.";
+"settings.help.exports_title" = "Exportaciones CSV";
+"settings.help.exports_detail" = "Exportar datos crea archivos CSV legibles de clientes o visitas para revisar o compartir. Un CSV no es un respaldo restaurable de la app.";
+"settings.help.backups_title" = "Respaldos y restauración";
+"settings.help.backups_detail" = "En Exportar datos puedes revisar los respaldos locales disponibles y restaurar uno. Antes de reemplazar el almacén activo, la app conserva sus archivos actuales.";
+"settings.help.security_title" = "Seguridad";
+"settings.help.security_detail" = "Usa Configuración › Seguridad para gestionar el PIN, el desbloqueo biométrico y el bloqueo automático.";
 
 "loyalty.settings.reward_type" = "Tipo de recompensa";
 
@@ -1902,9 +1896,7 @@
 
 "loyalty.visit.redeemed_fmt" = "%@ · %@ usados";
 
-"loyalty.catalog.checkout_hint" = "Elige este crédito en la revisión final de la salida. Reducirá el total automáticamente y los puntos se usarán solo al confirmar el pago.";
 
-"loyalty.catalog.at_checkout" = "Usar al finalizar";
 
 "common.retry" = "Volver a intentar";
 

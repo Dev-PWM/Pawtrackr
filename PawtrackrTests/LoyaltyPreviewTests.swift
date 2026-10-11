@@ -183,7 +183,7 @@ final class LoyaltyPreviewTests: XCTestCase {
         UserDefaults.standard.set(AppLanguageOverride.es.rawValue, forKey: AppSettingsKeys.appLanguageOverride)
 
         let seeded = LoyaltyRewardTemplate(reward: LoyaltyReward.builtInCatalog[0], sortOrder: 0)
-        XCTAssertEqual(LoyaltyRewardCatalog.displayTitle(for: seeded.displayReward), "Crédito de $5 para una visita")
+        XCTAssertEqual(LoyaltyRewardCatalog.displayTitle(for: seeded.displayReward), "Crédito de $10 para el salón")
 
         let edited = LoyaltyRewardTemplate(title: "$5 Visit Credit", detail: "", pointCost: 75, systemImage: "gift.fill", styleRaw: "credit", sortOrder: 0)
         XCTAssertEqual(LoyaltyRewardCatalog.displayTitle(for: edited.displayReward), "$5 Visit Credit", "A changed cost means the salon made it its own.")
@@ -213,7 +213,8 @@ final class LoyaltyPreviewTests: XCTestCase {
         // the app does, nothing invented.
         XCTAssertTrue(LoyaltyExplainer.tiers.contains("500") && LoyaltyExplainer.tiers.contains("1,500") && LoyaltyExplainer.tiers.contains("3,500"), LoyaltyExplainer.tiers)
         XCTAssertTrue(LoyaltyExplainer.rebook.contains("20 points") && LoyaltyExplainer.rebook.contains("45"), LoyaltyExplainer.rebook)
-        XCTAssertTrue(LoyaltyExplainer.redeeming(config: .default).contains("give the reward yourself"))
+        XCTAssertTrue(LoyaltyExplainer.redeeming(config: .default).contains("Payment step"))
+        XCTAssertTrue(LoyaltyExplainer.redeeming(config: .default).contains("Credits lower the amount due automatically"))
         XCTAssertFalse(LoyaltyExplainer.redeeming(config: .default).contains("%"))
     }
 

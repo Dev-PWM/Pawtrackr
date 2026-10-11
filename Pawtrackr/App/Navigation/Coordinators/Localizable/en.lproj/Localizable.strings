@@ -257,19 +257,9 @@
 "settings.export.preparing" = "Preparing export...";
 "settings.export.share_fmt" = "Share %@";
 "settings.export.failed_fmt" = "Export failed: %@";
-"settings.help.support_title" = "Support Toolkit";
-"settings.help.support_detail" = "Collect a local support report before troubleshooting records, exports, or device setup.";
-"settings.help.copy_report" = "Copy Support Report";
-"settings.help.preparing_report" = "Preparing report...";
-"settings.help.report_copied" = "Support report copied.";
-"settings.help.exports_title" = "Exports & Backups";
-"settings.help.exports_detail" = "Use Data Export to create client or visit CSV files before major cleanup, migrations, or support sessions.";
 "settings.business.name" = "Business Name";
-"settings.business.currency_symbol" = "Currency Symbol";
 "settings.preferences.appearance" = "Appearance";
 "settings.preferences.default_launch" = "Default Launch Tab";
-"settings.preferences.device_name" = "Device Name";
-"settings.preferences.device_name_placeholder" = "Reception iPad";
 "settings.preferences.brand_color" = "Brand Color";
 "settings.preferences.brand_color_hex" = "Brand Color Hex";
 "settings.preferences.haptics" = "Haptic Feedback";
@@ -1255,21 +1245,12 @@
 "dashboard.activity.no_devices" = "No devices yet";
 "dashboard.activity.events_waiting" = "Nothing logged yet";
 "dashboard.activity.last_event_fmt" = "Last event %@";
-"settings.preferences.device_status" = "Device Label";
-"settings.preferences.device_name_missing" = "Add a name to identify this workstation in support reports.";
 "common.never" = "Never";
-"settings.business.currency_placeholder" = "$";
 "settings.business.identity_detail" = "This name appears on receipts, exports, and the dashboard.";
 "settings.business.identity_title" = "Salon Identity";
 "settings.business.name_placeholder" = "My Pet Grooming";
-"settings.business.preview_title" = "Receipt Preview";
-"settings.business.receipts_detail" = "Keep currency short and familiar so totals stay readable in checkout and PDF receipts.";
-"settings.business.receipts_title" = "Money & Receipts";
-"settings.business.unnamed" = "Unnamed salon";
 "settings.preferences.branding_detail" = "Accent color updates the app live; haptics affects taps and confirmations on supported devices.";
 "settings.preferences.branding_title" = "Brand & Feedback";
-"settings.preferences.device_detail" = "A clear device name helps identify this workstation in local support reports.";
-"settings.preferences.device_title" = "This Workstation";
 "settings.preferences.experience_detail" = "Choose how Pawtrackr opens and which language and appearance it follows.";
 "settings.preferences.experience_title" = "App Experience";
 "settings.preferences.launch_summary" = "Startup";
@@ -1277,11 +1258,11 @@
 "settings.preferences.media_mode" = "Media Mode";
 "settings.preferences.media_originals" = "Keep originals on this device";
 "settings.section.about.subtitle" = "Version details, guided setup, and the protected fresh-start control.";
-"settings.section.business.subtitle" = "Branding and receipt defaults used across checkout, exports, and customer-facing paperwork.";
+"settings.section.business.subtitle" = "Your salon name on receipts, exports, and the dashboard.";
 "settings.section.export.subtitle" = "Export operational data for reporting, backup review, or handoff outside Pawtrackr.";
-"settings.section.help.subtitle" = "Support tools and quick recovery guidance for day-to-day salon operation.";
+"settings.section.help.subtitle" = "A quick guide to the controls and everyday work in Pawtrackr.";
 "settings.section.loyalty.subtitle" = "Visits earn points automatically. Choose the rewards your salon offers.";
-"settings.section.preferences.subtitle" = "Tune the app for this workstation, from launch behavior to appearance and feedback.";
+"settings.section.preferences.subtitle" = "Choose how the app opens, looks, and responds.";
 "settings.section.security.subtitle" = "Protect client records with PIN, biometric unlock, and automatic locking rules.";
 "emergency_contact.validation.name_required" = "Add a name for this contact, or clear the phone number.";
 "emergency_contact.validation.name_missing" = "Add a name for this contact.";
@@ -1328,11 +1309,8 @@
 "onboarding.role.front_desk.title" = "Front Desk / Groomer";
 "onboarding.role.front_desk.subtitle" = "Check-in, check-out, safety notes, contacts, and active work.";
 "onboarding.loyalty_sim.title" = "Loyalty Points";
-"onboarding.loyalty_sim.reward.visit_credit_5" = "$5 Visit Credit";
-"onboarding.loyalty_sim.reward.visit_credit_10" = "$10 Visit Credit";
-"onboarding.loyalty_sim.reward.addon_discount_15" = "15% Off Add-On";
-"onboarding.loyalty_sim.reward.groom_credit_20" = "$20 Groom Credit";
-"onboarding.loyalty_sim.reward.basic_groom_credit" = "Free Basic Groom Credit";
+"onboarding.loyalty_sim.reward.visit_credit_10" = "$10 Salon Credit";
+"onboarding.loyalty_sim.reward.groom_credit_20" = "$20 Salon Credit";
 "loyalty.reset_ladder.title" = "Reset rewards to Discount Ladder?";
 "loyalty.reset_ladder.action" = "Reset to Discount Ladder";
 "loyalty.reset_ladder.message" = "This replaces the current reward templates with the five default discount-credit rewards. Client point balances stay unchanged.";
@@ -1434,7 +1412,6 @@
 "loyalty.client.top_tier_accessibility_fmt" = "%@ tier, top tier";
 "loyalty.client.rewards_paused_settings" = "Rewards are paused in Loyalty settings";
 "loyalty.client.points_until_fmt" = "%1$d points until %2$@";
-"loyalty.client.all_unlocked" = "Every active reward is unlocked";
 "loyalty.client.coach.paused_title" = "Rewards paused";
 "loyalty.client.coach.ready_title" = "Ready to reward";
 "loyalty.client.coach.next_title_fmt" = "Next up: %@";
@@ -1470,17 +1447,6 @@
 "loyalty.adjust.title" = "Adjust Points";
 "loyalty.adjust.saving" = "Saving";
 "loyalty.adjust.apply" = "Apply";
-"loyalty.catalog.section" = "Rewards";
-"loyalty.catalog.paused_title" = "Rewards Paused";
-"loyalty.catalog.paused_detail" = "Rewards can be re-enabled in Loyalty settings.";
-"loyalty.catalog.title" = "Rewards Catalog";
-"loyalty.catalog.available_balance" = "Available Balance";
-"loyalty.catalog.redeem_hint" = "Redeem available loyalty rewards";
-"loyalty.catalog.balance_accessibility_fmt" = "Available balance, %d points";
-"loyalty.catalog.redeem" = "Redeem";
-"loyalty.catalog.locked" = "Locked";
-"loyalty.catalog.reward_accessibility_fmt" = "%1$@, %2$@";
-"loyalty.catalog.redeemed_fmt" = "Redeemed %@";
 "loyalty.settings.pro_title" = "Pawtrackr Pro";
 "loyalty.settings.pro_detail" = "Loyalty configuration is available with active Pro access.";
 "loyalty.settings.earning_rules" = "Loyalty Earning Rules";
@@ -1631,7 +1597,7 @@
 "loyalty.preview.earn_flat_off" = "Checkouts earn no points right now: the rule is 0 points per visit.";
 "loyalty.preview.tiers_fmt" = "Points earned at checkout move a client up: Silver at %1$@, Gold at %2$@ and Platinum at %3$@. Each tier multiplies the points of every visit. Spending points never lowers a tier.";
 "loyalty.preview.rebook_fmt" = "A visit that earns points gets %1$@ more when the client's last visit ended %2$d days ago or less.";
-"loyalty.preview.redeem" = "To redeem, open Loyalty & Rewards on the client's profile and pick a reward. Its points come off the balance. Then give the reward yourself, for example as a discount at checkout.";
+"loyalty.preview.redeem" = "Choose an available reward on the Payment step of checkout, or keep points for later. Credits lower the amount due automatically; your salon provides the VIP package.";
 "loyalty.preview.redeem_paused" = "Rewards are paused, so points can't be redeemed right now. Clients keep their balance.";
 "loyalty.preview.rewards_starter" = "Starter rewards";
 "loyalty.preview.rewards_salon" = "Your rewards";
@@ -1642,8 +1608,6 @@
 "loyalty.preview.rules_saved" = "These are your salon's current rules. Checkout awards points with this same math.";
 "loyalty.preview.rules_default" = "These are the default rules. Checkout awards points with this same math, and you can change the rules in Settings > Loyalty.";
 "settings.help.local_storage_title" = "Local Storage";
-"settings.help.local_storage_detail" = "Client records, visits, payments, and photos stay on this device. Keep exports in a safe place, and use Data Export to review and restore available on-device backups.";
-"settings.preferences.device_name_report_fmt" = "%@ will appear in local support reports.";
 "media.client_photo" = "client profile photo";
 "media.pet_photo" = "pet profile photo";
 "media.visit_before_photo" = "visit before photo";
@@ -1772,12 +1736,8 @@
 
 "new_client.duplicate_name" = "A client with this full name already exists. Edit the existing client to add pets or update their information.";
 
-"loyalty.catalog.simple_hint" = "Credits are applied at final checkout. Salon services can be redeemed here. Keep points for as long as you like.";
-"loyalty.catalog.confirm_title" = "Use this reward?";
 
-"loyalty.catalog.confirm_fmt" = "%1$@ uses %2$@. Apply the reward at the salon after redeeming.";
 
-"loyalty.catalog.more_fmt" = "%@ to go";
 
 "loyalty.client.automatic_note" = "Points arrive automatically after a completed, paid visit. Each award stays linked to the pet’s visit history.";
 
@@ -1785,7 +1745,6 @@
 
 "loyalty.client.balance_caption" = "A little thank-you for every visit.";
 
-"loyalty.client.browse_rewards" = "Explore rewards";
 
 "loyalty.client.reward_ready" = "A reward is waiting";
 
@@ -1873,7 +1832,42 @@
 
 "loyalty.points.keep_note" = "Use points when you choose. They never expire, and there’s no balance limit.";
 
-"loyalty.journey.choice_note" = "At final checkout, choose a reward or keep the points for another visit. Credits lower the total automatically. Saved points never expire.";
+"loyalty.journey.choice_note" = "At the Payment step, choose a reward or keep the points for another visit. Credits lower the total automatically. Saved points never expire.";
+
+"onboarding.loyalty_sim.reward.vip_spa" = "VIP Spa Package";
+"checkout.loyalty.selected" = "Chosen reward";
+"checkout.loyalty.subtotal" = "Before reward";
+"checkout.loyalty.credit_exceeds_total" = "This visit total is below the reward's full credit. Choose another reward or keep the points.";
+"loyalty.client.all_unlocked" = "All rewards unlocked";
+"loyalty.client.keep_growing" = "Every reward is available. Points keep accumulating until the client chooses one at checkout.";
+"loyalty.client.progress_value_fmt" = "%1$d of %2$d points";
+"loyalty.client.rewards_paused" = "Rewards are unavailable right now. Saved points remain in this account.";
+"settings.help.navigation_title" = "Find your way";
+"settings.help.dashboard_title" = "Dashboard";
+"settings.help.dashboard_detail" = "See today's visits, quick actions, and items that need attention.";
+"settings.help.clients_title" = "Clients & pets";
+"settings.help.clients_detail" = "Search or filter clients, open a profile for contacts and pet notes, and use the pet card for check-in, checkout, or history.";
+"settings.help.insights_title" = "Insights";
+"settings.help.insights_detail" = "Review visits, revenue, services, and payment trends. Choose a period before exporting a report.";
+"settings.help.settings_title" = "Settings";
+"settings.help.settings_detail" = "Change preferences and security, manage rewards, or open Data Export and Help.";
+"settings.help.daily_title" = "A visit from start to finish";
+"settings.help.checkin_title" = "Check in";
+"settings.help.checkin_detail" = "Start a pet's visit from its client profile. Notes and care alerts stay with that pet.";
+"settings.help.checkout_title" = "Check out";
+"settings.help.checkout_detail" = "Choose services, add notes or photos, then enter the amount and payment method. Review the final total before confirming.";
+"settings.help.payment_title" = "Payment controls";
+"settings.help.payment_detail" = "Cash, debit, credit, and Zelle record how the visit was paid. Enter a reference when the selected method asks for one.";
+"settings.help.loyalty_title" = "Points & rewards";
+"settings.help.loyalty_detail" = "Completed paid visits add points automatically. At payment, choose one available reward or keep points for later. Credits lower the bill; VIP is provided by the salon and recorded with the visit.";
+"settings.help.data_title" = "Your records";
+"settings.help.local_storage_detail" = "Client records, visits, payments, and photos stay on this device. Protect the device and keep a separate copy of important exports.";
+"settings.help.exports_title" = "CSV exports";
+"settings.help.exports_detail" = "Data Export creates readable client or visit CSV files for review or handoff. A CSV is not a restorable app backup.";
+"settings.help.backups_title" = "Backups & restore";
+"settings.help.backups_detail" = "Data Export also lets you inspect available on-device store backups and restore one when needed. A restore replaces the active store only after preserving the current files.";
+"settings.help.security_title" = "Security";
+"settings.help.security_detail" = "Use Settings › Security to manage the app PIN, biometric unlock, and automatic locking.";
 
 "loyalty.settings.reward_type" = "Reward type";
 
@@ -1889,9 +1883,7 @@
 
 "loyalty.visit.redeemed_fmt" = "%@ · %@ used";
 
-"loyalty.catalog.checkout_hint" = "Select this credit on the final checkout review. It will lower the total automatically, and points will be used only when payment is confirmed.";
 
-"loyalty.catalog.at_checkout" = "Use at checkout";
 
 "common.retry" = "Try Again";
 

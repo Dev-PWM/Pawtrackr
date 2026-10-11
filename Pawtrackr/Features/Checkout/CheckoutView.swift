@@ -57,7 +57,7 @@ struct CheckoutView: View {
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("checkout.content")
         .sheet(isPresented: $viewModel.isChoosingLoyaltyReward) {
-            CheckoutRewardSelectionView(points: viewModel.loyaltyPoints, rewards: viewModel.loyaltyRewards) { reward in
+            CheckoutRewardSelectionView(points: viewModel.loyaltyPoints, rewards: viewModel.loyaltyRewards, subtotal: viewModel.servicesTotalDecimal) { reward in
                 viewModel.chooseLoyaltyReward(reward)
             }
         }
@@ -486,6 +486,14 @@ struct CheckoutView: View {
                         .id(paymentReferenceScrollTarget)
                     }
 
+                    if entitlements.isPremium, viewModel.pet.owner != nil {
+                        CheckoutLoyaltyPaymentCard(viewModel: viewModel) {
+                            commitAmountInput()
+                            viewModel.isChoosingLoyaltyReward = true
+                        }
+                        .padding(.horizontal)
+                    }
+
                     VStack(alignment: .leading, spacing: 12) {
                         Text(localized("checkout.summary", value: "Summary")).font(.headline).padding(.horizontal)
                         Card {
@@ -495,9 +503,9 @@ struct CheckoutView: View {
                                 summaryRow(title: localized("checkout.services", value: "Services"), value: selectedServicesSummary)
                                 Divider()
                                 if viewModel.loyaltyCredit > .zero {
-                                summaryRow(title: localized("checkout.loyalty.credit", value: "Reward credit"), value: "−" + viewModel.loyaltyCredit.moneyString)
-                            }
-                            summaryRow(title: NSLocalizedString("checkout.total", comment: ""), value: viewModel.finalTotalString, isTotal: true)
+                                    summaryRow(title: localized("checkout.loyalty.credit", value: "Reward credit"), value: "−" + viewModel.loyaltyCredit.moneyString)
+                                }
+                                summaryRow(title: NSLocalizedString("checkout.total", comment: ""), value: viewModel.finalTotalString, isTotal: true)
                             }
                         }
                     }
@@ -534,11 +542,6 @@ struct CheckoutView: View {
                 )
                 .walkthroughTarget(.coReview)
 
-                if entitlements.isPremium, viewModel.pet.owner != nil {
-                    CheckoutLoyaltyReviewCard(viewModel: viewModel)
-                        .padding(.horizontal)
-                }
-
                 VStack(alignment: .leading, spacing: 12) {
                     Text(localized("checkout.visit_summary", value: "Visit Summary")).font(.headline).padding(.horizontal)
                     Card {
@@ -550,7 +553,11 @@ struct CheckoutView: View {
                             summaryRow(title: localized("checkout.notes", value: "Notes"), value: viewModel.notesPreview)
                             summaryRow(title: localized("checkout.photos", value: "Photos"), value: "\(viewModel.totalPhotoCount)")
                             Divider()
+                            if let reward = viewModel.selectedLoyaltyReward {
+                                summaryRow(title: localized("checkout.loyalty.selected", value: "Chosen reward"), value: LoyaltyRewardCatalog.displayTitle(for: reward))
+                            }
                             if viewModel.loyaltyCredit > .zero {
+                                summaryRow(title: localized("checkout.loyalty.subtotal", value: "Before reward"), value: viewModel.servicesTotalDecimal.moneyString)
                                 summaryRow(title: localized("checkout.loyalty.credit", value: "Reward credit"), value: "−" + viewModel.loyaltyCredit.moneyString)
                             }
                             summaryRow(title: NSLocalizedString("checkout.total", comment: ""), value: viewModel.finalTotalString, isTotal: true)

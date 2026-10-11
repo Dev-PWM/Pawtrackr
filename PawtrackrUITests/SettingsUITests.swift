@@ -49,6 +49,47 @@ final class SettingsUITests: XCTestCase {
         XCTAssertFalse(app.staticTexts["iCloud"].exists)
     }
 
+    func testHelpAndSettingsShowTheSimplifiedGuideAndBusinessControls() throws {
+        waitForDashboard()
+        tapTab("Settings")
+        openSettingsSection(identifier: "help", title: "Help")
+        XCTAssertTrue(app.staticTexts["Find your way"].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.staticTexts["A visit from start to finish"].exists)
+        XCTAssertTrue(app.descendants(matching: .any)
+            .matching(NSPredicate(format: "label CONTAINS[c] %@", "A CSV is not a restorable app backup"))
+            .firstMatch.exists)
+        XCTAssertFalse(app.buttons["Copy Support Report"].exists)
+
+        returnToSettingsList()
+        openSettingsSection(identifier: "business", title: "Business")
+        XCTAssertTrue(app.staticTexts["Salon Identity"].waitForExistence(timeout: 8))
+        XCTAssertFalse(app.staticTexts["Money & Receipts"].exists)
+        returnToSettingsList()
+        openSettingsSection(identifier: "preferences", title: "Preferences")
+        XCTAssertFalse(app.staticTexts["This Workstation"].exists)
+    }
+
+    func testSpanishHelpExplainsCSVAndBackups() throws {
+        app.terminate()
+        app.launchArguments = [
+            "-pawtrackr-ui-testing",
+            "--mock-storekit-premium",
+            "-AppleLanguages", "(es)",
+            "-AppleLocale", "es_ES"
+        ]
+        app.launch()
+        let settingsTab = app.tabBars.buttons["Ajustes"]
+        XCTAssertTrue(settingsTab.waitForHittable(timeout: 12))
+        settingsTab.tap()
+        let help = app.buttons["settings.section.help"]
+        XCTAssertTrue(help.waitForHittable(timeout: 8))
+        help.tap()
+        XCTAssertTrue(app.staticTexts["Encuentra lo que necesitas"].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.descendants(matching: .any)
+            .matching(NSPredicate(format: "label CONTAINS[c] %@", "Un CSV no es un respaldo"))
+            .firstMatch.exists)
+    }
+
     // MARK: - App Lock toggle confirmation
 
     func testDisableAppLockShowsConfirmationAlert() throws {
@@ -203,6 +244,13 @@ final class SettingsUITests: XCTestCase {
         if sectionTitle.waitForHittable(timeout: 2) {
             sectionTitle.tap()
         }
+    }
+
+    private func returnToSettingsList() {
+        let back = app.navigationBars.buttons.element(boundBy: 0)
+        XCTAssertTrue(back.waitForHittable(timeout: 5), "Settings back button should be available.")
+        back.tap()
+        XCTAssertTrue(app.buttons["settings.section.help"].waitForExistence(timeout: 5))
     }
 
     private func ensureAppLockEnabledWithPIN() {

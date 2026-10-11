@@ -199,6 +199,11 @@ struct RootView: View {
             DataMigrations.ensureServiceCatalog(in: backgroundContext)
             DataMigrations.ensureMessageTemplates(in: backgroundContext)
             DataMigrations.ensureLoyaltyDefaults(in: backgroundContext)
+            do {
+                try await LoyaltyService(modelContainer: container).ensureDefaults()
+            } catch {
+                Logger.database.error("Starter reward reconciliation failed: \(error.localizedDescription)")
+            }
             DataMigrations.backfillLoyaltyLedger(in: backgroundContext)
             SummaryUpdater.rebuildAllSummaries(in: backgroundContext)
             DataSafetyMonitor.evaluateClientStoreState(in: backgroundContext)

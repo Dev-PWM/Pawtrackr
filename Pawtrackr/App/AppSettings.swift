@@ -34,7 +34,6 @@ enum AppSettingsKeys {
     static let defaultLaunchTab = "defaultLaunchTab"
     static let appLanguageOverride = "appLanguageOverride"
     static let optimizeMediaForStorage = LocalMediaPolicy.optimizedMediaDefaultsKey
-    static let deviceName = "deviceName"
     static let idleLockMinutes = "idleLockMinutes"
     static let onboardingRole = "onboardingRole"
     /// Guided tour progress, per device: finished lesson raw values, and the
@@ -314,16 +313,6 @@ final class AppSettings {
         }
     }
 
-    var deviceName: String {
-        didSet {
-            let limited = TextInputLimits.limited(deviceName, to: TextInputLimits.shortText)
-            if limited != deviceName {
-                deviceName = limited
-            }
-            UserDefaults.standard.set(deviceName, forKey: AppSettingsKeys.deviceName)
-        }
-    }
-
     /// Idle threshold (minutes) for auto-lock. Adjustable in Settings and
     /// clamped to a sane 1...60 range so the lock timer can't be disabled by
     /// stuffing in 0 or made effectively infinite.
@@ -428,18 +417,6 @@ final class AppSettings {
         self.onboardingRole = OnboardingRole(rawValue: storedOnboardingRole) ?? .ownerManager
         self.tourProgress = Self.loadTourProgress()
         
-        #if os(iOS)
-        let defaultDeviceName = UIDevice.current.model
-        #elseif os(macOS)
-        let defaultDeviceName = "Mac"
-        #else
-        let defaultDeviceName = "Device"
-        #endif
-        self.deviceName = TextInputLimits.limited(
-            UserDefaults.standard.string(forKey: AppSettingsKeys.deviceName) ?? defaultDeviceName,
-            to: TextInputLimits.shortText
-        )
-
         // Migrate any existing plaintext PIN out of UserDefaults into the
         // Keychain, then erase the UserDefaults copy. Future reads come from
         // the Keychain only.

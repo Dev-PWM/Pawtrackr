@@ -64,10 +64,84 @@ actor LoyaltyService {
     /// Seeds defaults inside the actor without changing an existing salon's rules.
     func ensureDefaults() throws {
         _ = try fetchOrCreateConfig()
-        if try modelContext.fetchCount(FetchDescriptor<LoyaltyRewardTemplate>()) == 0 {
+        let existing = try modelContext.fetch(FetchDescriptor<LoyaltyRewardTemplate>())
+        if existing.isEmpty {
             for reward in LoyaltyRewardTemplate.seedTemplates() { modelContext.insert(reward) }
+        } else {
+            reconcileShippedRewards(existing)
         }
         if modelContext.hasChanges { try modelContext.save() }
+    }
+
+    /// Updates only recognizable shipped defaults; owner-authored rewards are left intact.
+    private func reconcileShippedRewards(_ existing: [LoyaltyRewardTemplate]) {
+        // Match the full shipped definition. A salon may have edited a starter's
+        // detail, icon, style, or cost while keeping its original title.
+        let shippedDefinitions: [(String, String, Int, String, LoyaltyReward.Style, Decimal?)] = [
+            ("$5 Visit Credit", "Apply a small thank-you discount at checkout.", 50, "ticket.fill", .credit, 5),
+            ("$10 Visit Credit", "Reward regular clients with credit toward any groom.", 100, "banknote.fill", .credit, 10),
+            ("$10 Salon Credit", "Apply toward the next completed checkout.", 100, "ticket.fill", .credit, nil),
+            ("$10 Salon Credit", "Apply toward the next completed checkout.", 100, "ticket.fill", .credit, 10),
+            ("15% Off Add-On", "Discount a nail grind, blueberry facial, or similar add-on.", 150, "percent", .upgrade, nil),
+            ("$20 Groom Credit", "A higher-value credit for loyal repeat clients.", 200, "creditcard.fill", .credit, 20),
+            ("Free Basic Groom Credit", "A premium reward that covers a future basic groom credit.", 500, "crown.fill", .vip, nil),
+            ("Deep-Conditioning Treatment", "A premium coat-care add-on for a returning client.", 200, "drop.fill", .care, nil),
+            ("Deshedding Upgrade", "A complimentary seasonal shed-control upgrade.", 350, "scissors", .upgrade, nil),
+            ("VIP Spa Package", "Bundle a high-value add-on into the client's next visit.", 500, "sparkles", .vip, nil),
+            ("$10 Salon Credit", "Reward regular clients with credit toward any groom.", 100, "banknote.fill", .credit, 10),
+            ("$20 Salon Credit", "A higher-value credit for loyal repeat clients.", 200, "creditcard.fill", .credit, 20),
+            ("VIP Spa Package", "A special package provided by your salon and saved with the visit.", 500, "sparkles", .vip, nil)
+        ]
+        let recognized = existing.filter { template in
+            shippedDefinitions.contains { title, detail, cost, image, style, credit in
+                template.title == title && template.detail == detail && template.pointCost == cost
+                    && template.systemImage == image && template.style == style && template.creditAmount == credit
+            }
+        }
+        guard !recognized.isEmpty else { return }
+
+        var retainedStarterTitles = Set<String>()
+        var removedIDs = Set<UUID>()
+        for reward in recognized {
+            switch reward.title {
+            case "$5 Visit Credit", "15% Off Add-On", "Deep-Conditioning Treatment", "Deshedding Upgrade":
+                modelContext.delete(reward)
+                removedIDs.insert(reward.uuid)
+            case "$10 Visit Credit", "$10 Salon Credit":
+                retainOrRemove(reward, as: LoyaltyReward.builtInCatalog[0], seen: &retainedStarterTitles, removedIDs: &removedIDs)
+            case "$20 Groom Credit", "$20 Salon Credit":
+                retainOrRemove(reward, as: LoyaltyReward.builtInCatalog[1], seen: &retainedStarterTitles, removedIDs: &removedIDs)
+            case "Free Basic Groom Credit", "VIP Spa Package":
+                retainOrRemove(reward, as: LoyaltyReward.builtInCatalog[2], seen: &retainedStarterTitles, removedIDs: &removedIDs)
+            default: break
+            }
+        }
+
+        let surviving = existing.filter { !removedIDs.contains($0.uuid) }
+        for (index, starter) in LoyaltyReward.builtInCatalog.enumerated() where !surviving.contains(where: { $0.title == starter.title && $0.pointCost == starter.pointCost }) {
+            modelContext.insert(LoyaltyRewardTemplate(reward: starter, sortOrder: index))
+        }
+    }
+
+    /// Keeps the first shipped milestone and removes duplicate shipped definitions.
+    private func retainOrRemove(_ template: LoyaltyRewardTemplate, as starter: LoyaltyReward, seen: inout Set<String>, removedIDs: inout Set<UUID>) {
+        guard seen.insert(starter.title).inserted else {
+            modelContext.delete(template)
+            removedIDs.insert(template.uuid)
+            return
+        }
+        updateShippedReward(template, to: starter)
+    }
+
+    /// Applies a new starter definition without changing the template's identity or enabled choice.
+    private func updateShippedReward(_ template: LoyaltyRewardTemplate, to starter: LoyaltyReward) {
+        guard template.title != starter.title || template.detail != starter.detail || template.systemImage != starter.systemImage || template.style != starter.style || template.creditAmount != starter.checkoutCreditAmount else { return }
+        template.title = starter.title
+        template.detail = starter.detail
+        template.systemImage = starter.systemImage
+        template.styleRaw = starter.style.rawValue
+        template.creditAmount = starter.checkoutCreditAmount
+        template.markModified()
     }
 
     /// Fetches a context-local reward before changing its availability.

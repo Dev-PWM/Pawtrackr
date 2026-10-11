@@ -25,7 +25,7 @@ struct LoyaltyReward: Identifiable, Hashable, Codable, Sendable {
         switch (title, pointCost) {
         case ("$5 Visit Credit", 50): return 5
         case ("$10 Visit Credit", 100), ("$10 Salon Credit", 100): return 10
-        case ("$20 Groom Credit", 200): return 20
+        case ("$20 Groom Credit", 200), ("$20 Salon Credit", 200): return 20
         default: return nil
         }
     }
@@ -33,6 +33,12 @@ struct LoyaltyReward: Identifiable, Hashable, Codable, Sendable {
     /// Credits cannot make a payment negative; all currency arithmetic stays Decimal.
     func creditDiscount(on subtotal: Decimal) -> Decimal {
         min(max(.zero, subtotal), checkoutCreditAmount ?? .zero).roundedMoney()
+    }
+
+    /// Prevents spending a full credit when the visit cannot use its full value.
+    func isApplicable(to subtotal: Decimal) -> Bool {
+        guard let credit = checkoutCreditAmount else { return true }
+        return subtotal.roundedMoney() >= credit
     }
 
     @MainActor
@@ -43,46 +49,32 @@ struct LoyaltyReward: Identifiable, Hashable, Codable, Sendable {
         return AppLocalization.localized("loyalty.reward.salon_provided", value: "Provided by your salon; recorded in visit history")
     }
 
-    /// The starter catalog used until configurable rewards land in the V2 loyalty schema.
+    /// The three starter milestones; salons can still keep their own rewards.
     static let builtInCatalog: [LoyaltyReward] = [
         LoyaltyReward(
-            id: "visit-credit-5",
-            title: "$5 Visit Credit",
-            detail: "Apply a small thank-you discount at checkout.",
-            pointCost: 50,
-            systemImage: "ticket.fill",
-            style: .credit
-        ),
-        LoyaltyReward(
             id: "visit-credit-10",
-            title: "$10 Visit Credit",
+            title: "$10 Salon Credit",
             detail: "Reward regular clients with credit toward any groom.",
             pointCost: 100,
             systemImage: "banknote.fill",
-            style: .credit
-        ),
-        LoyaltyReward(
-            id: "addon-discount-15",
-            title: "15% Off Add-On",
-            detail: "Discount a nail grind, blueberry facial, or similar add-on.",
-            pointCost: 150,
-            systemImage: "percent",
-            style: .upgrade
+            style: .credit,
+            creditAmount: 10
         ),
         LoyaltyReward(
             id: "groom-credit-20",
-            title: "$20 Groom Credit",
+            title: "$20 Salon Credit",
             detail: "A higher-value credit for loyal repeat clients.",
             pointCost: 200,
             systemImage: "creditcard.fill",
-            style: .credit
+            style: .credit,
+            creditAmount: 20
         ),
         LoyaltyReward(
-            id: "basic-groom-credit",
-            title: "Free Basic Groom Credit",
-            detail: "A premium reward that covers a future basic groom credit.",
+            id: "vip-spa-package",
+            title: "VIP Spa Package",
+            detail: "A special package provided by your salon and saved with the visit.",
             pointCost: 500,
-            systemImage: "crown.fill",
+            systemImage: "sparkles",
             style: .vip
         )
     ]

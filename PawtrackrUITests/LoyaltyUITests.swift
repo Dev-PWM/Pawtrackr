@@ -34,7 +34,7 @@ final class LoyaltyUITests: XCTestCase {
         XCTAssertTrue(app.buttons["subscriptionPaywall.dismiss"].exists)
     }
 
-    func testKeepingPointsAtFinalReviewAwardsAutomaticallyAndCatalogPreservesBalance() throws {
+    func testKeepingPointsAtPaymentAwardsAutomaticallyAndShowsProgress() throws {
         launch(entitlement: .premium)
         openSeededClient()
 
@@ -51,36 +51,29 @@ final class LoyaltyUITests: XCTestCase {
         let service = app.buttons["checkout.service.Full Package"]
         XCTAssertTrue(service.waitForHittable(timeout: 8))
         service.tap()
-        for _ in 0..<3 {
+        for _ in 0..<2 {
             let primary = app.buttons["checkout.primaryButton"]
             XCTAssertTrue(primary.waitForHittable(timeout: 8))
             primary.tap()
         }
-        XCTAssertTrue(app.buttons["Confirm & Pay"].waitForHittable(timeout: 8))
         let checkoutContent = app.descendants(matching: .any)["checkout.content"].firstMatch
         XCTAssertTrue(checkoutContent.exists)
         XCTAssertTrue(app.buttons["checkout.loyalty.choose"].exists)
         XCTAssertTrue(app.staticTexts["Keep points for later"].exists)
         XCTAssertFalse(app.buttons["clientLoyalty.adjustPoints"].exists)
+        app.buttons["checkout.primaryButton"].tap()
+        XCTAssertTrue(app.buttons["Confirm & Pay"].waitForHittable(timeout: 8))
+        XCTAssertFalse(app.buttons["checkout.loyalty.choose"].exists)
         app.buttons["Confirm & Pay"].tap()
         XCTAssertTrue(app.staticTexts["Checkout Complete!"].waitForExistence(timeout: 15))
         app.buttons["checkout.doneButton"].tap()
 
         tapLoyaltyEntry()
-        XCTAssertTrue(app.buttons["clientLoyalty.redeemRewards"].waitForHittable(timeout: 8))
+        XCTAssertTrue(app.descendants(matching: .any)["clientLoyalty.rewardProgress"].waitForExistence(timeout: 8))
+        XCTAssertFalse(app.buttons["clientLoyalty.redeemRewards"].exists)
         XCTAssertFalse(app.buttons["clientLoyalty.adjustPoints"].exists)
         XCTAssertTrue(app.staticTexts["115"].waitForExistence(timeout: 8),
                       "The $95 paid visit plus the return bonus earns 115 points automatically.")
-        app.buttons["clientLoyalty.redeemRewards"].tap()
-        XCTAssertTrue(app.staticTexts["Rewards Catalog"].waitForExistence(timeout: 8))
-        let redeem = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "rewardsCatalog.reward.")).firstMatch
-        XCTAssertTrue(redeem.waitForHittable(timeout: 6))
-        redeem.tap()
-        XCTAssertTrue(app.alerts.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "Select this credit on the final checkout review")).firstMatch.waitForExistence(timeout: 8))
-        app.alerts.buttons["Done"].tap()
-        app.buttons["Done"].tap()
-        XCTAssertTrue(app.staticTexts["115"].waitForExistence(timeout: 8),
-                      "Browsing a credit keeps the points until checkout confirmation.")
         let attachment = XCTAttachment(screenshot: app.screenshot())
         attachment.name = "Visit rewards after automatic earning and redemption"
         attachment.lifetime = .keepAlways
@@ -101,7 +94,7 @@ final class LoyaltyUITests: XCTestCase {
         checkIn.tap()
         let checkout = app.buttons["clientDetail.pet.UITest Pet.checkOut"]
         XCTAssertTrue(checkout.waitForHittable(timeout: 8))
-        openFinalCheckout()
+        openPaymentCheckout()
         let choose = app.buttons["checkout.loyalty.choose"]
         scrollTo(choose)
         XCTAssertTrue(choose.waitForHittable(timeout: 8))
@@ -109,19 +102,22 @@ final class LoyaltyUITests: XCTestCase {
         let select = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "checkout.reward.")).firstMatch
         XCTAssertTrue(select.waitForHittable(timeout: 8))
         select.tap()
-        XCTAssertTrue(app.staticTexts["$5.00 off this visit"].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.staticTexts["$10.00 off this visit"].waitForExistence(timeout: 8))
         let attachment = XCTAttachment(screenshot: app.screenshot())
-        attachment.name = "Final checkout with optional credit reward"
+        attachment.name = "Payment step with optional credit reward"
         attachment.lifetime = .keepAlways
         add(attachment)
+        app.buttons["checkout.primaryButton"].tap()
+        XCTAssertTrue(app.buttons["Confirm & Pay"].waitForHittable(timeout: 8))
+        XCTAssertFalse(app.buttons["checkout.loyalty.choose"].exists)
         app.buttons["Confirm & Pay"].tap()
         XCTAssertTrue(app.staticTexts["Checkout Complete!"].waitForExistence(timeout: 15))
-        XCTAssertTrue(app.staticTexts["$90.00"].exists, "The $5 credit lowers the $95 bill automatically.")
+        XCTAssertTrue(app.staticTexts["$85.00"].exists, "The $10 credit lowers the $95 bill automatically.")
         app.buttons["checkout.doneButton"].tap()
         tapLoyaltyEntry()
-        XCTAssertTrue(app.staticTexts["175"].waitForExistence(timeout: 8),
-                      "115 saved − 50 redeemed + 110 earned from the discounted paid visit.")
-        XCTAssertTrue(app.staticTexts["Redeemed $5 Visit Credit"].exists)
+        XCTAssertTrue(app.staticTexts["120"].waitForExistence(timeout: 8),
+                      "115 saved − 100 redeemed + 105 earned from the discounted paid visit.")
+        XCTAssertTrue(app.staticTexts["Redeemed $10 Salon Credit"].exists)
         let history = XCTAttachment(screenshot: app.screenshot())
         history.name = "Client rewards history after checkout credit"
         history.lifetime = .keepAlways
@@ -129,6 +125,12 @@ final class LoyaltyUITests: XCTestCase {
     }
 
     private func openFinalCheckout() {
+        openPaymentCheckout()
+        app.buttons["checkout.primaryButton"].tap()
+        XCTAssertTrue(app.buttons["Confirm & Pay"].waitForHittable(timeout: 8))
+    }
+
+    private func openPaymentCheckout() {
         let checkout = app.buttons["clientDetail.pet.UITest Pet.checkOut"]
         scrollTo(checkout)
         XCTAssertTrue(checkout.waitForHittable(timeout: 8))
@@ -138,12 +140,12 @@ final class LoyaltyUITests: XCTestCase {
         let service = app.buttons["checkout.service.Full Package"]
         XCTAssertTrue(service.waitForHittable(timeout: 8))
         service.tap()
-        for _ in 0..<3 {
+        for _ in 0..<2 {
             let primary = app.buttons["checkout.primaryButton"]
             XCTAssertTrue(primary.waitForHittable(timeout: 8))
             primary.tap()
         }
-        XCTAssertTrue(app.buttons["Confirm & Pay"].waitForHittable(timeout: 8))
+        XCTAssertTrue(app.buttons["checkout.loyalty.choose"].waitForExistence(timeout: 8))
     }
 
     private func scrollTo(_ element: XCUIElement) {

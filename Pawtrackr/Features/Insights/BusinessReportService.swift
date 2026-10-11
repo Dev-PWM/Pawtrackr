@@ -27,6 +27,13 @@ import UIKit
 import AppKit
 #endif
 
+/// An Insights data quality check included in the PDF report.
+struct BusinessReportReviewItem: Sendable, Equatable {
+    let title: String
+    let count: Int
+    let detail: String
+}
+
 /// Everything the report PDF shows, already formatted and translated.
 struct BusinessReportDocument: Sendable {
     enum Trend: Sendable {

@@ -17,7 +17,7 @@ struct LoyaltyJourneyCard: View {
                 journeyRow(2, symbol: "checkmark", title: AppLocalization.localized("loyalty.journey.complete", value: "Complete the visit & record payment"), detail: AppLocalization.localized("loyalty.journey.complete_detail", value: "Points wait until the visit is checked out and paid."))
                 journeyRow(3, symbol: "sparkles", title: AppLocalization.localized("loyalty.journey.saved", value: "Points, taken care of"), detail: AppLocalization.localized("loyalty.journey.saved_detail", value: "Added once to the client’s balance and saved with the visit. Nothing to enter."))
             }
-            Text(AppLocalization.localized("loyalty.journey.choice_note", value: "At final checkout, choose a reward or keep the points for another visit. Credits lower the total automatically. Saved points never expire."))
+            Text(AppLocalization.localized("loyalty.journey.choice_note", value: "At the Payment step, choose a reward or keep the points for another visit. Credits lower the total automatically. Saved points never expire."))
                 .font(.footnote).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
         }
         .padding(24)
@@ -92,16 +92,12 @@ enum LoyaltyRewardCatalog {
     /// Literal keys, so LocalizationTests can see them.
     static func localizedTitle(for reward: LoyaltyReward) -> String {
         switch reward.id {
-        case "visit-credit-5":
-            return AppLocalization.localized("onboarding.loyalty_sim.reward.visit_credit_5", value: reward.title)
         case "visit-credit-10":
             return AppLocalization.localized("onboarding.loyalty_sim.reward.visit_credit_10", value: reward.title)
-        case "addon-discount-15":
-            return AppLocalization.localized("onboarding.loyalty_sim.reward.addon_discount_15", value: reward.title)
         case "groom-credit-20":
             return AppLocalization.localized("onboarding.loyalty_sim.reward.groom_credit_20", value: reward.title)
-        case "basic-groom-credit":
-            return AppLocalization.localized("onboarding.loyalty_sim.reward.basic_groom_credit", value: reward.title)
+        case "vip-spa-package":
+            return AppLocalization.localized("onboarding.loyalty_sim.reward.vip_spa", value: reward.title)
         default:
             return reward.title
         }
@@ -183,7 +179,7 @@ enum LoyaltyExplainer {
         }
         return AppLocalization.localized(
             "loyalty.preview.redeem",
-            value: "To redeem, open Loyalty & Rewards on the client's profile and pick a reward. Its points come off the balance. Then give the reward yourself, for example as a discount at checkout."
+            value: "Choose an available reward on the Payment step of checkout, or keep points for later. Credits lower the amount due automatically; your salon provides the VIP package."
         )
     }
 

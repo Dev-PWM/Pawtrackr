@@ -203,7 +203,7 @@ class InsightsViewModel {
         let csv: ExportDocument
     }
 
-    func makeReportExports(businessName: String, currencySymbol: String) async throws -> ReportExports {
+    func makeReportExports(businessName: String) async throws -> ReportExports {
         let facts = try await BusinessReportFacts.build(container: dataStore.container, periodDays: revenuePeriodDays)
         let reviewItems = dataQualityIssues.map {
             BusinessReportReviewItem(title: $0.title, count: $0.count, detail: $0.detail)
@@ -211,7 +211,7 @@ class InsightsViewModel {
         let document = BusinessReportService.makeDocument(facts: facts, businessName: businessName, reviewItems: reviewItems)
         async let pdfData = BusinessReportService.renderAsync(document)
         let csv = await Task.detached(priority: .userInitiated) {
-            BusinessReportCSV.make(facts: facts, businessName: businessName, currencySymbol: currencySymbol, reviewItems: reviewItems)
+            BusinessReportCSV.make(facts: facts)
         }.value
         return ReportExports(pdf: ReportDocument(pdfData: await pdfData, filename: document.filename), csv: csv)
     }

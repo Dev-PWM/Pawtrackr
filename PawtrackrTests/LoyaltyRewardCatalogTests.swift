@@ -5,7 +5,15 @@ final class LoyaltyRewardCatalogTests: XCTestCase {
     func testBuiltInCatalogOrdersRewardsByPointCost() {
         let costs = LoyaltyReward.builtInCatalog.map(\.pointCost)
 
-        XCTAssertEqual(costs, costs.sorted())
+        XCTAssertEqual(costs, [100, 200, 500])
+        XCTAssertEqual(LoyaltyReward.builtInCatalog.map(\.title), ["$10 Salon Credit", "$20 Salon Credit", "VIP Spa Package"])
+    }
+
+    func testCreditNeedsEnoughVisitValueToUseItsFullAmount() {
+        let credit = LoyaltyReward.builtInCatalog[1]
+        XCTAssertFalse(credit.isApplicable(to: 19))
+        XCTAssertTrue(credit.isApplicable(to: 20))
+        XCTAssertTrue(LoyaltyReward.builtInCatalog[2].isApplicable(to: 0))
     }
 
     func testRewardEligibilityRequiresEnoughPoints() throws {

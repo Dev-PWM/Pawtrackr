@@ -75,8 +75,8 @@ final class MigrationsTests: XCTestCase {
             FetchDescriptor<LoyaltyRewardTemplate>(sortBy: [SortDescriptor(\.sortOrder)])
         )
         XCTAssertEqual(rewards.count, LoyaltyReward.builtInCatalog.count)
-        XCTAssertEqual(rewards.first?.pointCost, 50)
-        XCTAssertEqual(rewards.first?.title, "$5 Visit Credit")
+        XCTAssertEqual(rewards.first?.pointCost, 100)
+        XCTAssertEqual(rewards.first?.title, "$10 Salon Credit")
     }
 
     func testEnsureLoyaltyDefaults_IsIdempotent() throws {

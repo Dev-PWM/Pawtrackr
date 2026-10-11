@@ -90,4 +90,51 @@ final class LoyaltyServiceConfigTests: XCTestCase {
             }
         }
     }
+
+    func testReconcilesLegacyStarterRewardsWithoutChangingClientHistoryOrCustomRewards() async throws {
+        let context = ModelContext(container)
+        for reward in try context.fetch(FetchDescriptor<LoyaltyRewardTemplate>()) { context.delete(reward) }
+        let retired = LoyaltyRewardTemplate(title: "Deep-Conditioning Treatment", detail: "A premium coat-care add-on for a returning client.", pointCost: 200,
+                                            systemImage: "drop.fill", styleRaw: "care", sortOrder: 0)
+        let legacyCredit = LoyaltyRewardTemplate(title: "$10 Salon Credit", detail: "Apply toward the next completed checkout.", pointCost: 100,
+                                                 systemImage: "ticket.fill", styleRaw: "credit", sortOrder: 1)
+        let legacyVIP = LoyaltyRewardTemplate(title: "VIP Spa Package", detail: "Bundle a high-value add-on into the client's next visit.", pointCost: 500,
+                                              systemImage: "sparkles", styleRaw: "vip", sortOrder: 2)
+        let custom = LoyaltyRewardTemplate(title: "Birthday Gift", detail: "Owner-created", pointCost: 300,
+                                           systemImage: "gift.fill", styleRaw: "care", sortOrder: 3)
+        let client = Client(firstName: "Saved", lastName: "Points")
+        client.loyaltyPoints = 128
+        context.insert(retired)
+        context.insert(legacyCredit)
+        context.insert(legacyVIP)
+        context.insert(custom)
+        context.insert(client)
+        context.insert(LoyaltyLedgerEntry(kind: .redeemed, points: -200, clientUUID: client.uuid, reason: retired.title))
+        try context.save()
+
+        let service = LoyaltyService(modelContainer: container)
+        try await service.ensureDefaults()
+        try await service.ensureDefaults()
+
+        let fresh = ModelContext(container)
+        let rewards = try fresh.fetch(FetchDescriptor<LoyaltyRewardTemplate>())
+        XCTAssertEqual(rewards.count, 4)
+        XCTAssertEqual(Set(rewards.map(\.title)), Set(["$10 Salon Credit", "$20 Salon Credit", "VIP Spa Package", "Birthday Gift"]))
+        XCTAssertEqual(try fresh.fetch(FetchDescriptor<Client>()).first?.loyaltyPoints, 128)
+        XCTAssertEqual(try fresh.fetch(FetchDescriptor<LoyaltyLedgerEntry>()).first?.reason, "Deep-Conditioning Treatment")
+    }
+
+    func testReconciliationPreservesAnEditedStarterDefinition() async throws {
+        let context = ModelContext(container)
+        let edited = try XCTUnwrap(try context.fetch(FetchDescriptor<LoyaltyRewardTemplate>()).first { $0.title == "$10 Salon Credit" })
+        edited.detail = "Owner's custom description"
+        edited.markModified()
+        try context.save()
+
+        try await LoyaltyService(modelContainer: container).ensureDefaults()
+
+        let fresh = ModelContext(container)
+        let rewards = try fresh.fetch(FetchDescriptor<LoyaltyRewardTemplate>())
+        XCTAssertTrue(rewards.contains { $0.uuid == edited.uuid && $0.detail == "Owner's custom description" })
+    }
 }
