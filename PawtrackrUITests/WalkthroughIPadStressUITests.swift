@@ -134,7 +134,7 @@ final class WalkthroughIPadStressUITests: QualityControlUITestCase {
 
         advanceWalkthroughUntilActiveAnchor("loyaltySimulator", maxTaps: 64)
         assertActiveWalkthroughAnchor("loyaltySimulator")
-        XCTAssertTrue(app.sliders["onboarding.loyaltySimulator.slider"].exists, "The loyalty stop sits on the preview's Try it box.")
+        XCTAssertTrue(app.descendants(matching: .any)["loyaltyJourney.card"].exists, "The loyalty stop explains automatic points.")
 
         advanceWalkthroughUntilActiveAnchor("setData", maxTaps: 3)
         assertActiveWalkthroughAnchor("setData")

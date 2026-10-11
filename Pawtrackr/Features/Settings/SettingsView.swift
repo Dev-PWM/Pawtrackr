@@ -45,7 +45,7 @@ enum SettingSection: String, CaseIterable, Identifiable {
         case .preferences:
             return settingsLocalized("settings.section.preferences.subtitle", value: "Tune the app for this workstation, from launch behavior to appearance and feedback.")
         case .loyalty:
-            return settingsLocalized("settings.section.loyalty.subtitle", value: "Configure how visits earn points and which rewards your salon wants to offer.")
+            return settingsLocalized("settings.section.loyalty.subtitle", value: "Visits earn points automatically. Choose the rewards your salon offers.")
         case .security:
             return settingsLocalized("settings.section.security.subtitle", value: "Protect client records with PIN, biometric unlock, and automatic locking rules.")
         case .dataExport:

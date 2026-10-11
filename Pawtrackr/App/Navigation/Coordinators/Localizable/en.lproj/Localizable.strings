@@ -711,7 +711,7 @@
 "insights.top_clients.empty" = "No client data yet";
 "insights.export.pdf_report" = "PDF Report";
 "insights.export.csv" = "Insights CSV";
-"insights.export.csv_data" = "CSV Data";
+"insights.export.csv_data" = "Owner Insights CSV";
 "insights.export.share_report" = "Share Report";
 "insights.export.export_report" = "Export Report";
 "export.csv.first_name" = "First Name";
@@ -757,6 +757,36 @@
 "report.days" = "Days";
 "report.generated" = "Generated";
 "report.currency" = "Currency";
+"report.csv.owner_title" = "Business Owner Insights";
+"report.scope" = "Report scope";
+"report.scope.operational" = "Operational insights from completed visits. Excludes expenses, taxes collected, refunds, and deductions; not a tax report.";
+"report.owner_snapshot" = "Owner snapshot";
+"report.completed_visit_revenue" = "Completed visit revenue";
+"report.recorded_payments" = "Recorded payments";
+"report.revenue_less_payments" = "Revenue less recorded payments";
+"report.payment_coverage_percent" = "Payment coverage (%)";
+"report.clients_served" = "Clients served";
+"report.revenue_per_client" = "Revenue per client";
+"report.returning_client_rate" = "Returning client rate (%)";
+"report.owner_focus" = "What to focus on";
+"report.focus" = "Focus";
+"report.result" = "Result";
+"report.why_it_matters" = "Why it matters";
+"report.focus.revenue_trend" = "Revenue trend";
+"report.focus.revenue_result_fmt" = "%1$@%% vs previous %2$d days";
+"report.focus.revenue_use" = "Shows whether completed sales are growing.";
+"report.focus.returning_clients" = "Returning clients";
+"report.focus.returning_result_fmt" = "%1$d of %2$d clients · %3$@%%";
+"report.focus.returning_use" = "Shows how much business came from repeat clients.";
+"report.focus.top_service" = "Top service";
+"report.focus.service_result_fmt" = "%1$@ · %2$@%% of service revenue";
+"report.focus.service_use" = "Shows which service drives the most revenue.";
+"report.focus.busiest_weekday" = "Busiest weekday";
+"report.focus.weekday_result_fmt" = "%1$@ · %2$d completed visits";
+"report.focus.weekday_use" = "Helps plan staffing and appointment capacity.";
+"report.focus.top_payment_method" = "Top payment method";
+"report.focus.payment_result_fmt" = "%1$@ · %2$@%% of recorded payments";
+"report.focus.payment_use" = "Helps reconcile where client payments were recorded.";
 "report.summary" = "Summary";
 "report.metric" = "Metric";
 "report.this_period" = "This period";
@@ -952,10 +982,10 @@
 "onboarding.step.role" = "Your Role";
 "onboarding.step.loyalty" = "Loyalty Points";
 "onboarding.subtitle.role" = "Choose the tour style that fits your day-to-day work.";
-"onboarding.subtitle.loyalty" = "See how points build automatically after each completed visit.";
+"onboarding.subtitle.loyalty" = "Points build automatically after each completed, paid visit.";
 "onboarding.role.note" = "This only changes the guided tour. You can still use every Pawtrackr feature.";
 "onboarding.loyalty.title" = "Rewards without extra math";
-"onboarding.loyalty.message" = "Move the checkout total, pick a tier, and see the points a visit earns. Checkout uses this same math.";
+"onboarding.loyalty.message" = "Care for the pet. Complete the visit. Pawtrackr takes care of the points.";
 
 "tour.clients.filters.title" = "Client Filters";
 "tour.clients.filters.directive" = "Switch between All, Active, Needs Attention, and Missing Info.";
@@ -1250,7 +1280,7 @@
 "settings.section.business.subtitle" = "Branding and receipt defaults used across checkout, exports, and customer-facing paperwork.";
 "settings.section.export.subtitle" = "Export operational data for reporting, backup review, or handoff outside Pawtrackr.";
 "settings.section.help.subtitle" = "Support tools and quick recovery guidance for day-to-day salon operation.";
-"settings.section.loyalty.subtitle" = "Configure how visits earn points and which rewards your salon wants to offer.";
+"settings.section.loyalty.subtitle" = "Visits earn points automatically. Choose the rewards your salon offers.";
 "settings.section.preferences.subtitle" = "Tune the app for this workstation, from launch behavior to appearance and feedback.";
 "settings.section.security.subtitle" = "Protect client records with PIN, biometric unlock, and automatic locking rules.";
 "emergency_contact.validation.name_required" = "Add a name for this contact, or clear the phone number.";
@@ -1313,7 +1343,7 @@
 "loyalty.badge.points" = "points";
 "loyalty.badge.accessibility_fmt" = "%1$d loyalty points, %2$@ tier";
 "client_detail.loyalty.title" = "Loyalty & Rewards";
-"client_detail.loyalty.subtitle" = "Manage balance, rewards, and visit-earned points";
+"client_detail.loyalty.subtitle" = "Points saved automatically from paid visits";
 "client_detail.loyalty.locked_subtitle" = "Premium client retention tools";
 "client_detail.loyalty.accessibility_fmt" = "Loyalty and rewards, %d points";
 "client_detail.loyalty.locked_accessibility_fmt" = "Loyalty and rewards locked, %d points";
@@ -1709,10 +1739,10 @@
 "tour.academy.ins_revenue.why" = "Tell a strong stretch from a slow one and see where the business is heading.";
 "tour.academy.ins_revenue.try" = "Tap 30D to change the period.";
 "tour.academy.set_loyalty.title" = "How points add up";
-"tour.academy.set_loyalty.what" = "A live preview of your loyalty rules, using the same math as checkout.";
-"tour.academy.set_loyalty.why" = "Silver, Gold and Platinum clients earn more on every visit, and coming back soon adds a rebook bonus. Staff can tell a client exactly what a visit earns.";
-"tour.academy.set_loyalty.try" = "Drag the checkout total or pick a tier, and watch the points change.";
-"tour.academy.set_loyalty.tip" = "A check on a reward means one visit earns enough for it. Owners set the earning rule in Loyalty Earning Rules above.";
+"tour.academy.set_loyalty.what" = "Check in, complete the visit and record payment. Points are saved automatically.";
+"tour.academy.set_loyalty.why" = "Every award is linked to a completed, paid visit and appears in the client’s profile and history.";
+"tour.academy.set_loyalty.try" = "Follow the three steps, then continue.";
+"tour.academy.set_loyalty.tip" = "No manual entry is needed. Open How points are calculated for the salon’s current rules.";
 "tour.academy.set_data.title" = "Export your data";
 "tour.academy.set_data.what" = "Settings exports your clients and visits as spreadsheet files.";
 "tour.academy.set_data.why" = "Your records live on this device. An export is a copy you control, for bookkeeping, your accountant or a backup.";
@@ -1741,3 +1771,130 @@
 "pet.editor.removed_checkin" = "Restore this pet before starting a new session.";
 
 "new_client.duplicate_name" = "A client with this full name already exists. Edit the existing client to add pets or update their information.";
+
+"loyalty.catalog.simple_hint" = "Credits are applied at final checkout. Salon services can be redeemed here. Keep points for as long as you like.";
+"loyalty.catalog.confirm_title" = "Use this reward?";
+
+"loyalty.catalog.confirm_fmt" = "%1$@ uses %2$@. Apply the reward at the salon after redeeming.";
+
+"loyalty.catalog.more_fmt" = "%@ to go";
+
+"loyalty.client.automatic_note" = "Points arrive automatically after a completed, paid visit. Each award stays linked to the pet’s visit history.";
+
+"loyalty.client.visit_rewards" = "Visit rewards";
+
+"loyalty.client.balance_caption" = "A little thank-you for every visit.";
+
+"loyalty.client.browse_rewards" = "Explore rewards";
+
+"loyalty.client.reward_ready" = "A reward is waiting";
+
+"loyalty.client.next_reward" = "Your next thank-you";
+
+"loyalty.client.ready_detail" = "Choose it from rewards whenever you’re ready.";
+
+"loyalty.client.remaining_fmt" = "%@ to go. Keep visiting; we’ll keep count.";
+
+"loyalty.client.activity" = "From their visits";
+
+"loyalty.client.empty_title" = "Their story starts with a visit";
+
+"loyalty.client.empty_detail" = "Check in a pet, then complete and pay for the visit. Earned points will appear here automatically.";
+
+"loyalty.client.all_activity" = "See all activity";
+
+"loyalty.activity.visit_fmt" = "%@’s visit";
+
+"loyalty.activity.completed" = "Completed visit";
+
+"loyalty.activity.previous_adjustment" = "Previous balance correction";
+
+"loyalty.badge.saved_fmt" = "+%@ · saved from their visit";
+
+"loyalty.visit.earned_fmt" = "+%@ earned";
+
+"loyalty.error.reward_unavailable" = "This reward is no longer available. Please reopen rewards.";
+
+"loyalty.settings.bonuses" = "Regular visits can earn a return bonus, and membership benefits grow automatically. Pawtrackr calculates everything for you.";
+
+"loyalty.settings.program_details" = "How points are calculated";
+
+"loyalty.settings.offer_rewards" = "Offer rewards";
+
+"loyalty.settings.offer_detail" = "A thoughtful thank-you for returning clients.";
+
+"loyalty.settings.paused_note" = "Clients keep their points and still earn from paid visits. Turn rewards on whenever you’re ready.";
+
+"loyalty.journey.title" = "Every visit has its rewards";
+
+"loyalty.journey.checkin" = "Check in";
+
+"loyalty.journey.checkin_detail" = "Start the pet’s visit as usual.";
+
+"loyalty.journey.complete" = "Complete the visit & record payment";
+
+"loyalty.journey.complete_detail" = "Points wait until the visit is checked out and paid.";
+
+"loyalty.journey.saved" = "Points, taken care of";
+
+"loyalty.journey.saved_detail" = "Added once to the client’s balance and saved with the visit. Nothing to enter.";
+
+"loyalty.balance.refresh_error" = "Unable to refresh points. Reopen this screen to try again.";
+
+"loyalty.reward.credit_fmt" = "%@ automatically deducted at checkout";
+
+"loyalty.reward.salon_provided" = "Provided by your salon; recorded in visit history";
+
+"checkout.loyalty.title" = "Visit rewards";
+
+"checkout.loyalty.saved_points" = "saved points";
+
+"checkout.loyalty.use_fmt" = "Use %@ from the saved balance";
+
+"checkout.loyalty.credit_fmt" = "%@ off this visit";
+
+"checkout.loyalty.keep" = "Keep points for later";
+
+"checkout.loyalty.choose" = "Choose a reward";
+
+"checkout.loyalty.select" = "Select";
+
+"checkout.loyalty.select_fmt" = "Select %@";
+
+"checkout.loyalty.selection_note" = "Choose one reward for this visit. Points are used only when you confirm payment.";
+
+"checkout.loyalty.rechoose" = "This choice has changed. Choose a reward again or keep your points.";
+
+"checkout.loyalty.credit" = "Reward credit";
+
+"checkout.loyalty.total_changed" = "The reward or total changed. Review checkout again before paying.";
+
+"checkout.loyalty.load_error" = "Unable to load rewards. Keep your points or try again.";
+
+"loyalty.points.keep_note" = "Use points when you choose. They never expire, and there’s no balance limit.";
+
+"loyalty.journey.choice_note" = "At final checkout, choose a reward or keep the points for another visit. Credits lower the total automatically. Saved points never expire.";
+
+"loyalty.settings.reward_type" = "Reward type";
+
+"loyalty.settings.credit_type" = "Checkout credit";
+
+"loyalty.settings.service_type" = "Salon service";
+
+"loyalty.settings.credit_value" = "Credit amount";
+
+"loyalty.settings.credit_note" = "This amount is deducted automatically when selected at checkout.";
+
+"loyalty.activity.redeemed_fmt" = "Redeemed %@";
+
+"loyalty.visit.redeemed_fmt" = "%@ · %@ used";
+
+"loyalty.catalog.checkout_hint" = "Select this credit on the final checkout review. It will lower the total automatically, and points will be used only when payment is confirmed.";
+
+"loyalty.catalog.at_checkout" = "Use at checkout";
+
+"common.retry" = "Try Again";
+
+"checkout.loyalty.earned_fmt" = "+%@ saved to the client’s account";
+
+"loyalty.error.credit_zero" = "Credit amount must be greater than zero.";

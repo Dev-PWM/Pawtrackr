@@ -83,7 +83,7 @@ final class LocalizationTests: XCTestCase {
         XCTAssertEqual(spain.symmetricDifference(latinAmerica).sorted(), [])
     }
 
-    func testLoyaltyAndRoleWordingFollowTheAppLanguage() {
+    func testLoyaltyWordingFollowsTheAppLanguage() {
         let defaults = UserDefaults.standard
         let previous = defaults.string(forKey: AppSettingsKeys.appLanguageOverride)
         defer {
@@ -98,19 +98,17 @@ final class LocalizationTests: XCTestCase {
         XCTAssertEqual(LoyaltyCopy.points(1), "1 point")
         XCTAssertEqual(LoyaltyCopy.points(25), "25 points")
         XCTAssertEqual(LoyaltyTier.gold.displayName, "Gold")
-        XCTAssertEqual(OnboardingRole.frontDeskGroomer.title, "Front Desk / Groomer")
 
         defaults.set(AppLanguageOverride.es.rawValue, forKey: AppSettingsKeys.appLanguageOverride)
         XCTAssertEqual(LoyaltyCopy.points(1), "1 punto")
         XCTAssertEqual(LoyaltyCopy.points(25), "25 puntos")
         XCTAssertEqual(LoyaltyTier.gold.displayName, "Oro")
-        XCTAssertEqual(OnboardingRole.frontDeskGroomer.title, "Recepción o groomer")
     }
 
     /// The onboarding simulator shows the catalog a new salon is seeded with,
     /// in the same order and at the same costs.
     func testLoyaltySimulatorShowsTheSeededCatalog() {
-        let ladder = LoyaltySimulatorCard.rewardLadder
+        let ladder = LoyaltyRewardCatalog.rewardLadder
         XCTAssertEqual(ladder.map(\.points), LoyaltyReward.builtInCatalog.map(\.pointCost))
         XCTAssertEqual(ladder.count, LoyaltyReward.builtInCatalog.count)
     }

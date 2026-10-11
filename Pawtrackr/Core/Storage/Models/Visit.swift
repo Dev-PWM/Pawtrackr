@@ -23,6 +23,10 @@ final class Visit {
     var lastModifiedBy: UUID = DeviceIdentity.currentID
     var lastModifiedAt: Date = Date()
     var loyaltyPointsChange: Int = 0
+    /// Checkout reward summaries are additive; the signed audit trail stays in the ledger.
+    var loyaltyRedeemedPoints: Int = 0
+    var loyaltyRewardTitle: String? = nil
+    var loyaltyCreditApplied: Decimal = Decimal.zero
 
     // MARK: - Notes & Media
     var note: String?

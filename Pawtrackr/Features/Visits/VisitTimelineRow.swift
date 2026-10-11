@@ -18,6 +18,7 @@ struct VisitTimelineRow: View {
                 timingRow
                 services
                 footer
+                VisitLoyaltyReceipt(visit: visit)
             }
         }
     }

@@ -11,6 +11,7 @@ struct CheckoutView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @Environment(EntitlementStore.self) private var entitlements
     @Environment(GlobalEventBus.self) private var eventBus
     @Environment(WalkthroughController.self) private var walkthrough: WalkthroughController?
     @State private var viewModel: CheckoutViewModel
@@ -53,6 +54,14 @@ struct CheckoutView: View {
 
             bottomBar
         }
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("checkout.content")
+        .sheet(isPresented: $viewModel.isChoosingLoyaltyReward) {
+            CheckoutRewardSelectionView(points: viewModel.loyaltyPoints, rewards: viewModel.loyaltyRewards) { reward in
+                viewModel.chooseLoyaltyReward(reward)
+            }
+        }
+        .interactiveDismissDisabled(viewModel.isSaving)
         .safeAreaPadding(.bottom)
         .background(DS.ColorToken.background.ignoresSafeArea())
         #if os(macOS)
@@ -71,6 +80,8 @@ struct CheckoutView: View {
         .toolbar {
             ToolbarItem(placement: .cancellationAction) {
                 Button(NSLocalizedString("common.cancel", comment: "")) { dismiss() }
+                    .pressScaleStyle().disabled(viewModel.isSaving)
+                    .accessibilityLabel(AppLocalization.localized("common.cancel", value: "Cancel"))
             }
         }
         #if os(iOS)
@@ -483,7 +494,10 @@ struct CheckoutView: View {
                                 summaryRow(title: localized("checkout.duration", value: "Duration"), value: viewModel.sessionDurationString)
                                 summaryRow(title: localized("checkout.services", value: "Services"), value: selectedServicesSummary)
                                 Divider()
-                                summaryRow(title: NSLocalizedString("checkout.total", comment: ""), value: viewModel.finalTotalString, isTotal: true)
+                                if viewModel.loyaltyCredit > .zero {
+                                summaryRow(title: localized("checkout.loyalty.credit", value: "Reward credit"), value: "−" + viewModel.loyaltyCredit.moneyString)
+                            }
+                            summaryRow(title: NSLocalizedString("checkout.total", comment: ""), value: viewModel.finalTotalString, isTotal: true)
                             }
                         }
                     }
@@ -520,6 +534,11 @@ struct CheckoutView: View {
                 )
                 .walkthroughTarget(.coReview)
 
+                if entitlements.isPremium, viewModel.pet.owner != nil {
+                    CheckoutLoyaltyReviewCard(viewModel: viewModel)
+                        .padding(.horizontal)
+                }
+
                 VStack(alignment: .leading, spacing: 12) {
                     Text(localized("checkout.visit_summary", value: "Visit Summary")).font(.headline).padding(.horizontal)
                     Card {
@@ -531,6 +550,9 @@ struct CheckoutView: View {
                             summaryRow(title: localized("checkout.notes", value: "Notes"), value: viewModel.notesPreview)
                             summaryRow(title: localized("checkout.photos", value: "Photos"), value: "\(viewModel.totalPhotoCount)")
                             Divider()
+                            if viewModel.loyaltyCredit > .zero {
+                                summaryRow(title: localized("checkout.loyalty.credit", value: "Reward credit"), value: "−" + viewModel.loyaltyCredit.moneyString)
+                            }
                             summaryRow(title: NSLocalizedString("checkout.total", comment: ""), value: viewModel.finalTotalString, isTotal: true)
                         }
                     }
@@ -844,6 +866,12 @@ struct CheckoutView: View {
                 Text(viewModel.finalTotalString)
                     .font(Font.system(size: 44, weight: .black, design: .rounded))
                     .foregroundStyle(.blue)
+            }
+
+            if viewModel.completedLoyaltyPoints > 0 {
+                Label(String(format: AppLocalization.localized("checkout.loyalty.earned_fmt", value: "+%@ saved to the client’s account"), LoyaltyCopy.points(viewModel.completedLoyaltyPoints)), systemImage: "checkmark.circle.fill")
+                    .font(.subheadline).foregroundStyle(DS.ColorToken.primary)
+                    .accessibilityIdentifier("checkout.loyalty.saved")
             }
 
             if let pdfData = receiptPDFData {

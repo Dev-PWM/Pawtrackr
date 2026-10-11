@@ -53,6 +53,31 @@ public final class DataStoreService {
         }.value
     }
 
+    /// Reads fresh account presentation values without passing model instances across actors.
+    nonisolated func fetchLoyaltyAccount(clientUUID: UUID) async throws -> CheckoutLoyaltyOptions? {
+        let container = self.container
+        return try await Task.detached(priority: .utility) {
+            let context = ModelContext(container)
+            var descriptor = FetchDescriptor<Client>(predicate: #Predicate { $0.uuid == clientUUID })
+            descriptor.fetchLimit = 1
+            guard let client = try context.fetch(descriptor).first else { return nil }
+            return CheckoutLoyaltyOptions(points: client.loyaltyPoints,
+                tier: LoyaltyEngine.tier(forLifetimeEarned: LoyaltyEngine.lifetimeEarnedPoints(for: client)), rewards: [])
+        }.value
+    }
+
+    /// Reads the committed balance in a fresh context and returns only a value.
+    /// Actor saves can leave an already-materialized UI Client's attributes stale.
+    nonisolated func fetchLoyaltyBalance(clientUUID: UUID) async throws -> Int? {
+        let container = self.container
+        return try await Task.detached(priority: .utility) {
+            let context = ModelContext(container)
+            var descriptor = FetchDescriptor<Client>(predicate: #Predicate { $0.uuid == clientUUID })
+            descriptor.fetchLimit = 1
+            return try context.fetch(descriptor).first?.loyaltyPoints
+        }.value
+    }
+
     /// Yields a tick whenever the main context records changes.
     ///
     /// FRAGILE: SwiftData wraps Core Data, so the Core Data

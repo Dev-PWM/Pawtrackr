@@ -201,8 +201,8 @@ final class WalkthroughTourTests: XCTestCase {
     func testEveryAcademyStopWaitsForTheUser() {
         for step in practiceTour {
             XCTAssertNotNil(step.action, "\(step.id) has no Try it line")
-            if step.id == WalkthroughStepID.newClientPets {
-                XCTAssertFalse(step.requiresTargetAction, "Adding a pet to a new client is optional.")
+            if step.id == WalkthroughStepID.newClientPets || step.id == WalkthroughStepID.loyaltyPoints {
+                XCTAssertFalse(step.requiresTargetAction, "Optional input and the loyalty explanation can continue without acting.")
                 continue
             }
             XCTAssertTrue(step.requiresTargetAction, "\(step.id) lets the user tap Next without acting")
@@ -675,7 +675,7 @@ final class WalkthroughTourTests: XCTestCase {
             let steps = WalkthroughController.fullTour().filter { $0.anchor == anchor }
             let text = try source(file)
             // Attached there, or handed to a view that attaches it
-            // (`LoyaltySimulatorCard(tryItTourAnchor:)`).
+            // (`LoyaltyJourneyCard()`).
             let literal = text.range(of: #"(walkthrough(Target|Anchor)\(|TourAnchor: )\.\#(anchor.rawValue)[,)]"#, options: .regularExpression) != nil
             let mapped = text.contains("return .\(anchor.rawValue)")
             if case .toolbar = home {

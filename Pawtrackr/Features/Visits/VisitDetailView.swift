@@ -106,6 +106,7 @@ struct VisitDetailView: View {
                     compactDetailLayout
                 }
                 
+                VisitLoyaltyReceipt(visit: visit)
                 metadataFooter
             }
             .frame(maxWidth: contentMaxWidth ?? .infinity)

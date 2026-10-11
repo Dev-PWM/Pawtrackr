@@ -30,7 +30,7 @@ final class OnboardingUITests: XCTestCase {
         app = nil
     }
 
-    // MARK: - Welcome → Role → Business Profile
+    // MARK: - Welcome → Business Profile
 
     func testWelcomeStepShowsAndContinueAdvances() {
         XCTAssertTrue(
@@ -41,9 +41,6 @@ final class OnboardingUITests: XCTestCase {
         XCTAssertTrue(continueBtn.waitForHittable(timeout: 5))
         continueBtn.tap()
 
-        XCTAssertTrue(waitForRoleStep(), "Continue from welcome should land on the Role step.")
-        tapOnboardingContinue()
-
         XCTAssertTrue(
             app.staticTexts["Business Profile"].waitForExistence(timeout: 5)
                 || app.textFields["onboarding.businessName"].waitForExistence(timeout: 5),
@@ -51,23 +48,12 @@ final class OnboardingUITests: XCTestCase {
         )
     }
 
-    func testRoleStepRemembersTheChoice() {
-        XCTAssertTrue(app.staticTexts["Welcome to Pawtrackr"].waitForExistence(timeout: 12))
-        tapOnboardingContinue()
-        XCTAssertTrue(waitForRoleStep())
-
-        let frontDesk = app.buttons["onboarding.role.frontDeskGroomer"]
-        XCTAssertTrue(frontDesk.waitForHittable(timeout: 5))
-        frontDesk.tap()
-        tapOnboardingContinue()
-        XCTAssertTrue(app.textFields["onboarding.businessName"].waitForExistence(timeout: 5))
-
-        let back = app.buttons["onboarding.back"]
-        XCTAssertTrue(back.waitForHittable(timeout: 5))
-        back.tap()
-        XCTAssertTrue(waitForRoleStep())
-        XCTAssertTrue(app.buttons["onboarding.role.frontDeskGroomer"].isSelected, "Going back keeps the role picked.")
-        XCTAssertFalse(app.buttons["onboarding.role.ownerManager"].isSelected)
+    func testSetupHasNoRoleChoiceAndBackReturnsToWelcome() {
+        advanceFromWelcome()
+        XCTAssertFalse(app.buttons["onboarding.role.frontDeskGroomer"].exists)
+        XCTAssertFalse(app.buttons["onboarding.role.ownerManager"].exists)
+        app.buttons["onboarding.back"].tap()
+        XCTAssertTrue(app.staticTexts["Welcome to Pawtrackr"].waitForExistence(timeout: 5))
     }
 
     // MARK: - Business Profile validation
@@ -137,7 +123,7 @@ final class OnboardingUITests: XCTestCase {
 
     // MARK: - Helpers
 
-    /// Welcome → Role → Business → Contact → Security → Permissions →
+    /// Welcome → Business → Contact → Security → Permissions →
     /// Loyalty → Finish.
     private func advanceToFinish() {
         advanceFromWelcome()
@@ -179,7 +165,8 @@ final class OnboardingUITests: XCTestCase {
 
         // Loyalty: the preview card with its ticket slider, then Review Setup.
         XCTAssertTrue(waitForLoyaltyStep(), "Permissions should advance to the Loyalty step.")
-        XCTAssertTrue(app.sliders["onboarding.loyaltySimulator.slider"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.descendants(matching: .any)["loyaltyJourney.card"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.sliders["onboarding.loyaltySimulator.slider"].exists)
         tapOnboardingContinue()
 
         // Finish
@@ -204,7 +191,7 @@ final class OnboardingUITests: XCTestCase {
         )
     }
 
-    /// Welcome, then the Role step with the default role kept.
+    /// Welcome advances straight to business setup.
     private func advanceFromWelcome() {
         XCTAssertTrue(
             app.staticTexts["Welcome to Pawtrackr"].waitForExistence(timeout: 12)
@@ -213,24 +200,12 @@ final class OnboardingUITests: XCTestCase {
         XCTAssertTrue(continueBtn.waitForHittable(timeout: 5))
         continueBtn.tap()
 
-        XCTAssertTrue(waitForRoleStep(), "Welcome should advance to the Role step.")
-        tapOnboardingContinue()
-    }
-
-    private func waitForRoleStep(timeout: TimeInterval = 5) -> Bool {
-        waitForAny([
-            { self.app.buttons["onboarding.role.ownerManager"].exists },
-            {
-                let title = self.app.staticTexts["onboarding.stepTitle"]
-                return title.exists && title.label == "Your Role"
-            }
-        ], timeout: timeout)
+        XCTAssertTrue(app.textFields["onboarding.businessName"].waitForExistence(timeout: 5))
     }
 
     private func waitForLoyaltyStep(timeout: TimeInterval = 6) -> Bool {
         waitForAny([
-            { self.app.descendants(matching: .any)["loyaltySimulator.card"].exists },
-            { self.app.sliders["onboarding.loyaltySimulator.slider"].exists },
+            { self.app.descendants(matching: .any)["loyaltyJourney.card"].exists },
             {
                 let title = self.app.staticTexts["onboarding.stepTitle"]
                 return title.exists && title.label == "Loyalty Points"

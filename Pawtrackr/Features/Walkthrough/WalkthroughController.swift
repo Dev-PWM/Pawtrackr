@@ -1353,18 +1353,17 @@ extension WalkthroughController {
                 requiresTargetAction: true
             ),
             WalkthroughStep(
-                // The preview writes nothing. Playing with it shows Next
-                // (LoyaltySimulatorCard), so there's time to watch the points.
+                // A read-only explanation of the automatic visit lifecycle.
                 id: WalkthroughStepID.loyaltyPoints, anchor: .loyaltySimulator, surface: .settings,
                 title: text("tour.academy.set_loyalty.title", "How points add up"),
-                directive: text("tour.academy.set_loyalty.what", "A live preview of your loyalty rules, using the same math as checkout."),
-                purpose: text("tour.academy.set_loyalty.why", "Silver, Gold and Platinum clients earn more on every visit, and coming back soon adds a rebook bonus. Staff can tell a client exactly what a visit earns."),
-                action: text("tour.academy.set_loyalty.try", "Drag the checkout total or pick a tier, and watch the points change."),
+                directive: text("tour.academy.set_loyalty.what", "Check in, complete the visit and record payment. Points are saved automatically."),
+                purpose: text("tour.academy.set_loyalty.why", "Every award is linked to a completed, paid visit and appears in the client’s profile and history."),
+                action: text("tour.academy.set_loyalty.try", "Follow the three steps, then continue."),
                 lesson: .businessInsights,
-                coachTip: text("tour.academy.set_loyalty.tip", "A check on a reward means one visit earns enough for it. Owners set the earning rule in Loyalty Earning Rules above."),
+                coachTip: text("tour.academy.set_loyalty.tip", "No manual entry is needed. Open How points are calculated for the salon’s current rules."),
                 icon: "star.circle.fill",
                 allowsTargetInteraction: true,
-                requiresTargetAction: true
+                requiresTargetAction: false
             ),
             WalkthroughStep(
                 id: WalkthroughStepID.backups, anchor: .setData, surface: .settings,

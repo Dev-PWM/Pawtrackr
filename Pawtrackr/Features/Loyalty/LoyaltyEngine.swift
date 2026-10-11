@@ -97,8 +97,7 @@ struct LoyaltyEngine {
 
     /// The points one checkout earns, step by step. This is THE earn rule:
     /// `LoyaltyCheckoutProcessor.applyEarnings` awards `preview(...).total`,
-    /// and the loyalty preview card shows the same value, so what a groomer
-    /// tries out is what a client gets.
+    /// so the checkout and repository paths always award the same value.
     ///
     /// - Parameters:
     ///   - ticket: what the client pays at checkout: the services, or the

@@ -91,25 +91,6 @@ final class CheckoutViewModel {
         }
     }
 
-    // MARK: - Loyalty
-    var pointsToRedeem: Int = 0 {
-        didSet {
-            triggerBackgroundCalculation(reason: "points_redeemed", immediate: true)
-        }
-    }
-    
-    var clientLoyaltyPoints: Int {
-        pet.owner?.loyaltyPoints ?? 0
-    }
-    
-    @MainActor
-    func applyPointRedemption() async throws {
-        guard let client = pet.owner else { return }
-        // Use loyaltyService (which is a ModelActor) to redeem points
-        let loyalty = LoyaltyService(modelContainer: pet.modelContext!.container)
-        try await loyalty.redeemPoints(client: client, points: pointsToRedeem)
-    }
-
     // MARK: - Async Calculations (Off-Main-Thread)
     @MainActor
     private func triggerBackgroundCalculation(reason: String, immediate: Bool = false) {
@@ -168,6 +149,51 @@ final class CheckoutViewModel {
     var tags: Set<String> = [] { didSet { triggerBackgroundCalculation(reason: "tags_changed") } }
     var selectedAddOnIDs: Set<PersistentIdentifier> = [] { didSet { triggerBackgroundCalculation(reason: "addons_changed") } }
 
+    private(set) var completedLoyaltyPoints = 0
+    private(set) var loyaltyPoints = 0
+    private(set) var loyaltyTier: LoyaltyTier = .bronze
+    private(set) var loyaltyRewards: [LoyaltyReward] = []
+    private(set) var selectedLoyaltyReward: LoyaltyReward?
+    private(set) var loyaltyError: String?
+    private(set) var isLoadingLoyalty = false
+    var isChoosingLoyaltyReward = false
+    private var loyaltyContainer: ModelContainer?
+
+    var loyaltyCredit: Decimal { selectedLoyaltyReward?.creditDiscount(on: servicesTotalDecimal) ?? .zero }
+    var paymentTotalDecimal: Decimal { max(.zero, servicesTotalDecimal - loyaltyCredit).roundedMoney() }
+    var isLoyaltySelectionValid: Bool {
+        guard let selectedLoyaltyReward else { return true }
+        return !isLoadingLoyalty && loyaltyError == nil && loyaltyPoints >= selectedLoyaltyReward.pointCost
+            && loyaltyRewards.contains { $0.id == selectedLoyaltyReward.id && $0.pointCost == selectedLoyaltyReward.pointCost
+                && $0.style == selectedLoyaltyReward.style && $0.checkoutCreditAmount == selectedLoyaltyReward.checkoutCreditAmount }
+    }
+
+    /// Refreshes values from a context owned by the loyalty actor.
+    func refreshLoyaltyOptions() async {
+        guard let loyaltyContainer, let uuid = pet.owner?.uuid, !isLoadingLoyalty else { return }
+        isLoadingLoyalty = true
+        defer { isLoadingLoyalty = false }
+        do {
+            let options = try await LoyaltyService(modelContainer: loyaltyContainer).checkoutOptions(clientUUID: uuid)
+            loyaltyPoints = options.points
+            loyaltyTier = options.tier
+            loyaltyRewards = options.rewards
+            loyaltyError = nil
+        } catch {
+            Logger.checkout.error("Checkout rewards refresh failed: \(error.localizedDescription)")
+            loyaltyError = AppLocalization.localized("checkout.loyalty.load_error", value: "Unable to load rewards. Keep your points or try again.")
+        }
+    }
+
+    /// Saves the choice immediately for recovery. The balance changes only with payment.
+    func chooseLoyaltyReward(_ reward: LoyaltyReward?) {
+        guard !isSaving, state != .confirmed else { return }
+        selectedLoyaltyReward = reward
+        isChoosingLoyaltyReward = false
+        recalculateCachedStrings()
+        scheduleCriticalDraftSave(reason: "reward_choice")
+    }
+
     // MARK: State
     private(set) var isSaving: Bool = false
     private(set) var isLoadingServices: Bool = false
@@ -216,7 +242,7 @@ final class CheckoutViewModel {
     var isConfirmEnabled: Bool {
         let hasValidAmount = servicesTotalDecimal > 0
         let hasValidReference = selectedPaymentMethod.isValidReference(externalReference)
-        return hasValidAmount && !isSaving && (!requiresExternalReference || hasValidReference)
+        return hasValidAmount && !isSaving && isLoyaltySelectionValid && (!requiresExternalReference || hasValidReference)
     }
 
     static let tagOptions: [String] = Pet.BehaviorTag.allCases.map { $0.displayName }
@@ -282,6 +308,7 @@ final class CheckoutViewModel {
     @MainActor
     func loadServices(modelContext: ModelContext) {
         Logger.checkout.info("CheckoutViewModel: Loading services")
+        self.loyaltyContainer = modelContext.container
         self.serviceRepository = ServiceRepository(modelContainer: modelContext.container)
         if self.transactionActor == nil {
             self.transactionActor = CheckoutTransactionActor(modelContainer: modelContext.container)
@@ -311,6 +338,7 @@ final class CheckoutViewModel {
                 self.isBootstrappingCheckout = true
                 self.hydrateStateFromVisit()
                 await self.restoreDraftIfAvailable()
+                await self.refreshLoyaltyOptions()
                 self.isBootstrappingCheckout = false
                 self.isLoadingServices = false
                 Logger.checkout.info("CheckoutViewModel: Hydration complete")
@@ -329,6 +357,7 @@ final class CheckoutViewModel {
     private func hydrateStateFromVisit() {
         Logger.checkout.info("CheckoutViewModel: Hydrating from visit \(self.visit.uuid)")
         suppressDraftAutosave = true
+        selectedLoyaltyReward = nil
         sessionNotes = TextInputLimits.limited(visit.note?.trimmed ?? "", to: TextInputLimits.notes)
 
         if visit.behaviorTags.isEmpty {
@@ -486,7 +515,7 @@ final class CheckoutViewModel {
     }
 
     private func recalculateCachedStrings() {
-        finalTotalString = servicesTotalDecimal.moneyString
+        finalTotalString = paymentTotalDecimal.moneyString
 
         let allSelected = selectedServiceIDs.union(selectedAddOnIDs)
         let sortedNames = (allServices + addOnServices)
@@ -638,11 +667,16 @@ final class CheckoutViewModel {
             beforePhotoData: beforePhotoData,
             afterPhotoData: afterPhotoData,
             selectedServiceIDs: Array(selectedServiceIDs),
-            selectedAddOnIDs: Array(selectedAddOnIDs)
+            selectedAddOnIDs: Array(selectedAddOnIDs),
+            selectedLoyaltyReward: selectedLoyaltyReward,
+            expectedPaymentAmount: paymentTotalDecimal
         )
 
         do {
             let result = try await transactionActor.process(request)
+            completedLoyaltyPoints = result.earnedPoints
+            if let balance = result.savedLoyaltyBalance { loyaltyPoints = balance }
+            finalTotalString = result.total.moneyString
 
             autosaveTask?.cancel()
             do {
@@ -744,6 +778,9 @@ final class CheckoutViewModel {
             guard total > 0 else {
                 throw ValidationError.custom(message: AppLocalization.localized("checkout.error.zero_total", value: "Cannot check out with a total amount of zero."))
             }
+            guard isLoyaltySelectionValid else {
+                throw ValidationError.custom(message: AppLocalization.localized("loyalty.error.reward_unavailable", value: "This reward is no longer available. Please reopen rewards."))
+            }
             if let message = selectedPaymentMethod.validationMessage(for: externalReference) {
                 throw ValidationError.custom(message: message)
             }
@@ -761,6 +798,7 @@ final class CheckoutViewModel {
         // takes tips, and a hidden one would change the total.
         externalReference = TextInputLimits.limited(draft.externalReference, to: TextInputLimits.shortText)
         tags = Set(draft.tags)
+        selectedLoyaltyReward = draft.selectedLoyaltyReward
         
         if let method = Payment.Method(rawValue: draft.selectedPaymentMethodRawValue) {
             selectedPaymentMethod = method
@@ -811,7 +849,10 @@ final class CheckoutViewModel {
             externalReference,
             tagList,
             String(beforePhotoData?.count ?? 0),
-            String(afterPhotoData?.count ?? 0)
+            String(afterPhotoData?.count ?? 0),
+            selectedLoyaltyReward?.id ?? "keep",
+            String(selectedLoyaltyReward?.pointCost ?? 0),
+            loyaltyCredit.description
         ]
         return parts.joined(separator: "||")
     }
@@ -879,7 +920,8 @@ final class CheckoutViewModel {
             hadBeforePhoto: beforePhotoData != nil,
             hadAfterPhoto: afterPhotoData != nil,
             externalReference: externalReference,
-            tags: Array(tags.sorted())
+            tags: Array(tags.sorted()),
+            selectedLoyaltyReward: selectedLoyaltyReward
         )
     }
 

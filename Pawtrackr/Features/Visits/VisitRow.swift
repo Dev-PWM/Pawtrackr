@@ -27,6 +27,7 @@ struct VisitRow: View {
                     header
                     services
                     footer
+                    VisitLoyaltyReceipt(visit: visit)
                 }
             }
         }

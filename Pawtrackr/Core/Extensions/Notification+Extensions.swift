@@ -15,6 +15,8 @@ extension Notification.Name {
     static let inboxDidUpdate = Notification.Name("inboxDidUpdate")
     /// Posted after a successful checkout so views (Clients, Pet Detail, Recent History, Insights) can refresh.
     static let visitDidComplete = Notification.Name("visitDidComplete")
+    /// Posted after a committed loyalty mutation; object is the client's UUID.
+    static let loyaltyBalanceDidChange = Notification.Name("loyaltyBalanceDidChange")
     /// Posted when a new visit is started (Check-in).
     static let visitDidStart = Notification.Name("visitDidStart")
     /// Posted when a visit ends (Check-out).

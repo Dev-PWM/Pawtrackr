@@ -53,7 +53,7 @@ final class OnboardingViewModelTests: XCTestCase {
                        "Edits after init still save.")
     }
 
-    func testResumingOnboardingKeepsTheDraftRoleAndChoices() {
+    func testResumingLegacyDraftPreservesChoicesAndDropsRole() {
         // OnboardingView builds the view model with nil settings, then binds
         // the real AppSettings in .task. Those still hold the registered
         // defaults (onboarding writes them only in finish), so binding used
@@ -73,21 +73,17 @@ final class OnboardingViewModelTests: XCTestCase {
         }
 
         let viewModel = OnboardingViewModel(modelContext: nil, appSettings: nil)
-        XCTAssertEqual(viewModel.selectedRole, .frontDeskGroomer)
 
         let settings = AppSettings()
         XCTAssertEqual(settings.onboardingRole, .ownerManager, "Precondition: settings still hold the default role.")
         viewModel.bindIfNeeded(modelContext: context, appSettings: settings)
 
-        XCTAssertEqual(viewModel.selectedRole, .frontDeskGroomer)
         XCTAssertEqual(viewModel.currentCurrency, "€")
         XCTAssertFalse(viewModel.lockOnBackgroundEnabled)
         XCTAssertTrue(viewModel.autoLockAfterInactivityEnabled)
-        XCTAssertEqual(
-            UserDefaults.standard.dictionary(forKey: draftKey)?["selectedRole"] as? String,
-            OnboardingRole.frontDeskGroomer.rawValue,
-            "Binding must not rewrite the draft with the default role."
-        )
+        viewModel.name = "Bark & Bathe Updated"
+        XCTAssertNil(UserDefaults.standard.dictionary(forKey: draftKey)?["selectedRole"],
+                     "New drafts no longer contain a role choice.")
     }
 
     func testBindingWithoutADraftStillReadsTheSettings() {
@@ -105,7 +101,6 @@ final class OnboardingViewModelTests: XCTestCase {
         let viewModel = OnboardingViewModel(modelContext: nil, appSettings: nil)
         viewModel.bindIfNeeded(modelContext: context, appSettings: settings)
 
-        XCTAssertEqual(viewModel.selectedRole, .frontDeskGroomer)
         XCTAssertEqual(viewModel.currentCurrency, "€")
     }
 
@@ -251,9 +246,6 @@ final class OnboardingViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.currentStep, .welcome)
 
         viewModel.nextStep()
-        XCTAssertEqual(viewModel.currentStep, .role)
-
-        viewModel.nextStep()
         XCTAssertEqual(viewModel.currentStep, .businessProfile)
 
         // Business profile blocks until name is set.
@@ -294,9 +286,6 @@ final class OnboardingViewModelTests: XCTestCase {
 
         viewModel.previousStep()
         XCTAssertEqual(viewModel.currentStep, .businessProfile)
-
-        viewModel.previousStep()
-        XCTAssertEqual(viewModel.currentStep, .role)
 
         viewModel.previousStep()
         XCTAssertEqual(viewModel.currentStep, .welcome)
@@ -399,7 +388,7 @@ final class OnboardingViewModelTests: XCTestCase {
             XCTAssertTrue(ownerAnchors.contains(anchor), "\(anchor)")
         }
         let insights = WalkthroughController.steps(for: .businessInsights, role: .frontDeskGroomer, context: .practice).map(\.anchor)
-        XCTAssertEqual(insights, [.insights, .insRevenue, .insServices, .insPaymentMix, .setData, .setAbout])
+        XCTAssertEqual(insights, [.insights, .insRevenue, .insServices, .insPaymentMix, .loyaltySimulator, .setData, .setAbout])
     }
 
     func testFullWalkthroughTeachesCheckoutAndHistoryAsDedicatedProcess() throws {
@@ -429,7 +418,7 @@ final class OnboardingViewModelTests: XCTestCase {
         XCTAssertEqual(checkoutSteps.map(\.anchor), [.coServices, .coPayment, .coConfirm])
         XCTAssertTrue(checkoutSteps.allSatisfy { $0.lesson == .checkoutAndMoney })
         XCTAssertTrue(checkoutSteps[0].purpose.localizedCaseInsensitiveContains("subtotal"))
-        XCTAssertTrue(checkoutSteps[1].purpose.localizedCaseInsensitiveContains("tip"))
+        XCTAssertTrue(checkoutSteps[1].purpose.localizedCaseInsensitiveContains("amount"))
         XCTAssertTrue(checkoutSteps[1].purpose.localizedCaseInsensitiveContains("reference"))
         XCTAssertTrue(checkoutSteps[2].purpose.localizedCaseInsensitiveContains("insights"))
         XCTAssertTrue(checkoutSteps[2].purpose.localizedCaseInsensitiveContains("nothing is charged"))
@@ -483,7 +472,7 @@ final class OnboardingViewModelTests: XCTestCase {
 
         XCTAssertTrue(controller.isActive)
         XCTAssertEqual(controller.currentIndex, 0)
-        XCTAssertEqual(controller.currentStep?.anchor, .dashboard)
+        XCTAssertEqual(controller.currentStep?.anchor, .appNavigation)
     }
 
     func testWalkthroughBackReturnsToPreviousClientDetailActionStep() throws {
@@ -522,6 +511,8 @@ final class OnboardingViewModelTests: XCTestCase {
 
         XCTAssertTrue(controller.isActive)
         XCTAssertNil(controller.currentStep?.presents)
+        XCTAssertEqual(controller.currentStep?.anchor, .clientList)
+        controller.observe(.clientOpened)
         XCTAssertEqual(controller.currentStep?.anchor, .cdOwner)
         XCTAssertEqual(controller.currentStep?.route, .demoClientDetail)
     }
@@ -543,6 +534,8 @@ final class OnboardingViewModelTests: XCTestCase {
         controller.focusClientDetail(client.persistentModelID)
         controller.completePresentation(.newClient)
 
+        XCTAssertEqual(controller.currentStep?.anchor, .clientList)
+        controller.observe(.clientOpened)
         XCTAssertEqual(controller.currentStep?.anchor, .cdOwner)
         XCTAssertEqual(controller.preferredClientDetailID, client.persistentModelID)
     }

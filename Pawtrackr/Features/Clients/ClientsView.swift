@@ -360,7 +360,9 @@ struct ClientsView: View {
         anchorsFirstCard: Bool = false
     ) -> some View {
         LazyVGrid(columns: clientGridColumns, spacing: 12) {
-            ForEach(clients, id: \.uuid) { client in
+            // All rows come from saved records. Their persistent identifiers stay
+            // stable across search/sort and do not fault 10,000 UUID properties.
+            ForEach(clients, id: \.persistentModelID) { client in
                 Button(action: {
                     router.navigateToClient(client)
                     walkthrough?.observe(.clientOpened)

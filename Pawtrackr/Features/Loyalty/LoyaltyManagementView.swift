@@ -1,405 +1,215 @@
 import SwiftData
 import SwiftUI
+import OSLog
 
+/// Loyalty runs with the visit; settings only explain it and curate rewards.
 @MainActor
 struct LoyaltyManagementView: View {
     @Environment(\.modelContext) private var modelContext
+    @Environment(AppSettings.self) private var appSettings
     @Environment(EntitlementStore.self) private var entitlements
-
-    @Query(sort: \LoyaltyConfig.createdAt, order: .forward) private var configs: [LoyaltyConfig]
-    @Query(sort: \LoyaltyRewardTemplate.sortOrder, order: .forward) private var rewards: [LoyaltyRewardTemplate]
-
+    @Query(sort: \LoyaltyConfig.createdAt) private var configs: [LoyaltyConfig]
+    @Query(sort: \LoyaltyRewardTemplate.sortOrder) private var rewards: [LoyaltyRewardTemplate]
+    @State private var showNewReward = false
+    @State private var isSaving = false
     @State private var errorMessage: String?
-    @State private var newRewardTitle = ""
-    @State private var newRewardDetail = ""
-    @State private var newRewardCost = 100
-    @State private var newRewardStyle: LoyaltyReward.Style = .credit
-    @State private var showResetCatalogConfirmation = false
 
-    private var config: LoyaltyConfig? {
-        configs.first
-    }
-
-    private var canEdit: Bool {
-        entitlements.isPremium
-    }
+    private var config: LoyaltyConfigSnapshot { LoyaltyConfigResolver.snapshot(from: configs) }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            if !canEdit {
-                lockedCard
-            }
+        VStack(alignment: .leading, spacing: 28) {
+            LoyaltyJourneyCard()
+                .walkthroughTarget(.loyaltySimulator)
 
-            earningRulesCard
-                .disabled(!canEdit)
-
-            // Read-only preview of the rules above, with the same math
-            // checkout uses. It stays usable without Pro: it changes nothing.
-            LoyaltySimulatorCard(tryItTourAnchor: .loyaltySimulator)
-
-            rewardsCatalogCard
-                .disabled(!canEdit || !(config?.isRewardsCatalogEnabled ?? true))
-
-            if let errorMessage {
-                Text(errorMessage)
-                    .font(.caption)
-                    .foregroundStyle(DS.ColorToken.danger)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-        }
-        .task {
-            guard !Task.isCancelled else { return }
-            DataMigrations.ensureLoyaltyDefaults(in: modelContext)
-        }
-        .confirmationDialog(
-            AppLocalization.localized("loyalty.reset_ladder.title", value: "Reset rewards to Discount Ladder?"),
-            isPresented: $showResetCatalogConfirmation,
-            titleVisibility: .visible
-        ) {
-            Button(AppLocalization.localized("loyalty.reset_ladder.action", value: "Reset to Discount Ladder"), role: .destructive) {
-                resetToDiscountLadder()
-            }
-            Button(AppLocalization.localized("common.cancel", value: "Cancel"), role: .cancel) {}
-        } message: {
-            Text(AppLocalization.localized(
-                "loyalty.reset_ladder.message",
-                value: "This replaces the current reward templates with the five default discount-credit rewards. Client point balances stay unchanged."
-            ))
-        }
-    }
-
-    private var lockedCard: some View {
-        Card(cornerRadius: 12, accent: .leading(.color(DS.ColorToken.warning))) {
-            HStack(alignment: .top, spacing: 12) {
-                Image(systemName: "lock.fill")
-                    .font(.headline)
-                    .foregroundStyle(.white)
-                    .frame(width: 36, height: 36)
-                    .background(DS.ColorToken.warning, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(AppLocalization.localized("loyalty.settings.pro_title", value: "Pawtrackr Pro"))
-                        .font(.headline)
-                    Text(AppLocalization.localized("loyalty.settings.pro_detail", value: "Loyalty configuration is available with active Pro access."))
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
+            DisclosureGroup {
+                VStack(alignment: .leading, spacing: 12) {
+                    Text(LoyaltyExplainer.earning(config: config, currencySymbol: appSettings.currencySymbol))
+                    Text(AppLocalization.localized("loyalty.settings.bonuses", value: "Regular visits can earn a return bonus, and membership benefits grow automatically. Pawtrackr calculates everything for you."))
+                    Text(LoyaltyExplainer.rebook)
+                    Text(LoyaltyExplainer.tiers)
                 }
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-        }
-    }
-
-    private var earningRulesCard: some View {
-        Card(cornerRadius: 12, accent: .leading(.color(DS.ColorToken.warning))) {
-            VStack(alignment: .leading, spacing: 14) {
-                Label(AppLocalization.localized("loyalty.settings.earning_rules", value: "Loyalty Earning Rules"), systemImage: "star.circle.fill")
-                    .font(.headline)
-
-                Picker(AppLocalization.localized("loyalty.settings.earning_mode", value: "Earning Mode"), selection: earnModeBinding) {
-                    ForEach(LoyaltyEarnMode.allCases, id: \.self) { mode in
-                        Text(mode.displayTitle).tag(mode)
-                    }
-                }
-                .pickerStyle(.segmented)
-                .accessibilityIdentifier("loyaltySettings.earnMode")
-
-                switch earnModeBinding.wrappedValue {
-                case .pointsPerDollar:
-                    Stepper(value: pointsPerDollarBinding, in: 0...50, step: 1) {
-                        settingsValueRow(
-                            title: AppLocalization.localized("loyalty.settings.points_per_dollar", value: "Points per dollar"),
-                            value: "\(pointsPerDollarBinding.wrappedValue)"
-                        )
-                    }
-                    .accessibilityIdentifier("loyaltySettings.pointsPerDollar")
-                case .flatPerVisit:
-                    Stepper(value: pointsPerVisitBinding, in: 0...500, step: 5) {
-                        settingsValueRow(
-                            title: AppLocalization.localized("loyalty.settings.flat_visit_points", value: "Flat visit points"),
-                            value: "\(pointsPerVisitBinding.wrappedValue)"
-                        )
-                    }
-                    .accessibilityIdentifier("loyaltySettings.pointsPerVisit")
-                }
-
-                Toggle(isOn: catalogEnabledBinding) {
-                    Label(AppLocalization.localized("loyalty.catalog.title", value: "Rewards Catalog"), systemImage: "gift.fill")
-                }
-                .accessibilityIdentifier("loyaltySettings.catalogEnabled")
-            }
-        }
-    }
-
-    private var rewardsCatalogCard: some View {
-        Card(cornerRadius: 12, accent: .leading(.color(DS.ColorToken.info))) {
-            VStack(alignment: .leading, spacing: 14) {
-                Label(AppLocalization.localized("loyalty.settings.templates", value: "Reward Templates"), systemImage: "giftcard.fill")
-                    .font(.headline)
-
-                Button {
-                    showResetCatalogConfirmation = true
-                } label: {
-                    Label(
-                        AppLocalization.localized("loyalty.reset_ladder.action", value: "Reset to Discount Ladder"),
-                        systemImage: "arrow.counterclockwise.circle.fill"
-                    )
-                }
-                .buttonStyle(.bordered)
-                .controlSize(.small)
-                .disabled(rewards.isEmpty)
-
-                if rewards.isEmpty {
-                    ContentUnavailableView(
-                        AppLocalization.localized("loyalty.settings.no_rewards_title", value: "No Rewards"),
-                        systemImage: "gift",
-                        description: Text(AppLocalization.localized("loyalty.settings.no_rewards_detail", value: "Default rewards are added on launch."))
-                    )
-                    .frame(maxWidth: .infinity)
-                } else {
-                    VStack(alignment: .leading, spacing: 10) {
-                        ForEach(rewards) { reward in
-                            rewardTemplateRow(reward)
-                        }
-                    }
-                }
-
-                Divider()
-
-                addRewardForm
-            }
-        }
-    }
-
-    private var addRewardForm: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            TextField(AppLocalization.localized("loyalty.settings.reward_title_field", value: "Reward title"), text: $newRewardTitle)
-                .textFieldStyle(.roundedBorder)
-                .textLengthLimit($newRewardTitle, to: TextInputLimits.name)
-                .accessibilityIdentifier("loyaltySettings.newRewardTitle")
-
-            TextField(AppLocalization.localized("loyalty.settings.reward_detail_field", value: "Reward detail"), text: $newRewardDetail)
-                .textFieldStyle(.roundedBorder)
-                .textLengthLimit($newRewardDetail, to: TextInputLimits.notes)
-                .accessibilityIdentifier("loyaltySettings.newRewardDetail")
-
-            Stepper(value: $newRewardCost, in: 1...10_000, step: 25) {
-                settingsValueRow(title: AppLocalization.localized("loyalty.settings.cost", value: "Cost"), value: LoyaltyCopy.points(newRewardCost))
-            }
-            .accessibilityIdentifier("loyaltySettings.newRewardCost")
-
-            Picker(AppLocalization.localized("loyalty.settings.style", value: "Style"), selection: $newRewardStyle) {
-                ForEach(LoyaltyReward.Style.allCases, id: \.self) { style in
-                    Label(style.displayTitle, systemImage: style.systemImage)
-                        .tag(style)
-                }
-            }
-            .pickerStyle(.menu)
-            .accessibilityIdentifier("loyaltySettings.newRewardStyle")
-
-            Button {
-                createReward()
+                .font(.footnote).foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.top, 12)
             } label: {
-                Label(AppLocalization.localized("loyalty.settings.add_reward", value: "Add Reward"), systemImage: "plus.circle.fill")
+                Text(AppLocalization.localized("loyalty.settings.program_details", value: "How points are calculated"))
+                    .font(.subheadline.weight(.medium))
             }
-            .buttonStyle(.borderedProminent)
-            .pressScaleStyle(hapticsEnabled: true)
-            .disabled(newRewardTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-            .accessibilityIdentifier("loyaltySettings.addReward")
-        }
-    }
+            .tint(DS.ColorToken.primary)
+            .accessibilityLabel(AppLocalization.localized("loyalty.settings.program_details", value: "How points are calculated"))
 
-    private func settingsValueRow(title: String, value: String) -> some View {
-        HStack {
-            Text(title)
-            Spacer(minLength: 12)
-            Text(value)
-                .foregroundStyle(.secondary)
-                .monospacedDigit()
-        }
-    }
+            VStack(alignment: .leading, spacing: 20) {
+                Toggle(isOn: catalogEnabled) {
+                    VStack(alignment: .leading, spacing: 5) {
+                        Text(AppLocalization.localized("loyalty.settings.offer_rewards", value: "Offer rewards")).font(.headline)
+                        Text(AppLocalization.localized("loyalty.settings.offer_detail", value: "A thoughtful thank-you for returning clients."))
+                            .font(.footnote).foregroundStyle(.secondary)
+                    }
+                }
+                .tint(DS.ColorToken.primary)
+                .disabled(!entitlements.isPremium || isSaving)
+                .accessibilityLabel(AppLocalization.localized("loyalty.settings.offer_rewards", value: "Offer rewards"))
+                .accessibilityIdentifier("loyaltySettings.catalogEnabled")
 
-    private func rewardTemplateRow(_ reward: LoyaltyRewardTemplate) -> some View {
-        HStack(spacing: 12) {
-            Image(systemName: reward.style.systemImage)
-                .font(.subheadline.weight(.bold))
-                .foregroundStyle(.white)
-                .frame(width: 34, height: 34)
-                .background(reward.style.tint, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
-                .accessibilityHidden(true)
-
-            VStack(alignment: .leading, spacing: 2) {
-                Text(reward.title)
-                    .font(.subheadline.weight(.semibold))
-                Text(LoyaltyCopy.points(reward.pointCost))
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                if config.isRewardsCatalogEnabled {
+                    ForEach(rewards) { reward in
+                        HStack(spacing: 14) {
+                            Image(systemName: reward.systemImage)
+                                .foregroundStyle(DS.ColorToken.primary)
+                                .frame(width: 32).accessibilityHidden(true)
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(LoyaltyRewardCatalog.displayTitle(for: reward.displayReward))
+                                    .font(.subheadline.weight(.medium))
+                                Text(LoyaltyCopy.points(reward.pointCost)).font(.caption).foregroundStyle(.secondary)
+                            }
+                            Spacer(minLength: 12)
+                            Toggle(reward.title, isOn: enabledBinding(for: reward))
+                                .labelsHidden().tint(DS.ColorToken.primary)
+                                .disabled(!entitlements.isPremium || isSaving)
+                                .accessibilityLabel(reward.title)
+                        }
+                        Divider()
+                    }
+                    if entitlements.isPremium {
+                        Button { showNewReward = true } label: {
+                            Label(AppLocalization.localized("loyalty.settings.add_reward", value: "Add Reward"), systemImage: "plus")
+                                .font(.subheadline.weight(.medium))
+                        }
+                        .pressScaleStyle()
+                        .accessibilityLabel(AppLocalization.localized("loyalty.settings.add_reward", value: "Add Reward"))
+                        .accessibilityIdentifier("loyaltySettings.addReward")
+                    }
+                } else {
+                    Text(AppLocalization.localized("loyalty.settings.paused_note", value: "Clients keep their points and still earn from paid visits. Turn rewards on whenever you’re ready."))
+                        .font(.footnote).foregroundStyle(.secondary)
+                }
             }
+            .padding(24)
+            .background(DS.ColorToken.surface, in: RoundedRectangle(cornerRadius: 24))
+            .hairlineBorder(DS.ColorToken.border, cornerRadius: 24)
 
-            Spacer(minLength: 12)
-
-            Toggle(reward.title, isOn: enabledBinding(for: reward))
-                .labelsHidden()
-                .toggleStyle(.switch)
-                .accessibilityIdentifier("loyaltySettings.reward.\(reward.uuid.uuidString).enabled")
+            if !entitlements.isPremium {
+                Label(AppLocalization.localized("loyalty.settings.pro_detail", value: "Loyalty configuration is available with active Pro access."), systemImage: "lock")
+                    .font(.footnote).foregroundStyle(.secondary)
+            }
+            if let errorMessage {
+                Text(errorMessage).font(.footnote).foregroundStyle(DS.ColorToken.danger)
+            }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-    }
-
-    private var earnModeBinding: Binding<LoyaltyEarnMode> {
-        Binding {
-            config?.earnMode ?? .pointsPerDollar
-        } set: { mode in
-            updateConfig(earnMode: mode)
-        }
-    }
-
-    private var pointsPerDollarBinding: Binding<Int> {
-        Binding {
-            NSDecimalNumber(decimal: config?.pointsPerDollar ?? Decimal(1)).intValue
-        } set: { value in
-            updateConfig(pointsPerDollar: Decimal(value))
+        .frame(maxWidth: 720, alignment: .leading)
+        .sheet(isPresented: $showNewReward) { NewLoyaltyRewardSheet() }
+        .task {
+            do { try await LoyaltyService(modelContainer: modelContext.container).ensureDefaults() }
+            catch {
+                Logger.database.error("Loyalty save failed: \(error.localizedDescription)")
+                errorMessage = error.localizedDescription
+            }
         }
     }
 
-    private var pointsPerVisitBinding: Binding<Int> {
-        Binding {
-            config?.pointsPerVisit ?? 20
-        } set: { value in
-            updateConfig(pointsPerVisit: value)
+    private var catalogEnabled: Binding<Bool> {
+        Binding { config.isRewardsCatalogEnabled } set: { enabled in
+            mutate { try await $0.updateConfig(isRewardsCatalogEnabled: enabled) }
         }
     }
 
-    private var catalogEnabledBinding: Binding<Bool> {
-        Binding {
-            config?.isRewardsCatalogEnabled ?? true
-        } set: { enabled in
-            updateConfig(isRewardsCatalogEnabled: enabled)
-        }
-    }
-
+    /// Only the actor's own reward model is modified, identified by UUID.
     private func enabledBinding(for reward: LoyaltyRewardTemplate) -> Binding<Bool> {
-        Binding {
-            reward.isEnabled
-        } set: { enabled in
-            mutate { service in
-                try await service.setRewardTemplate(reward, isEnabled: enabled)
-            }
+        let uuid = reward.uuid
+        return Binding { reward.isEnabled } set: { enabled in
+            mutate { try await $0.setRewardTemplate(uuid: uuid, isEnabled: enabled) }
         }
     }
 
-    private func updateConfig(
-        earnMode: LoyaltyEarnMode? = nil,
-        pointsPerDollar: Decimal? = nil,
-        pointsPerVisit: Int? = nil,
-        isRewardsCatalogEnabled: Bool? = nil
-    ) {
-        mutate { service in
-            try await service.updateConfig(
-                earnMode: earnMode,
-                pointsPerDollar: pointsPerDollar,
-                pointsPerVisit: pointsPerVisit,
-                isRewardsCatalogEnabled: isRewardsCatalogEnabled
-            )
-        }
-    }
-
-    private func createReward() {
-        let title = newRewardTitle
-        let detail = newRewardDetail.isEmpty
-            ? AppLocalization.localized("loyalty.settings.custom_reward_detail", value: "Custom loyalty reward.")
-            : newRewardDetail
-        let cost = newRewardCost
-        let style = newRewardStyle
-
-        mutate { service in
-            try await service.createRewardTemplate(
-                title: title,
-                detail: detail,
-                pointCost: cost,
-                systemImage: style.systemImage,
-                style: style
-            )
-            newRewardTitle = ""
-            newRewardDetail = ""
-            newRewardCost = 100
-            newRewardStyle = .credit
-        }
-    }
-
-    private func resetToDiscountLadder() {
-        mutate { service in
-            try await service.resetRewardTemplatesToDiscountLadder()
-        }
-    }
-
+    /// Serializes settings actions and makes persistence errors visible.
     private func mutate(_ operation: @escaping (LoyaltyService) async throws -> Void) {
+        guard !isSaving, entitlements.isPremium else { return }
+        isSaving = true
         Task {
+            defer { isSaving = false }
             do {
-                let service = LoyaltyService(modelContainer: modelContext.container)
-                try await operation(service)
+                try await operation(LoyaltyService(modelContainer: modelContext.container))
                 errorMessage = nil
             } catch {
+                Logger.database.error("Loyalty save failed: \(error.localizedDescription)")
                 errorMessage = error.localizedDescription
             }
         }
     }
 }
 
-extension LoyaltyReward.Style: CaseIterable {
-    static var allCases: [LoyaltyReward.Style] {
-        [.credit, .care, .upgrade, .vip]
-    }
-}
+@MainActor
+private struct NewLoyaltyRewardSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    @Environment(\.modelContext) private var modelContext
+    @State private var title = ""
+    @State private var detail = ""
+    @State private var cost = 100
+    @State private var style: LoyaltyReward.Style = .credit
+    @State private var creditText = "5"
+    private var creditAmount: Decimal? { Formatters.parseCurrency(creditText) }
+    private var validCredit: Bool { style != .credit || (creditAmount?.roundedMoney() ?? .zero) > .zero }
+    @State private var isSaving = false
+    @State private var errorMessage: String?
 
-private extension LoyaltyEarnMode {
-    var displayTitle: String {
-        switch self {
-        case .pointsPerDollar:
-            AppLocalization.localized("loyalty.settings.mode.per_dollar", value: "Points per dollar")
-        case .flatPerVisit:
-            AppLocalization.localized("loyalty.settings.mode.flat", value: "Flat per visit")
+    var body: some View {
+        NavigationStack {
+            Form {
+                TextField(AppLocalization.localized("loyalty.settings.reward_title_field", value: "Reward title"), text: $title)
+                    .textLengthLimit($title, to: TextInputLimits.name)
+                    .accessibilityLabel(AppLocalization.localized("loyalty.settings.reward_title_field", value: "Reward title"))
+                TextField(AppLocalization.localized("loyalty.settings.reward_detail_field", value: "Reward detail"), text: $detail)
+                    .textLengthLimit($detail, to: TextInputLimits.notes)
+                    .accessibilityLabel(AppLocalization.localized("loyalty.settings.reward_detail_field", value: "Reward detail"))
+                Picker(AppLocalization.localized("loyalty.settings.reward_type", value: "Reward type"), selection: $style) {
+                    Text(AppLocalization.localized("loyalty.settings.credit_type", value: "Checkout credit")).tag(LoyaltyReward.Style.credit)
+                    Text(AppLocalization.localized("loyalty.settings.service_type", value: "Salon service")).tag(LoyaltyReward.Style.care)
+                }
+                if style == .credit {
+                    TextField(AppLocalization.localized("loyalty.settings.credit_value", value: "Credit amount"), text: $creditText)
+                        .accessibilityLabel(AppLocalization.localized("loyalty.settings.credit_value", value: "Credit amount"))
+                    Text(AppLocalization.localized("loyalty.settings.credit_note", value: "This amount is deducted automatically when selected at checkout."))
+                        .font(.caption).foregroundStyle(.secondary)
+                }
+                Stepper(LoyaltyCopy.points(cost), value: $cost, in: 1...10_000, step: 25)
+                    .accessibilityLabel(AppLocalization.localized("loyalty.settings.cost", value: "Cost"))
+                if let errorMessage { Text(errorMessage).foregroundStyle(DS.ColorToken.danger) }
+            }
+            .navigationTitle(AppLocalization.localized("loyalty.settings.add_reward", value: "Add Reward"))
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button(AppLocalization.localized("common.cancel", value: "Cancel")) { dismiss() }
+                        .pressScaleStyle().disabled(isSaving)
+                        .accessibilityLabel(AppLocalization.localized("common.cancel", value: "Cancel"))
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button(AppLocalization.localized("common.save", value: "Save")) { save() }
+                        .pressScaleStyle().disabled(title.trimmed.isEmpty || !validCredit || isSaving)
+                        .accessibilityLabel(AppLocalization.localized("common.save", value: "Save"))
+                }
+            }
+            .disabled(isSaving)
         }
-    }
-}
-
-private extension LoyaltyReward.Style {
-    var displayTitle: String {
-        switch self {
-        case .credit:
-            AppLocalization.localized("loyalty.style.credit", value: "Credit")
-        case .care:
-            AppLocalization.localized("loyalty.style.care", value: "Care")
-        case .upgrade:
-            AppLocalization.localized("loyalty.style.upgrade", value: "Upgrade")
-        case .vip:
-            AppLocalization.localized("loyalty.style.vip", value: "VIP")
-        }
+        #if os(macOS)
+        .frame(width: 500, height: 480)
+        #endif
     }
 
-    var systemImage: String {
-        switch self {
-        case .credit:
-            "ticket.fill"
-        case .care:
-            "drop.fill"
-        case .upgrade:
-            "scissors"
-        case .vip:
-            "sparkles"
-        }
-    }
-
-    var tint: Color {
-        switch self {
-        case .credit:
-            DS.ColorToken.success
-        case .care:
-            DS.ColorToken.info
-        case .upgrade:
-            DS.ColorToken.warning
-        case .vip:
-            Color.purple
+    /// Creates the reward away from the main actor before dismissing the editor.
+    private func save() {
+        guard !isSaving, !title.trimmed.isEmpty, validCredit else { return }
+        isSaving = true
+        Task {
+            defer { isSaving = false }
+            do {
+                try await LoyaltyService(modelContainer: modelContext.container).createRewardTemplate(
+                    title: title.trimmed, detail: detail.trimmed, pointCost: cost, systemImage: "gift", style: style,
+                    creditAmount: style == .credit ? creditAmount : nil)
+                dismiss()
+            } catch {
+                Logger.database.error("Loyalty save failed: \(error.localizedDescription)")
+                errorMessage = error.localizedDescription
+            }
         }
     }
 }

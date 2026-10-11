@@ -22,6 +22,7 @@ final class LoyaltyRewardTemplate {
     var styleRaw: String = LoyaltyReward.Style.credit.rawValue
     var sortOrder: Int = 0
     var isEnabled: Bool = true
+    var creditAmount: Decimal? = nil
 
     @Transient
     var style: LoyaltyReward.Style {
@@ -39,7 +40,8 @@ final class LoyaltyRewardTemplate {
         systemImage: String,
         styleRaw: String,
         sortOrder: Int,
-        isEnabled: Bool = true
+        isEnabled: Bool = true,
+        creditAmount: Decimal? = nil
     ) {
         uuid = UUID()
         createdAt = .now
@@ -52,6 +54,7 @@ final class LoyaltyRewardTemplate {
         self.styleRaw = LoyaltyReward.Style(rawValue: styleRaw)?.rawValue ?? LoyaltyReward.Style.credit.rawValue
         self.sortOrder = sortOrder
         self.isEnabled = isEnabled
+        self.creditAmount = creditAmount
     }
 
     convenience init(reward: LoyaltyReward, sortOrder: Int) {
@@ -61,7 +64,8 @@ final class LoyaltyRewardTemplate {
             pointCost: reward.pointCost,
             systemImage: reward.systemImage,
             styleRaw: reward.style.rawValue,
-            sortOrder: sortOrder
+            sortOrder: sortOrder,
+            creditAmount: reward.checkoutCreditAmount
         )
     }
 
@@ -78,7 +82,8 @@ final class LoyaltyRewardTemplate {
             detail: detail,
             pointCost: pointCost,
             systemImage: systemImage,
-            style: style
+            style: style,
+            creditAmount: creditAmount
         )
     }
 

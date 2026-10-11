@@ -1,297 +1,132 @@
 import SwiftUI
+import SwiftData
+import OSLog
+import Combine
 
+/// A read-only presentation value; fetching it never writes into the cached UI model.
+@Observable
+@MainActor
+final class LoyaltyBalanceState {
+    private(set) var points: Int
+    private(set) var tier: LoyaltyTier = .bronze
+    private(set) var errorMessage: String?
+    private var loadGeneration = 0
+
+    init(points: Int) { self.points = points }
+
+    /// Uses the central store facade to refresh after checkout or redemption.
+    func refresh(clientUUID: UUID, container: ModelContainer) async {
+        loadGeneration += 1
+        let generation = loadGeneration
+        do {
+            let committed = try await DataStoreService(container: container).fetchLoyaltyAccount(clientUUID: clientUUID)
+            guard !Task.isCancelled, generation == loadGeneration, let committed else { return }
+            points = committed.points
+            tier = committed.tier
+            errorMessage = nil
+        } catch {
+            guard !Task.isCancelled, generation == loadGeneration else { return }
+            Logger.database.error("Loyalty balance refresh failed: \(error.localizedDescription)")
+            errorMessage = AppLocalization.localized("loyalty.balance.refresh_error", value: "Unable to refresh points. Reopen this screen to try again.")
+        }
+    }
+
+    /// Shows an actor-confirmed result immediately and invalidates older reads.
+    func acceptCommittedBalance(_ points: Int) {
+        loadGeneration += 1
+        self.points = points
+        errorMessage = nil
+    }
+}
+
+private struct LoyaltyBalanceTracking: ViewModifier {
+    @Environment(\.modelContext) private var modelContext
+    let state: LoyaltyBalanceState
+    let clientUUID: UUID
+
+    func body(content: Content) -> some View {
+        content
+            .task { await state.refresh(clientUUID: clientUUID, container: modelContext.container) }
+            .onReceive(NotificationCenter.default.publisher(for: .loyaltyBalanceDidChange).receive(on: DispatchQueue.main)) { notification in
+                guard notification.object as? UUID == clientUUID else { return }
+                Task { await state.refresh(clientUUID: clientUUID, container: modelContext.container) }
+            }
+    }
+}
+
+extension View {
+    /// Refreshes a presentation balance when entering a screen or after a committed award.
+    func loyaltyBalanceTracking(_ state: LoyaltyBalanceState, clientUUID: UUID) -> some View {
+        modifier(LoyaltyBalanceTracking(state: state, clientUUID: clientUUID))
+    }
+}
+
+/// Displays the committed balance with a short, accessible completion cue.
 @MainActor
 struct LoyaltyPointsBadge: View {
-    enum Scale: Equatable {
-        case compact
-        case prominent
-
-        var horizontalPadding: CGFloat {
-            switch self {
-            case .compact:
-                9
-            case .prominent:
-                16
-            }
-        }
-
-        var verticalPadding: CGFloat {
-            switch self {
-            case .compact:
-                5
-            case .prominent:
-                12
-            }
-        }
-
-        var iconSize: CGFloat {
-            switch self {
-            case .compact:
-                12
-            case .prominent:
-                18
-            }
-        }
-
-        var pointsFont: Font {
-            switch self {
-            case .compact:
-                .caption.weight(.bold)
-            case .prominent:
-                .system(.largeTitle, design: .rounded).weight(.black)
-            }
-        }
-
-        var labelFont: Font {
-            switch self {
-            case .compact:
-                .caption2.weight(.semibold)
-            case .prominent:
-                .caption.weight(.semibold)
-            }
-        }
-
-        var deltaFont: Font {
-            switch self {
-            case .compact:
-                .caption2.weight(.heavy)
-            case .prominent:
-                .callout.weight(.heavy)
-            }
-        }
-
-        var cornerRadius: CGFloat {
-            switch self {
-            case .compact:
-                999
-            case .prominent:
-                18
-            }
-        }
-
-        var sparkleSpread: CGFloat {
-            switch self {
-            case .compact:
-                62
-            case .prominent:
-                112
-            }
-        }
-
-        var sparkleRise: CGFloat {
-            switch self {
-            case .compact:
-                36
-            case .prominent:
-                62
-            }
-        }
-
-        var particleSize: CGFloat {
-            switch self {
-            case .compact:
-                4
-            case .prominent:
-                6
-            }
-        }
-    }
-
-    /// One points change event. Identity (`id`) is unique per event so the
-    /// floating delta chip and sparkle burst get FRESH view identity each
-    /// time — a second rapid event replaces them instead of silently
-    /// updating views mid-animation.
-    private struct DeltaEvent: Equatable {
-        let id: Int
-        let amount: Int
-    }
-
+    enum Scale: Equatable { case compact, prominent }
     let client: Client
-    let scale: Scale
-
+    var scale: Scale = .prominent
+    var balanceOverride: Int? = nil
+    var errorMessage: String? = nil
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var earnedDelta = 0
 
-    @State private var pulseCount = 0
-    @State private var deltaEvent: DeltaEvent?
-    @State private var showSparkles = false
-    /// Sole owner of decoration teardown. Exactly one lives at a time:
-    /// every new event cancels the previous task BEFORE mutating any
-    /// animation state, so competing sleeps can never fight over it.
-    @State private var decorationTask: Task<Void, Never>?
-
-    init(client: Client, scale: Scale = .prominent) {
-        self.client = client
-        self.scale = scale
-    }
+    private var points: Int { balanceOverride ?? client.loyaltyPoints }
 
     var body: some View {
-        ZStack(alignment: .top) {
-            badgeContent
-                .phaseAnimator([false, true], trigger: pulseCount) { view, bouncing in
-                    view.scaleEffect(bouncing ? 1.06 : 1)
-                } animation: { bouncing in
-                    bouncing
-                        ? .interpolatingSpring(stiffness: 300, damping: 12)
-                        : .interpolatingSpring(stiffness: 300, damping: 18)
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(alignment: .firstTextBaseline, spacing: 6) {
+                if scale == .compact {
+                    Image(systemName: "sparkles").font(.caption)
                 }
-
-            if showSparkles, let deltaEvent {
-                LoyaltySparkleBurst(seed: deltaEvent.id, scale: scale)
-                    .id(deltaEvent.id)
-                    .offset(y: -6)
-                    .allowsHitTesting(false)
-                    .transition(.opacity)
+                Text(points.formatted())
+                    .font(scale == .compact ? .subheadline.weight(.semibold) : .system(.largeTitle, design: .serif).weight(.medium))
+                    .contentTransition(.numericText())
+                    .monospacedDigit()
+                Text(AppLocalization.localized("loyalty.badge.points", value: "points"))
+                    .font(scale == .compact ? .caption : .subheadline)
+                    .foregroundStyle(.secondary)
             }
-
-            if let deltaEvent {
-                deltaChip(for: deltaEvent)
-                    .id(deltaEvent.id)
-                    .allowsHitTesting(false)
+            .foregroundStyle(scale == .compact ? DS.ColorToken.primary : .primary)
+            if earnedDelta > 0 {
+                Label(String(format: AppLocalization.localized("loyalty.badge.saved_fmt", value: "+%@ · saved from their visit"), LoyaltyCopy.points(earnedDelta)), systemImage: "checkmark.circle.fill")
+                    .font(.caption).foregroundStyle(DS.ColorToken.primary)
+                    .transition(.opacity)
+                    .accessibilityIdentifier("loyaltyPointsBadge.saved")
+            }
+            if let errorMessage {
+                Text(errorMessage).font(.caption).foregroundStyle(DS.ColorToken.danger)
             }
         }
         .accessibilityElement(children: .combine)
-        .accessibilityLabel(String(
-            format: AppLocalization.localized("loyalty.badge.accessibility_fmt", value: "%1$d loyalty points, %2$@ tier"),
-            client.loyaltyPoints,
-            tier.displayName
-        ))
+        .accessibilityLabel(LoyaltyCopy.points(points))
         .accessibilityIdentifier("loyaltyPointsBadge")
-        .onChange(of: client.loyaltyPoints) { oldValue, newValue in
-            pointsDidChange(by: newValue - oldValue)
-        }
-        .onDisappear {
-            decorationTask?.cancel()
-            decorationTask = nil
-        }
-    }
-
-    private var tier: LoyaltyTier {
-        LoyaltyEngine.tier(forLifetimeEarned: LoyaltyEngine.lifetimeEarnedPoints(for: client))
-    }
-
-    private var badgeContent: some View {
-        HStack(spacing: scale == .compact ? 5 : 9) {
-            Image(systemName: tier.systemImage)
-                .font(.system(size: scale.iconSize, weight: .bold))
-                .symbolRenderingMode(.hierarchical)
-
-            VStack(alignment: scale == .compact ? .center : .trailing, spacing: scale == .compact ? 0 : -1) {
-                Text("\(client.loyaltyPoints)")
-                    .font(scale.pointsFont)
-                    .contentTransition(.numericText(value: Double(client.loyaltyPoints)))
-                    .monospacedDigit()
-                if scale == .prominent {
-                    Text(AppLocalization.localized("loyalty.badge.points", value: "points"))
-                        .font(scale.labelFont)
-                        .foregroundStyle(.white.opacity(0.78))
-                }
-            }
-        }
-        .foregroundStyle(.white)
-        .padding(.horizontal, scale.horizontalPadding)
-        .padding(.vertical, scale.verticalPadding)
-        .background(
-            RoundedRectangle(cornerRadius: scale.cornerRadius, style: .continuous)
-                .fill(tier.tint.gradient)
-                .shadow(color: tier.tint.opacity(0.24), radius: scale == .compact ? 4 : 10, y: scale == .compact ? 2 : 5)
-        )
-        .overlay {
-            RoundedRectangle(cornerRadius: scale.cornerRadius, style: .continuous)
-                .stroke(.white.opacity(0.18), lineWidth: 1)
-        }
-        // The odometer roll must run even when the mutation arrives without an
-        // animation transaction (CheckoutTransactionActor save, context refresh).
-        .animation(MotionSystem.resolved(MotionSystem.snappy, reduceMotion: reduceMotion), value: client.loyaltyPoints)
-    }
-
-    private func deltaChip(for event: DeltaEvent) -> some View {
-        let gained = event.amount > 0
-        return Text(gained ? "+\(event.amount)" : "\(event.amount)")
-            .font(scale.deltaFont)
-            .monospacedDigit()
-            .foregroundStyle(.white)
-            .padding(.horizontal, scale == .compact ? 6 : 9)
-            .padding(.vertical, scale == .compact ? 2 : 4)
-            .background(
-                Capsule().fill((gained ? DS.ColorToken.success : DS.ColorToken.danger).gradient)
-                    .shadow(color: .black.opacity(0.14), radius: 3, y: 1)
-            )
-            .offset(y: scale == .compact ? -18 : -26)
-            .transition(
-                .asymmetric(
-                    insertion: .offset(y: 10).combined(with: .scale(scale: 0.6)).combined(with: .opacity),
-                    removal: .offset(y: -14).combined(with: .opacity)
-                )
-            )
-    }
-
-    private func pointsDidChange(by delta: Int) {
-        guard delta != 0 else { return }
-        pulseCount &+= 1
-
-        // Decorations are pure garnish — respect Reduce Motion / thermals and
-        // let the numericText roll carry the change on its own.
-        guard MotionGovernor.shouldAnimate(reduceMotion: reduceMotion) else { return }
-
-        // Cancel the previous event's teardown FIRST so it can never clobber
-        // the state this event is about to own.
-        decorationTask?.cancel()
-
-        let event = DeltaEvent(id: (deltaEvent?.id ?? 0) &+ 1, amount: delta)
-        withAnimation(MotionSystem.snappy) {
-            deltaEvent = event
-            showSparkles = delta > 0
-        }
-
-        decorationTask = Task { @MainActor in
-            do {
-                try await Task.sleep(for: .milliseconds(900))
-            } catch {
-                return // cancelled: a newer event owns the decorations now
-            }
-            withAnimation(.easeOut(duration: 0.18)) {
-                showSparkles = false
-                deltaEvent = nil
-            }
+        .animation(MotionSystem.resolved(MotionSystem.snappy, reduceMotion: reduceMotion), value: points)
+        .onChange(of: points) { old, new in earnedDelta = max(0, new - old) }
+        .task(id: earnedDelta) {
+            guard earnedDelta > 0 else { return }
+            do { try await Task.sleep(for: .seconds(3)) } catch { return }
+            withAnimation(MotionSystem.resolved(MotionSystem.snappy, reduceMotion: reduceMotion)) { earnedDelta = 0 }
         }
     }
 }
 
-private struct LoyaltySparkleBurst: View {
-    let seed: Int
-    let scale: LoyaltyPointsBadge.Scale
-
-    @State private var expanded = false
-
+/// The original award lives on the visit, so history can explain the balance.
+struct VisitLoyaltyReceipt: View {
+    let visit: Visit
     var body: some View {
-        ZStack {
-            ForEach(0..<10, id: \.self) { index in
-                sparkle(index: index)
+        if visit.endedAt != nil, visit.isPaid {
+            if let title = visit.loyaltyRewardTitle, visit.loyaltyRedeemedPoints > 0 {
+                Label(String(format: AppLocalization.localized("loyalty.visit.redeemed_fmt", value: "%@ · %@ used"), title, LoyaltyCopy.points(visit.loyaltyRedeemedPoints)), systemImage: "gift")
+                    .font(.caption).foregroundStyle(.secondary)
+                    .accessibilityIdentifier("visit.loyaltyReward")
+            }
+            if visit.loyaltyPointsChange > 0 {
+            Label(String(format: AppLocalization.localized("loyalty.visit.earned_fmt", value: "+%@ earned"), LoyaltyCopy.points(visit.loyaltyPointsChange)), systemImage: "checkmark.circle")
+                .font(.caption).foregroundStyle(DS.ColorToken.primary)
+                .accessibilityIdentifier("visit.loyaltyPoints")
             }
         }
-        .frame(width: scale.sparkleSpread, height: scale.sparkleRise)
-        .onAppear {
-            withAnimation(.easeOut(duration: 0.56)) {
-                expanded = true
-            }
-        }
-    }
-
-    private func sparkle(index: Int) -> some View {
-        let spreadUnit = CGFloat(index) / 9 - 0.5
-        let seededOffset = CGFloat((seed + index * 3) % 5 - 2) * 3
-        let x = spreadUnit * scale.sparkleSpread + seededOffset
-        let verticalWave = CGFloat((index * 7 + seed) % 6) / 10
-        let y = -scale.sparkleRise * (0.52 + verticalWave)
-        let size = scale.particleSize + CGFloat(index % 3)
-
-        return RoundedRectangle(cornerRadius: size / 2, style: .continuous)
-            .fill(index.isMultiple(of: 2) ? Color.white : DS.ColorToken.warning)
-            .frame(width: size, height: size)
-            .rotationEffect(.degrees(expanded ? Double(index * 18 + 40) : Double(index * 6)))
-            .offset(x: expanded ? x : 0, y: expanded ? y : 0)
-            .opacity(expanded ? 0 : 0.95)
-            .scaleEffect(expanded ? 0.4 : 1)
-            .blur(radius: expanded ? 0.8 : 0)
     }
 }

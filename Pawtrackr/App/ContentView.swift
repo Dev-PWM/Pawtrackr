@@ -909,6 +909,13 @@ struct ContentView: View {
                 missingDestinationView
             }
 
+        case .clientLoyalty(let id):
+            if let client = modelContext.model(for: id) as? Client {
+                ClientLoyaltyView(client: client)
+            } else {
+                missingDestinationView
+            }
+
         case .petDetail(let id):
             if let pet = modelContext.model(for: id) as? Pet {
                 PetDetailView(pet: pet, namespace: sharedNamespace)

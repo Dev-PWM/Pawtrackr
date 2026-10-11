@@ -26,7 +26,8 @@ final class CheckoutDraftStoreTests: XCTestCase {
             hadBeforePhoto: true,
             hadAfterPhoto: true,
             externalReference: "1234",
-            tags: ["Friendly"]
+            tags: ["Friendly"],
+            selectedLoyaltyReward: LoyaltyReward.builtInCatalog[0]
         )
 
         try await store.saveDraft(draft)
@@ -47,6 +48,7 @@ final class CheckoutDraftStoreTests: XCTestCase {
         XCTAssertEqual(loaded?.hadAfterPhoto, draft.hadAfterPhoto)
         XCTAssertEqual(loaded?.externalReference, draft.externalReference)
         XCTAssertEqual(loaded?.tags, draft.tags)
+        XCTAssertEqual(loaded?.selectedLoyaltyReward, draft.selectedLoyaltyReward)
 
         try await store.deleteDraft(for: visitID)
         let deleted = await store.loadDraft(for: visitID)
@@ -80,6 +82,7 @@ final class CheckoutDraftStoreTests: XCTestCase {
         XCTAssertEqual(draft.visitID, visitID)
         XCTAssertEqual(draft.tipAmountString, "")
         XCTAssertNil(draft.selectedTipPercentage)
+        XCTAssertNil(draft.selectedLoyaltyReward)
         XCTAssertFalse(draft.hadBeforePhoto)
         XCTAssertFalse(draft.hadAfterPhoto)
     }

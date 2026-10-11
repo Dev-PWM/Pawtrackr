@@ -712,7 +712,7 @@
 "insights.top_clients.empty" = "Aún no hay datos de clientes";
 "insights.export.pdf_report" = "Reporte PDF";
 "insights.export.csv" = "CSV de estadísticas";
-"insights.export.csv_data" = "Datos CSV";
+"insights.export.csv_data" = "CSV de estadísticas del negocio";
 "insights.export.share_report" = "Compartir reporte";
 "insights.export.export_report" = "Exportar reporte";
 "export.csv.first_name" = "Nombre";
@@ -758,6 +758,36 @@
 "report.days" = "Días";
 "report.generated" = "Generado";
 "report.currency" = "Moneda";
+"report.csv.owner_title" = "Estadísticas para el negocio";
+"report.scope" = "Alcance del reporte";
+"report.scope.operational" = "Estadísticas operativas de visitas completadas. Excluye gastos, impuestos cobrados, reembolsos y deducciones; no es un reporte fiscal.";
+"report.owner_snapshot" = "Resumen para el negocio";
+"report.completed_visit_revenue" = "Ingresos de visitas completadas";
+"report.recorded_payments" = "Pagos registrados";
+"report.revenue_less_payments" = "Ingresos menos pagos registrados";
+"report.payment_coverage_percent" = "Cobertura de pagos (%)";
+"report.clients_served" = "Clientes atendidos";
+"report.revenue_per_client" = "Ingresos por cliente";
+"report.returning_client_rate" = "Tasa de clientes que regresan (%)";
+"report.owner_focus" = "En qué enfocarse";
+"report.focus" = "Enfoque";
+"report.result" = "Resultado";
+"report.why_it_matters" = "Por qué importa";
+"report.focus.revenue_trend" = "Tendencia de ingresos";
+"report.focus.revenue_result_fmt" = "%1$@%% frente a los %2$d días anteriores";
+"report.focus.revenue_use" = "Muestra si aumentan las ventas de visitas completadas.";
+"report.focus.returning_clients" = "Clientes que regresan";
+"report.focus.returning_result_fmt" = "%1$d de %2$d clientes · %3$@%%";
+"report.focus.returning_use" = "Muestra cuánto negocio provino de clientes habituales.";
+"report.focus.top_service" = "Servicio principal";
+"report.focus.service_result_fmt" = "%1$@ · %2$@%% de los ingresos por servicios";
+"report.focus.service_use" = "Muestra qué servicio genera más ingresos.";
+"report.focus.busiest_weekday" = "Día de la semana con más trabajo";
+"report.focus.weekday_result_fmt" = "%1$@ · %2$d visitas completadas";
+"report.focus.weekday_use" = "Ayuda a planificar el personal y la capacidad de citas.";
+"report.focus.top_payment_method" = "Método de pago principal";
+"report.focus.payment_result_fmt" = "%1$@ · %2$@%% de los pagos registrados";
+"report.focus.payment_use" = "Ayuda a conciliar dónde se registraron los pagos de clientes.";
 "report.summary" = "Resumen";
 "report.metric" = "Indicador";
 "report.this_period" = "Este período";
@@ -957,10 +987,10 @@
 "onboarding.step.role" = "Tu rol";
 "onboarding.step.loyalty" = "Puntos de lealtad";
 "onboarding.subtitle.role" = "Elige el recorrido que mejor coincide con tu trabajo diario.";
-"onboarding.subtitle.loyalty" = "Mira cómo los puntos se acumulan automáticamente después de cada visita completada.";
+"onboarding.subtitle.loyalty" = "Los puntos se suman automáticamente tras cada visita completada y pagada.";
 "onboarding.role.note" = "Esto solo cambia el recorrido guiado. Puedes seguir usando todas las funciones de Pawtrackr.";
 "onboarding.loyalty.title" = "Recompensas sin hacer cuentas";
-"onboarding.loyalty.message" = "Mueve el total del cobro, elige un nivel y mira los puntos que gana una visita. El cobro usa esta misma cuenta.";
+"onboarding.loyalty.message" = "Cuida a la mascota. Completa la visita. Pawtrackr se encarga de los puntos.";
 
 "tour.clients.filters.title" = "Filtros de clientes";
 "tour.clients.filters.directive" = "Cambia entre Todos, Activos, Necesita atención e Información faltante.";
@@ -1314,7 +1344,7 @@
 "settings.section.business.subtitle" = "Marca y valores de los recibos que se usan en el cobro, las exportaciones y los documentos para clientes.";
 "settings.section.export.subtitle" = "Exporta los datos del negocio para informes, revisiones o para usarlos fuera de Pawtrackr.";
 "settings.section.help.subtitle" = "Herramientas de soporte y guía rápida de recuperación para el día a día del salón.";
-"settings.section.loyalty.subtitle" = "Configura cómo las visitas suman puntos y qué recompensas quiere ofrecer tu salón.";
+"settings.section.loyalty.subtitle" = "Las visitas suman puntos automáticamente. Elige las recompensas que ofrece tu salón.";
 "settings.section.preferences.subtitle" = "Ajusta la app para esta estación de trabajo, desde el comportamiento al iniciar hasta la apariencia y las respuestas de interacción.";
 "settings.section.security.subtitle" = "Protege los registros de clientes con PIN, desbloqueo biométrico y bloqueo automático.";
 "emergency_contact.validation.name_required" = "Agrega un nombre para este contacto o borra el teléfono.";
@@ -1377,7 +1407,7 @@
 "loyalty.badge.points" = "puntos";
 "loyalty.badge.accessibility_fmt" = "%1$d puntos de lealtad, nivel %2$@";
 "client_detail.loyalty.title" = "Lealtad y recompensas";
-"client_detail.loyalty.subtitle" = "Administra saldo, recompensas y puntos ganados en visitas";
+"client_detail.loyalty.subtitle" = "Puntos guardados automáticamente de visitas pagadas";
 "client_detail.loyalty.locked_subtitle" = "Herramientas premium para retener clientes";
 "client_detail.loyalty.accessibility_fmt" = "Lealtad y recompensas, %d puntos";
 "client_detail.loyalty.locked_accessibility_fmt" = "Lealtad y recompensas bloqueadas, %d puntos";
@@ -1722,10 +1752,10 @@
 "tour.academy.ins_revenue.why" = "Distingue una buena racha de una lenta y ve hacia dónde va el negocio.";
 "tour.academy.ins_revenue.try" = "Toca 30D para cambiar el periodo.";
 "tour.academy.set_loyalty.title" = "Cómo se suman los puntos";
-"tour.academy.set_loyalty.what" = "Una vista previa de tus reglas de lealtad, con el mismo cálculo que el cobro.";
-"tour.academy.set_loyalty.why" = "Los clientes Plata, Oro y Platino ganan más en cada visita, y regresar pronto suma el bono por volver. Así el equipo le dice al cliente cuánto gana cada visita.";
-"tour.academy.set_loyalty.try" = "Mueve el total del cobro o elige un nivel y mira cómo cambian los puntos.";
-"tour.academy.set_loyalty.tip" = "Una marca en una recompensa significa que una visita sola alcanza. El dueño cambia la regla en Reglas para ganar puntos, arriba.";
+"tour.academy.set_loyalty.what" = "Completa y cobra la visita. Los puntos se guardan solos.";
+"tour.academy.set_loyalty.why" = "Cada recompensa está vinculada a una visita completada y pagada y aparece en el perfil y el historial del cliente.";
+"tour.academy.set_loyalty.try" = "Sigue los tres pasos y continúa.";
+"tour.academy.set_loyalty.tip" = "No hace falta introducir puntos. Abre Cómo se calculan los puntos para ver las reglas actuales del salón.";
 "tour.academy.set_data.title" = "Exporta tus datos";
 "tour.academy.set_data.what" = "Ajustes exporta tus clientes y visitas como archivos de hoja de cálculo.";
 "tour.academy.set_data.why" = "Tus registros viven en este dispositivo. Una exportación es una copia que tú controlas, para la contabilidad, tu contador o un respaldo.";
@@ -1754,3 +1784,130 @@
 "pet.editor.removed_checkin" = "Restaura esta mascota antes de iniciar una nueva sesión.";
 
 "new_client.duplicate_name" = "Ya existe un cliente con este nombre completo. Edita el cliente existente para agregar mascotas o actualizar su información.";
+
+"loyalty.catalog.simple_hint" = "Los créditos se aplican al finalizar la visita. Los servicios del salón se pueden canjear aquí. Guarda tus puntos todo el tiempo que quieras.";
+"loyalty.catalog.confirm_title" = "¿Usar esta recompensa?";
+
+"loyalty.catalog.confirm_fmt" = "%1$@ utiliza %2$@. Aplica la recompensa en el salón después de canjearla.";
+
+"loyalty.catalog.more_fmt" = "Faltan %@";
+
+"loyalty.client.automatic_note" = "Los puntos se añaden automáticamente tras una visita completada y pagada. Cada recompensa queda vinculada al historial de visitas de la mascota.";
+
+"loyalty.client.visit_rewards" = "Recompensas por visitas";
+
+"loyalty.client.balance_caption" = "Un pequeño agradecimiento por cada visita.";
+
+"loyalty.client.browse_rewards" = "Explorar recompensas";
+
+"loyalty.client.reward_ready" = "Te espera una recompensa";
+
+"loyalty.client.next_reward" = "Tu próximo agradecimiento";
+
+"loyalty.client.ready_detail" = "Elígela en recompensas cuando quieras.";
+
+"loyalty.client.remaining_fmt" = "Faltan %@. Sigue visitándonos; nosotros llevamos la cuenta.";
+
+"loyalty.client.activity" = "De sus visitas";
+
+"loyalty.client.empty_title" = "Su historia empieza con una visita";
+
+"loyalty.client.empty_detail" = "Registra la entrada de una mascota y completa y cobra la visita. Los puntos aparecerán aquí automáticamente.";
+
+"loyalty.client.all_activity" = "Ver toda la actividad";
+
+"loyalty.activity.visit_fmt" = "Visita de %@";
+
+"loyalty.activity.completed" = "Visita completada";
+
+"loyalty.activity.previous_adjustment" = "Corrección de saldo anterior";
+
+"loyalty.badge.saved_fmt" = "+%@ · guardados de su visita";
+
+"loyalty.visit.earned_fmt" = "+%@ ganados";
+
+"loyalty.error.reward_unavailable" = "Esta recompensa ya no está disponible. Vuelve a abrir las recompensas.";
+
+"loyalty.settings.bonuses" = "Las visitas habituales pueden ganar un bono por volver, y las ventajas de membresía crecen automáticamente. Pawtrackr calcula todo por ti.";
+
+"loyalty.settings.program_details" = "Cómo se calculan los puntos";
+
+"loyalty.settings.offer_rewards" = "Ofrecer recompensas";
+
+"loyalty.settings.offer_detail" = "Un detalle de agradecimiento para los clientes que vuelven.";
+
+"loyalty.settings.paused_note" = "Los clientes conservan sus puntos y siguen ganando con las visitas pagadas. Activa las recompensas cuando quieras.";
+
+"loyalty.journey.title" = "Cada visita tiene su recompensa";
+
+"loyalty.journey.checkin" = "Registrar entrada";
+
+"loyalty.journey.checkin_detail" = "Inicia la visita de la mascota como siempre.";
+
+"loyalty.journey.complete" = "Completar la visita y registrar el pago";
+
+"loyalty.journey.complete_detail" = "Los puntos esperan hasta que la visita esté completada y pagada.";
+
+"loyalty.journey.saved" = "Los puntos se suman solos";
+
+"loyalty.journey.saved_detail" = "Se añaden una sola vez al saldo del cliente y se guardan con la visita. No hay que introducir nada.";
+
+"loyalty.balance.refresh_error" = "No se pueden actualizar los puntos. Vuelve a abrir esta pantalla para intentarlo de nuevo.";
+
+"loyalty.reward.credit_fmt" = "%@ se descuentan automáticamente al finalizar";
+
+"loyalty.reward.salon_provided" = "El salón lo proporciona y queda registrado en el historial";
+
+"checkout.loyalty.title" = "Recompensas de la visita";
+
+"checkout.loyalty.saved_points" = "puntos guardados";
+
+"checkout.loyalty.use_fmt" = "Usar %@ del saldo guardado";
+
+"checkout.loyalty.credit_fmt" = "%@ de descuento en esta visita";
+
+"checkout.loyalty.keep" = "Guardar los puntos para después";
+
+"checkout.loyalty.choose" = "Elegir una recompensa";
+
+"checkout.loyalty.select" = "Seleccionar";
+
+"checkout.loyalty.select_fmt" = "Seleccionar %@";
+
+"checkout.loyalty.selection_note" = "Elige una recompensa para esta visita. Los puntos se usan solo al confirmar el pago.";
+
+"checkout.loyalty.rechoose" = "Esta opción ha cambiado. Elige otra recompensa o guarda tus puntos.";
+
+"checkout.loyalty.credit" = "Crédito de recompensa";
+
+"checkout.loyalty.total_changed" = "La recompensa o el total cambió. Revisa la salida antes de pagar.";
+
+"checkout.loyalty.load_error" = "No se pudieron cargar las recompensas. Guarda tus puntos o vuelve a intentarlo.";
+
+"loyalty.points.keep_note" = "Usa los puntos cuando quieras. Nunca vencen y no hay límite de saldo.";
+
+"loyalty.journey.choice_note" = "Al finalizar, elige una recompensa o guarda los puntos para otra visita. Los créditos reducen el total automáticamente. Los puntos guardados nunca vencen.";
+
+"loyalty.settings.reward_type" = "Tipo de recompensa";
+
+"loyalty.settings.credit_type" = "Crédito al finalizar";
+
+"loyalty.settings.service_type" = "Servicio del salón";
+
+"loyalty.settings.credit_value" = "Importe del crédito";
+
+"loyalty.settings.credit_note" = "Este importe se descuenta automáticamente al elegirlo durante la salida.";
+
+"loyalty.activity.redeemed_fmt" = "Canjeó %@";
+
+"loyalty.visit.redeemed_fmt" = "%@ · %@ usados";
+
+"loyalty.catalog.checkout_hint" = "Elige este crédito en la revisión final de la salida. Reducirá el total automáticamente y los puntos se usarán solo al confirmar el pago.";
+
+"loyalty.catalog.at_checkout" = "Usar al finalizar";
+
+"common.retry" = "Volver a intentar";
+
+"checkout.loyalty.earned_fmt" = "+%@ guardados en la cuenta del cliente";
+
+"loyalty.error.credit_zero" = "El importe del crédito debe ser mayor que cero.";

@@ -123,6 +123,7 @@ struct ClientDetailView: View {
     @State private var inlineEditBaseline: ClientEditBaseline? = nil
 
     @Environment(NavigationRouter.self) private var router
+    @State private var loyaltyBalance: LoyaltyBalanceState
     private var namespace: Namespace.ID
     /// Every tour stop on this screen, so each one is scrolled into view.
     static let walkthroughAnchors: Set<WalkthroughAnchorID> = [
@@ -145,6 +146,7 @@ struct ClientDetailView: View {
     init(client: Client, namespace: Namespace.ID) {
         self.client = client
         self.namespace = namespace
+        _loyaltyBalance = State(initialValue: LoyaltyBalanceState(points: client.loyaltyPoints))
     }
 
     // MARK: - Body
@@ -157,6 +159,7 @@ struct ClientDetailView: View {
                     .padding()
             }
         }
+        .loyaltyBalanceTracking(loyaltyBalance, clientUUID: client.uuid)
         .onAppear {
             if viewModel == nil {
                 let ctx = client.modelContext ?? modelContext
@@ -540,11 +543,11 @@ struct ClientDetailView: View {
     }
 
     private func loyaltySection(client: Client) -> some View {
-        Card {
+        Card(elevation: .flat, hoverRaises: false) {
             Group {
                 if entitlements.isPremium {
-                    NavigationLink {
-                        ClientLoyaltyView(client: client)
+                    Button {
+                        router.navigateToClientLoyalty(client)
                     } label: {
                         loyaltyRowContent(client: client, isLocked: false)
                     }
@@ -567,11 +570,11 @@ struct ClientDetailView: View {
 
     private func loyaltyRowContent(client: Client, isLocked: Bool) -> some View {
         HStack(spacing: 12) {
-            Image(systemName: isLocked ? "lock.fill" : "crown.fill")
+            Image(systemName: isLocked ? "lock" : "sparkles")
                 .font(.headline)
-                .foregroundStyle(.white)
+                .foregroundStyle(DS.ColorToken.primary)
                 .frame(width: 44, height: 44)
-                .background(DS.ColorToken.warning.gradient, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                .background(DS.ColorToken.primary.opacity(0.10), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
 
             VStack(alignment: .leading, spacing: 3) {
                 Text(AppLocalization.localized("client_detail.loyalty.title", value: "Loyalty & Rewards"))
@@ -579,14 +582,14 @@ struct ClientDetailView: View {
                     .foregroundStyle(.primary)
                 Text(isLocked
                      ? AppLocalization.localized("client_detail.loyalty.locked_subtitle", value: "Premium client retention tools")
-                     : AppLocalization.localized("client_detail.loyalty.subtitle", value: "Manage balance, rewards, and visit-earned points"))
+                     : AppLocalization.localized("client_detail.loyalty.subtitle", value: "Points saved automatically from paid visits"))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
 
             Spacer(minLength: 8)
 
-            LoyaltyPointsBadge(client: client, scale: .compact)
+            LoyaltyPointsBadge(client: client, scale: .compact, balanceOverride: loyaltyBalance.points, errorMessage: loyaltyBalance.errorMessage)
 
             Image(systemName: "chevron.right")
                 .font(.caption.weight(.bold))
@@ -598,7 +601,7 @@ struct ClientDetailView: View {
             format: isLocked
                 ? AppLocalization.localized("client_detail.loyalty.locked_accessibility_fmt", value: "Loyalty and rewards locked, %d points")
                 : AppLocalization.localized("client_detail.loyalty.accessibility_fmt", value: "Loyalty and rewards, %d points"),
-            client.loyaltyPoints
+            loyaltyBalance.points
         ))
     }
 

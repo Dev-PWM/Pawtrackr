@@ -15,6 +15,7 @@ import OSLog
 /// Type-safe navigation destinations for the app.
 enum AppDestination: Hashable, Sendable {
     case clientDetail(PersistentIdentifier)
+    case clientLoyalty(PersistentIdentifier)
     case petDetail(PersistentIdentifier)
     case visitDetail(PersistentIdentifier)
     case petHistory(PersistentIdentifier)
@@ -79,6 +80,11 @@ final class NavigationRouter {
 
     func navigateToClient(_ client: Client) {
         append(AppDestination.clientDetail(client.persistentModelID))
+    }
+
+    /// Opens visit rewards lazily, without creating a queried destination in the client profile.
+    func navigateToClientLoyalty(_ client: Client) {
+        append(AppDestination.clientLoyalty(client.persistentModelID))
     }
 
     func navigateToPet(_ pet: Pet) {

@@ -31,8 +31,10 @@ enum LoyaltyCheckoutProcessor {
         in context: ModelContext,
         now: Date = .now,
         config: LoyaltyConfigSnapshot = .default
-    ) -> UUID? {
-        let client = pet.owner
+    ) throws -> UUID? {
+        guard let endedAt = visit.endedAt, endedAt >= visit.startedAt,
+              let payment = visit.payment, payment.amount >= total.roundedMoney(),
+              let client = pet.owner else { return nil }
 
         let tier = LoyaltyEngine.tier(
             forLifetimeEarned: LoyaltyEngine.lifetimeEarnedPoints(for: client, excluding: visit.uuid)
@@ -41,7 +43,7 @@ enum LoyaltyCheckoutProcessor {
             previousVisitEndedAt: LoyaltyEngine.previousCompletedVisitDate(for: client, excluding: visit.uuid),
             checkoutAt: now
         )
-        // The same function the loyalty preview card shows, so the two can't drift.
+        // Both checkout paths use the same deterministic earning rule.
         let points = LoyaltyEngine.preview(ticket: total, config: config, tier: tier, rebook: isRebook).total
 
         let previousPoints = visit.loyaltyPointsChange
@@ -52,12 +54,11 @@ enum LoyaltyCheckoutProcessor {
         visit.lastModifiedAt = .now
         visit.lastModifiedBy = DeviceIdentity.currentID
 
-        guard let client else { return nil }
         client.loyaltyPoints += points - previousPoints
         client.updatedAt = .now
         client.lastModifiedBy = DeviceIdentity.currentID
 
-        upsertEarnedEntry(
+        try upsertEarnedEntry(
             visit: visit,
             client: client,
             pet: pet,
@@ -75,7 +76,7 @@ enum LoyaltyCheckoutProcessor {
         pet: Pet,
         points: Int,
         in context: ModelContext
-    ) {
+    ) throws {
         let visitUUID = visit.uuid
         let earnedRaw = LoyaltyLedgerEntry.Kind.earned.rawValue
         var descriptor = FetchDescriptor<LoyaltyLedgerEntry>(
@@ -85,7 +86,7 @@ enum LoyaltyCheckoutProcessor {
         )
         descriptor.fetchLimit = 1
 
-        if let existing = (try? context.fetch(descriptor))?.first {
+        if let existing = try context.fetch(descriptor).first {
             existing.points = points
             existing.balanceAfter = client.loyaltyPoints
             existing.markModified()

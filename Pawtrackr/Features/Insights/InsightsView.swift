@@ -727,7 +727,7 @@ struct InsightsView: View {
                         Label(localized("insights.export.pdf_report", value: "PDF Report"), systemImage: "doc.richtext")
                     }
                     ShareLink(item: exports.csv, preview: SharePreview(exports.csv.filename)) {
-                        Label(localized("insights.export.csv_data", value: "CSV Data"), systemImage: "tablecells")
+                        Label(localized("insights.export.csv_data", value: "Owner Insights CSV"), systemImage: "tablecells")
                     }
                 } label: {
                     Label(NSLocalizedString("common.export", comment: ""), systemImage: "square.and.arrow.up")

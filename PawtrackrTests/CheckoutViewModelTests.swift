@@ -97,6 +97,38 @@ final class CheckoutViewModelTests: XCTestCase {
         }
     }
 
+    func testRewardChoiceSavesDraftWithoutSpendingAndRestoresCredit() async throws {
+        pet.owner?.loyaltyPoints = 100
+        try context.save()
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        let visit = makeCheckoutVisit()
+        let vm = makeVM(root: root, visit: visit)
+        vm.loadServices(modelContext: context)
+        await waitForServicesToLoad(vm)
+        vm.toggleService(bath)
+        vm.chooseLoyaltyReward(LoyaltyReward.builtInCatalog[0])
+        XCTAssertEqual(vm.paymentTotalDecimal, 25)
+        XCTAssertEqual(pet.owner?.loyaltyPoints, 100)
+        XCTAssertEqual(try context.fetchCount(FetchDescriptor<LoyaltyLedgerEntry>()), 0)
+        let store = CheckoutDraftStore(directoryURL: root)
+        var draft: CheckoutDraft?
+        for _ in 0..<30 {
+            draft = await store.loadDraft(for: visit.uuid)
+            if draft?.selectedLoyaltyReward != nil { break }
+            try await Task.sleep(for: .milliseconds(20))
+        }
+        XCTAssertEqual(draft?.selectedLoyaltyReward, LoyaltyReward.builtInCatalog[0])
+        let recovered = makeVM(root: root, visit: visit)
+        recovered.loadServices(modelContext: context)
+        await waitForServicesToLoad(recovered)
+        XCTAssertEqual(recovered.selectedLoyaltyReward, LoyaltyReward.builtInCatalog[0])
+        XCTAssertEqual(recovered.paymentTotalDecimal, 25)
+        XCTAssertTrue(recovered.isLoyaltySelectionValid)
+        recovered.chooseLoyaltyReward(nil)
+        XCTAssertEqual(recovered.paymentTotalDecimal, 30)
+        XCTAssertEqual(pet.owner?.loyaltyPoints, 100)
+    }
+
     // MARK: - Service Selection
 
     func testToggleService_SelectsService() {

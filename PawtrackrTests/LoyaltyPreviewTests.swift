@@ -162,20 +162,20 @@ final class LoyaltyPreviewTests: XCTestCase {
     // MARK: - The card's rewards and wording
 
     func testRewardsFallBackToTheStarterCatalogOnlyWhileNoTemplateExists() throws {
-        XCTAssertEqual(LoyaltySimulatorCard.rewards(templates: [], config: .default).map(\.id), LoyaltyReward.builtInCatalog.map(\.id))
+        XCTAssertEqual(LoyaltyRewardCatalog.rewards(templates: [], config: .default).map(\.id), LoyaltyReward.builtInCatalog.map(\.id))
 
         let second = LoyaltyRewardTemplate(title: "Free Bandana", detail: "", pointCost: 40, systemImage: "gift.fill", styleRaw: "care", sortOrder: 1)
         let first = LoyaltyRewardTemplate(title: "Nail Trim", detail: "", pointCost: 60, systemImage: "gift.fill", styleRaw: "care", sortOrder: 0)
         let off = LoyaltyRewardTemplate(title: "Old Reward", detail: "", pointCost: 10, systemImage: "gift.fill", styleRaw: "care", sortOrder: 2, isEnabled: false)
-        let rewards = LoyaltySimulatorCard.rewards(templates: [second, off, first], config: .default)
+        let rewards = LoyaltyRewardCatalog.rewards(templates: [second, off, first], config: .default)
         XCTAssertEqual(rewards.map(\.title), ["Nail Trim", "Free Bandana"], "The salon's enabled templates, in order.")
 
-        XCTAssertTrue(LoyaltySimulatorCard.rewards(templates: [off], config: .default).isEmpty,
+        XCTAssertTrue(LoyaltyRewardCatalog.rewards(templates: [off], config: .default).isEmpty,
                       "All templates switched off is not the same as none: no starter catalog.")
 
         let paused = LoyaltyConfigSnapshot(earnMode: .pointsPerDollar, pointsPerDollar: 1, pointsPerVisit: 20, redemptionThreshold: 100, isRewardsCatalogEnabled: false)
-        XCTAssertTrue(LoyaltySimulatorCard.rewards(templates: [first], config: paused).isEmpty)
-        XCTAssertTrue(LoyaltySimulatorCard.rewards(templates: [], config: paused).isEmpty)
+        XCTAssertTrue(LoyaltyRewardCatalog.rewards(templates: [first], config: paused).isEmpty)
+        XCTAssertTrue(LoyaltyRewardCatalog.rewards(templates: [], config: paused).isEmpty)
     }
 
     func testSeededTemplatesShowTranslatedAndEditedOnesShowAsWritten() {
@@ -183,10 +183,10 @@ final class LoyaltyPreviewTests: XCTestCase {
         UserDefaults.standard.set(AppLanguageOverride.es.rawValue, forKey: AppSettingsKeys.appLanguageOverride)
 
         let seeded = LoyaltyRewardTemplate(reward: LoyaltyReward.builtInCatalog[0], sortOrder: 0)
-        XCTAssertEqual(LoyaltySimulatorCard.displayTitle(for: seeded.displayReward), "Crédito de $5 para una visita")
+        XCTAssertEqual(LoyaltyRewardCatalog.displayTitle(for: seeded.displayReward), "Crédito de $5 para una visita")
 
         let edited = LoyaltyRewardTemplate(title: "$5 Visit Credit", detail: "", pointCost: 75, systemImage: "gift.fill", styleRaw: "credit", sortOrder: 0)
-        XCTAssertEqual(LoyaltySimulatorCard.displayTitle(for: edited.displayReward), "$5 Visit Credit", "A changed cost means the salon made it its own.")
+        XCTAssertEqual(LoyaltyRewardCatalog.displayTitle(for: edited.displayReward), "$5 Visit Credit", "A changed cost means the salon made it its own.")
     }
 
     func testExplainerSaysHowACheckoutEarns() {
@@ -266,6 +266,9 @@ final class LoyaltyPreviewTests: XCTestCase {
 
         let visit = Visit(pet: pet, startedAt: now.addingTimeInterval(-3_600))
         visit.markCheckedOut(total: ticket, now: now)
+        let payment = Payment(amount: ticket, method: .cash, paidAt: now)
+        context.insert(payment)
+        visit.attachPayment(payment)
         context.insert(visit)
         try context.save()
 
@@ -275,7 +278,7 @@ final class LoyaltyPreviewTests: XCTestCase {
             "Test setup: the client should hold \(tier) before this visit."
         )
 
-        LoyaltyCheckoutProcessor.applyEarnings(
+        try LoyaltyCheckoutProcessor.applyEarnings(
             visit: visit,
             pet: pet,
             total: ticket,

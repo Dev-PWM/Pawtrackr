@@ -215,15 +215,20 @@ final class CheckoutFlowTests: XCTestCase {
         let visit = Visit(pet: pet)
         context.insert(visit)
         visit.markCheckedOut(total: Decimal(80))
+        let payment = Payment(amount: 80, method: .cash)
+        context.insert(payment)
+        visit.attachPayment(payment)
         try context.save()
 
-        LoyaltyCheckoutProcessor.applyEarnings(visit: visit, pet: pet, total: Decimal(80), in: context)
+        try LoyaltyCheckoutProcessor.applyEarnings(visit: visit, pet: pet, total: Decimal(80), in: context)
         try context.save()
         XCTAssertEqual(visit.loyaltyPointsChange, 80)
         XCTAssertEqual(client.loyaltyPoints, 80)
 
-        // The groomer corrects the total upward; the award must follow.
-        LoyaltyCheckoutProcessor.applyEarnings(visit: visit, pet: pet, total: Decimal(100), in: context)
+        // The groomer corrects the total and payment upward; the award follows.
+        payment.setAmount(100)
+        visit.markCheckedOut(total: 100)
+        try LoyaltyCheckoutProcessor.applyEarnings(visit: visit, pet: pet, total: Decimal(100), in: context)
         try context.save()
 
         let visitUUID = visit.uuid
@@ -239,6 +244,10 @@ final class CheckoutFlowTests: XCTestCase {
 
     func testLoyaltyProcessor_ReprocessesFlatVisitModeIdempotently() throws {
         let visit = Visit(pet: pet)
+        visit.markCheckedOut(total: 80)
+        let payment = Payment(amount: 120, method: .cash)
+        context.insert(payment)
+        visit.attachPayment(payment)
         context.insert(visit)
         try context.save()
 
@@ -250,7 +259,7 @@ final class CheckoutFlowTests: XCTestCase {
             isRewardsCatalogEnabled: true
         )
 
-        LoyaltyCheckoutProcessor.applyEarnings(
+        try LoyaltyCheckoutProcessor.applyEarnings(
             visit: visit,
             pet: pet,
             total: Decimal(80),
@@ -258,7 +267,7 @@ final class CheckoutFlowTests: XCTestCase {
             now: .now,
             config: config
         )
-        LoyaltyCheckoutProcessor.applyEarnings(
+        try LoyaltyCheckoutProcessor.applyEarnings(
             visit: visit,
             pet: pet,
             total: Decimal(120),

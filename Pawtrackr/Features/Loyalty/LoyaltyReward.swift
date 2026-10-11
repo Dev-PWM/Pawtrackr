@@ -1,8 +1,8 @@
 import Foundation
 
 /// A built-in, schema-free reward catalog entry for the premium loyalty UI.
-struct LoyaltyReward: Identifiable, Hashable, Sendable {
-    enum Style: String, Hashable, Sendable {
+struct LoyaltyReward: Identifiable, Hashable, Codable, Sendable {
+    enum Style: String, Hashable, Codable, Sendable {
         case credit
         case care
         case upgrade
@@ -15,6 +15,33 @@ struct LoyaltyReward: Identifiable, Hashable, Sendable {
     let pointCost: Int
     let systemImage: String
     let style: Style
+    /// Explicit currency value for a credit. Nil for salon-provided benefits.
+    var creditAmount: Decimal? = nil
+
+    /// Recognizes shipped credit definitions while preserving existing stored templates.
+    var checkoutCreditAmount: Decimal? {
+        guard style == .credit else { return nil }
+        if let creditAmount, creditAmount > 0 { return creditAmount.roundedMoney() }
+        switch (title, pointCost) {
+        case ("$5 Visit Credit", 50): return 5
+        case ("$10 Visit Credit", 100), ("$10 Salon Credit", 100): return 10
+        case ("$20 Groom Credit", 200): return 20
+        default: return nil
+        }
+    }
+
+    /// Credits cannot make a payment negative; all currency arithmetic stays Decimal.
+    func creditDiscount(on subtotal: Decimal) -> Decimal {
+        min(max(.zero, subtotal), checkoutCreditAmount ?? .zero).roundedMoney()
+    }
+
+    @MainActor
+    var fulfillmentDescription: String {
+        if let credit = checkoutCreditAmount {
+            return String(format: AppLocalization.localized("loyalty.reward.credit_fmt", value: "%@ automatically deducted at checkout"), credit.moneyString)
+        }
+        return AppLocalization.localized("loyalty.reward.salon_provided", value: "Provided by your salon; recorded in visit history")
+    }
 
     /// The starter catalog used until configurable rewards land in the V2 loyalty schema.
     static let builtInCatalog: [LoyaltyReward] = [

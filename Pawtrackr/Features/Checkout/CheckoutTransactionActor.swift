@@ -29,6 +29,8 @@ struct CheckoutRequest: Sendable {
     
     let selectedServiceIDs: [PersistentIdentifier]
     let selectedAddOnIDs: [PersistentIdentifier]
+    var selectedLoyaltyReward: LoyaltyReward? = nil
+    var expectedPaymentAmount: Decimal? = nil
 }
 
 struct CheckoutResult: Sendable {
@@ -37,12 +39,30 @@ struct CheckoutResult: Sendable {
     let clientID: PersistentIdentifier?
     let endedAt: Date
     let total: Decimal
+    let earnedPoints: Int
+    let savedLoyaltyBalance: Int?
 }
 
 @ModelActor
 final actor CheckoutTransactionActor {
     
     func process(_ request: CheckoutRequest) async throws -> CheckoutResult {
+        let balanceKey = try request.clientUUID ?? fetchPet(uuid: request.petUUID).owner?.uuid ?? request.petUUID
+        await LoyaltyMutationGate.shared.acquire(balanceKey)
+        do {
+            // A new actor context cannot carry cached balances from an earlier checkout.
+            let writer = CheckoutTransactionActor(modelContainer: modelContainer)
+            let result = try await writer.processReserved(request)
+            await LoyaltyMutationGate.shared.release(balanceKey)
+            return result
+        } catch {
+            await LoyaltyMutationGate.shared.release(balanceKey)
+            throw error
+        }
+    }
+
+    /// Owns one atomic checkout while the client balance is reserved.
+    private func processReserved(_ request: CheckoutRequest) async throws -> CheckoutResult {
         let context = modelContext
         
         // 1. Idempotency Check
@@ -65,6 +85,10 @@ final actor CheckoutTransactionActor {
             let visit = try fetchOrCreateVisit(uuid: request.visitUUID, petUUID: request.petUUID)
             let pet = try fetchPet(uuid: request.petUUID)
             visit.ensureSessionToken()
+            guard visit.pet?.uuid == pet.uuid,
+                  request.clientUUID == nil || request.clientUUID == pet.owner?.uuid else {
+                throw AppError.database(AppLocalization.localized("checkout.error.pet_missing", value: "Pet not found for checkout."))
+            }
             
             // 3. Process Images (Parallelized background work)
             let (pBefore, pBeforeThumb, pAfter, pAfterThumb) = await processImages(
@@ -72,6 +96,19 @@ final actor CheckoutTransactionActor {
                 after: request.afterPhotoData
             )
             
+            let reward: LoyaltyReward?
+            if let selected = request.selectedLoyaltyReward, let client = pet.owner {
+                reward = try LoyaltyRedemptionProcessor.validatedReward(selected, client: client, in: context)
+            } else if request.selectedLoyaltyReward != nil {
+                throw AppError.database(AppLocalization.localized("loyalty.error.insufficient", value: "Insufficient loyalty points"))
+            } else { reward = nil }
+            let credit = reward?.creditDiscount(on: request.amount) ?? .zero
+            let finalTotal = max(.zero, request.amount.roundedMoney() - credit).roundedMoney()
+            if let expected = request.expectedPaymentAmount, expected.roundedMoney() != finalTotal {
+                throw AppError.database(AppLocalization.localized("checkout.loyalty.total_changed", value: "The reward or total changed. Review checkout again before paying."))
+            }
+            transaction.amount = finalTotal
+
             // 4. Sync State
             visit.note = request.sessionNotes
             visit.behaviorTags = request.behaviorTags
@@ -83,20 +120,23 @@ final actor CheckoutTransactionActor {
             
             // 5. Sync Line Items
             try syncVisitItems(visit: visit, serviceIDs: request.selectedServiceIDs + request.selectedAddOnIDs)
-            reconcileLineItemPrices(visit: visit, finalTotal: request.amount)
+            reconcileLineItemPrices(visit: visit, finalTotal: finalTotal)
             
             // 6. Payment
             let endedAt = Date.now
-            applyPayment(visit: visit, request: request, endedAt: endedAt)
+            if let reward, let client = pet.owner {
+                LoyaltyRedemptionProcessor.apply(reward, client: client, visit: visit, credit: credit, in: context, now: endedAt)
+            }
+            applyPayment(visit: visit, request: request, amount: finalTotal, endedAt: endedAt)
             
             // 7. Finalize Visit
-            visit.markCheckedOut(total: request.amount, now: endedAt)
+            visit.markCheckedOut(total: finalTotal, now: endedAt)
             pet.reconcileBehaviorTagsFromCompletedVisits()
             let loyaltyConfig = LoyaltyConfigResolver.snapshot(in: modelContext)
-            _ = LoyaltyCheckoutProcessor.applyEarnings(
+            _ = try LoyaltyCheckoutProcessor.applyEarnings(
                 visit: visit,
                 pet: pet,
-                total: request.amount,
+                total: finalTotal,
                 in: modelContext,
                 now: endedAt,
                 config: loyaltyConfig
@@ -105,6 +145,9 @@ final actor CheckoutTransactionActor {
             // 8. Commit
             transaction.markSucceeded(completedAt: endedAt)
             try context.save()
+            if let clientUUID = pet.owner?.uuid {
+                NotificationCenter.default.post(name: .loyaltyBalanceDidChange, object: clientUUID)
+            }
             
             // 9. Rebuild Summaries (Off-actor utility)
             SummaryUpdater.rebuildDay(for: endedAt, in: context)
@@ -114,10 +157,15 @@ final actor CheckoutTransactionActor {
                 petID: pet.persistentModelID,
                 clientID: pet.owner?.persistentModelID,
                 endedAt: endedAt,
-                total: request.amount
+                total: finalTotal,
+                earnedPoints: visit.loyaltyPointsChange,
+                savedLoyaltyBalance: pet.owner?.loyaltyPoints
             )
         } catch {
-            transaction.markFailed(error.localizedDescription)
+            // Discard the visit, payment and points together if any part failed.
+            context.rollback()
+            let failedTransaction = try fetchOrCreateTransaction(idempotencyKey: idempotencyKey, request: request)
+            failedTransaction.markFailed(error.localizedDescription)
             do {
                 try context.save()
             } catch let saveError {
@@ -261,16 +309,16 @@ final actor CheckoutTransactionActor {
         visit.recalcTotal()
     }
     
-    private func applyPayment(visit: Visit, request: CheckoutRequest, endedAt: Date) {
+    private func applyPayment(visit: Visit, request: CheckoutRequest, amount: Decimal, endedAt: Date) {
         if let payment = visit.payment {
-            payment.setAmount(request.amount)
+            payment.setAmount(amount)
             payment.method = request.paymentMethod
             payment.paidAt = endedAt
             payment.externalReference = request.externalReference
             payment.markModified()
         } else {
             let payment = Payment(
-                amount: request.amount,
+                amount: amount,
                 method: request.paymentMethod,
                 paidAt: endedAt,
                 externalReference: request.externalReference
@@ -293,7 +341,9 @@ final actor CheckoutTransactionActor {
             petID: visit.pet?.persistentModelID,
             clientID: visit.pet?.owner?.persistentModelID,
             endedAt: endedAt,
-            total: visit.total
+            total: visit.total,
+            earnedPoints: visit.loyaltyPointsChange,
+            savedLoyaltyBalance: visit.pet?.owner?.loyaltyPoints
         )
     }
 }

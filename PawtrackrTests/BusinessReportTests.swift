@@ -53,7 +53,7 @@ final class BusinessReportTests: XCTestCase {
         let busiest = try date(month: 9, day: 24)
         XCTAssertEqual(facts.days[23].date, busiest)
         XCTAssertEqual(facts.days[23].revenue, Decimal(100))
-        XCTAssertEqual(facts.busiestWeekday, BusinessReportFacts.Weekday(weekday: calendar.component(.weekday, from: busiest), visits: 2))
+        XCTAssertEqual(facts.busiestWeekday, BusinessReportFacts.Weekday(weekday: calendar.component(.weekday, from: busiest), visits: 3))
 
         XCTAssertEqual(facts.months.count, 6)
         XCTAssertEqual(facts.months.last?.revenue, Decimal(200))
@@ -62,30 +62,74 @@ final class BusinessReportTests: XCTestCase {
 
     // MARK: - CSV
 
-    func testCSVIsOrganizedIntoSectionsWithPlainNumbers() throws {
+    func testCSVStartsWithOwnerDecisionsThenKeepsSupportingDetail() throws {
         try seedSalon()
         let facts = try BusinessReportFacts.build(in: ModelContext(container), periodDays: 30, now: now, calendar: calendar)
         let review = [BusinessReportReviewItem(title: "Missing phone", count: 2, detail: "Add a phone so reminders reach them.")]
         let csv = BusinessReportCSV.make(facts: facts, businessName: "Repro Grooming", currencySymbol: "$", reviewItems: review, calendar: calendar)
         let lines = csv.csvData.components(separatedBy: "\r\n")
 
-        XCTAssertEqual(lines.first, "Business Report")
+        XCTAssertEqual(lines.first, "Business Owner Insights")
         XCTAssertTrue(lines.contains("Business,Repro Grooming"))
         XCTAssertTrue(lines.contains("Period,2026-09-01,2026-09-30"))
+        XCTAssertTrue(lines.contains("Report scope,\"Operational insights from completed visits. Excludes expenses, taxes collected, refunds, and deductions; not a tax report.\""))
         XCTAssertTrue(lines.contains("Metric,This period,Previous period,Change (%)"))
-        XCTAssertTrue(lines.contains("Revenue,200.00,50.00,300"))
+        XCTAssertTrue(lines.contains("Completed visit revenue,200.00,50.00,300"))
+        XCTAssertTrue(lines.contains("Recorded payments,200.00,,"))
+        XCTAssertTrue(lines.contains("Revenue less recorded payments,0.00,,"))
+        XCTAssertTrue(lines.contains("Payment coverage (%),100,,"))
         XCTAssertTrue(lines.contains("Visits,3,1,200"))
+        XCTAssertTrue(lines.contains("Revenue per client,100.00,,"))
+        XCTAssertTrue(lines.contains("Returning client rate (%),50,,"))
+        XCTAssertTrue(lines.contains("Revenue trend,300% vs previous 30 days,Shows whether completed sales are growing."))
+        XCTAssertTrue(lines.contains("Returning clients,1 of 2 clients · 50%,Shows how much business came from repeat clients."))
+        XCTAssertTrue(lines.contains("Top service,Bath · 50% of service revenue,Shows which service drives the most revenue."))
+        XCTAssertTrue(lines.contains("Busiest weekday,Thursday · 3 completed visits,Helps plan staffing and appointment capacity."))
+        XCTAssertTrue(lines.contains("Top payment method,Cash · 70% of recorded payments,Helps reconcile where client payments were recorded."))
         XCTAssertTrue(lines.contains("Bath,2,100.00,50"))
         XCTAssertTrue(lines.contains("\(Payment.Method.cash.displayName),2,140.00,70"))
         XCTAssertTrue(lines.contains("Ava Martinez,2,160.00"))
         XCTAssertTrue(lines.contains("2026-08,1,50.00,50.00"))
         XCTAssertTrue(lines.contains("Missing phone,2,Add a phone so reminders reach them."))
-        for section in ["Summary", "Daily revenue", "Services", "Payment methods", "Top clients", "Monthly performance", "Data to review"] {
+        let sections = ["Owner snapshot", "What to focus on", "Monthly performance", "Services", "Payment methods", "Top clients", "Daily revenue", "Data to review"]
+        for section in sections {
             let index = try XCTUnwrap(lines.firstIndex(of: section), section)
             XCTAssertEqual(lines[index - 1], "", "\(section) follows a blank line.")
         }
+        let sectionIndexes = try sections.map { try XCTUnwrap(lines.firstIndex(of: $0), $0) }
+        XCTAssertEqual(sectionIndexes, sectionIndexes.sorted(), "The owner summary comes before supporting detail.")
         XCTAssertEqual(lines.filter { $0.hasPrefix("2026-09-") }.count, 30, "One row per day.")
-        XCTAssertTrue(csv.filename.hasPrefix("Pawtrackr_Insights_2026-09-30"))
+        XCTAssertTrue(csv.filename.hasPrefix("Pawtrackr_Owner_Insights_2026-09-30"))
+    }
+
+    func testCSVSurfacesCompletedRevenueWithoutARecordedPayment() throws {
+        let start = try date(month: 9, day: 1)
+        let end = try date(month: 10, day: 1)
+        var facts = BusinessReportFacts(
+            generatedAt: now,
+            periodDays: 30,
+            periodStart: start,
+            periodEnd: end
+        )
+        facts.revenue = Decimal(120)
+        facts.visits = 2
+        facts.clients = 2
+        facts.days = [BusinessReportFacts.Day(date: try date(month: 9, day: 30), revenue: Decimal(120), visits: 2)]
+        facts.payments = [BusinessReportFacts.Line(name: Payment.Method.cash.displayName, count: 1, amount: Decimal(100))]
+
+        let csv = BusinessReportCSV.make(
+            facts: facts,
+            businessName: "Repro Grooming",
+            currencySymbol: "$",
+            reviewItems: [],
+            calendar: calendar
+        )
+        let lines = csv.csvData.components(separatedBy: "\r\n")
+
+        XCTAssertTrue(lines.contains("Completed visit revenue,120.00,0.00,"))
+        XCTAssertTrue(lines.contains("Recorded payments,100.00,,"))
+        XCTAssertTrue(lines.contains("Revenue less recorded payments,20.00,,"))
+        XCTAssertTrue(lines.contains("Payment coverage (%),83,,"))
     }
 
     // MARK: - PDF
