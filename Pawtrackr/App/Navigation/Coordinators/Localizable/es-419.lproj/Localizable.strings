@@ -666,7 +666,6 @@
 "insights.churn_risk" = "Riesgo de abandono";
 "insights.retention" = "Retención de clientes";
 "insights.retention_rate" = "Tasa de retención";
-"insights.data_quality.title" = "Calidad de datos";
 "insights.window_days_fmt" = "Ventana de %d días";
 "insights.chart.day" = "Día";
 "insights.chart.count" = "Cantidad";
@@ -806,10 +805,6 @@
 "report.spend" = "Gasto";
 "report.monthly" = "Rendimiento mensual";
 "report.month" = "Mes";
-"report.data_to_review" = "Datos por revisar";
-"report.issue" = "Asunto";
-"report.count" = "Cantidad";
-"report.detail" = "Detalle";
 "report.period_fmt" = "Últimos %1$d días · %2$@ – %3$@";
 "report.generated_fmt" = "Generado el %@";
 "report.change_none" = "Sin datos anteriores para comparar";
@@ -849,16 +844,6 @@
 "insights.lapsed.your_pet" = "tu mascota";
 "insights.lapsed.unnamed_client" = "Cliente sin nombre";
 "insights.lapsed.no_pets_listed" = "Sin mascotas registradas";
-"insights.data_quality.stale_active_title" = "Visitas activas antiguas";
-"insights.data_quality.stale_active_detail" = "Las visitas registradas por más de 24 horas pueden distorsionar la carga activa.";
-"insights.data_quality.missing_payment_title" = "Visitas completadas sin pago";
-"insights.data_quality.missing_payment_detail" = "Estas visitas están terminadas pero no tienen registro de pago.";
-"insights.data_quality.zero_revenue_title" = "Visitas completadas de cero dólares";
-"insights.data_quality.zero_revenue_detail" = "Revisa cortesías o cobros incompletos antes de confiar en los totales de ingresos.";
-"insights.data_quality.missing_reference_title" = "Faltan referencias de tarjeta/Zelle";
-"insights.data_quality.missing_reference_detail" = "Las referencias de pago ayudan a conciliar depósitos y disputas de cargo.";
-"insights.data_quality.missing_contact_title" = "Clientes sin datos de contacto";
-"insights.data_quality.missing_contact_detail" = "Agrega teléfono o correo para que las campañas de recordatorio lleguen a cada cliente.";
 "insights.forecast.confidence.high" = "Confianza alta";
 "insights.forecast.confidence.medium" = "Confianza media";
 "insights.forecast.confidence.low" = "Confianza baja";

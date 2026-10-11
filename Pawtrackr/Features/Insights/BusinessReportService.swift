@@ -11,8 +11,7 @@
 //    on the previous period,
 //  - "At a glance": a few plain sentences about what stands out,
 //  - the daily revenue chart,
-//  - tables for months, services, payment methods, top clients and any data
-//    worth a look.
+//  - tables for months, services, payment methods and top clients.
 //  A table that runs past the page continues on the next one under its
 //  header row, and every page has a footer with its number. Colors are fixed
 //  print colors: system label colors turn white in Dark Mode.
@@ -26,13 +25,6 @@ import UIKit
 #elseif canImport(AppKit)
 import AppKit
 #endif
-
-/// An Insights data quality check included in the PDF report.
-struct BusinessReportReviewItem: Sendable, Equatable {
-    let title: String
-    let count: Int
-    let detail: String
-}
 
 /// Everything the report PDF shows, already formatted and translated.
 struct BusinessReportDocument: Sendable {
@@ -104,7 +96,6 @@ enum BusinessReportService {
     static func makeDocument(
         facts: BusinessReportFacts,
         businessName: String,
-        reviewItems: [BusinessReportReviewItem],
         calendar: Calendar = .current
     ) -> BusinessReportDocument {
         typealias Doc = BusinessReportDocument
@@ -230,7 +221,7 @@ enum BusinessReportService {
         let revenueTitle = text("report.revenue", "Revenue")
         let visitsTitle = text("report.visits", "Visits")
         let shareTitle = text("report.share", "Share")
-        var tables: [Doc.Table] = [
+        let tables: [Doc.Table] = [
             Doc.Table(
                 title: text("report.monthly", "Monthly performance"),
                 columns: [
@@ -290,20 +281,6 @@ enum BusinessReportService {
                 emptyText: noVisits
             )
         ]
-        if !reviewItems.isEmpty {
-            tables.append(Doc.Table(
-                title: text("report.data_to_review", "Data to review"),
-                columns: [
-                    Doc.Column(title: text("report.issue", "Issue"), width: 0.32, alignsRight: false),
-                    Doc.Column(title: text("report.count", "Count"), width: 0.1, alignsRight: true),
-                    Doc.Column(title: text("report.detail", "Detail"), width: 0.58, alignsRight: false)
-                ],
-                rows: reviewItems.map { [$0.title, "\($0.count)", $0.detail] },
-                shares: nil,
-                emptyText: ""
-            ))
-        }
-
         return BusinessReportDocument(
             businessName: displayName,
             title: text("report.title", "Business Report"),

@@ -134,7 +134,7 @@ final class BusinessReportTests: XCTestCase {
     func testTheDocumentReadsLikeAReport() throws {
         try seedSalon()
         let facts = try BusinessReportFacts.build(in: ModelContext(container), periodDays: 30, now: now, calendar: calendar)
-        let document = BusinessReportService.makeDocument(facts: facts, businessName: "  Repro Grooming ", reviewItems: [], calendar: calendar)
+        let document = BusinessReportService.makeDocument(facts: facts, businessName: "  Repro Grooming ", calendar: calendar)
 
         XCTAssertEqual(document.businessName, "Repro Grooming")
         XCTAssertEqual(document.tiles.count, 4)
@@ -152,7 +152,7 @@ final class BusinessReportTests: XCTestCase {
     @MainActor
     func testAnEmptyPeriodSaysSoInsteadOfShowingZeros() throws {
         let facts = try BusinessReportFacts.build(in: ModelContext(container), periodDays: 7, now: now, calendar: calendar)
-        let document = BusinessReportService.makeDocument(facts: facts, businessName: "", reviewItems: [], calendar: calendar)
+        let document = BusinessReportService.makeDocument(facts: facts, businessName: "", calendar: calendar)
         XCTAssertEqual(document.businessName, "Pawtrackr")
         XCTAssertEqual(document.highlights.count, 1)
         XCTAssertTrue(document.highlights[0].hasPrefix("No finished visits"))
@@ -166,7 +166,7 @@ final class BusinessReportTests: XCTestCase {
     func testTheRenderedPDFHoldsItsTextAndPageNumbers() throws {
         try seedSalon()
         let facts = try BusinessReportFacts.build(in: ModelContext(container), periodDays: 30, now: now, calendar: calendar)
-        let document = BusinessReportService.makeDocument(facts: facts, businessName: "Repro Grooming", reviewItems: [], calendar: calendar)
+        let document = BusinessReportService.makeDocument(facts: facts, businessName: "Repro Grooming", calendar: calendar)
         let pdf = try XCTUnwrap(PDFDocument(data: BusinessReportService.render(document)))
 
         XCTAssertGreaterThanOrEqual(pdf.pageCount, 1)
@@ -182,7 +182,7 @@ final class BusinessReportTests: XCTestCase {
         facts.visits = 60
         facts.revenue = Decimal(3_000)
         facts.services = (1...60).map { BusinessReportFacts.Line(name: "Service \($0)", count: 1, amount: Decimal(50)) }
-        let document = BusinessReportService.makeDocument(facts: facts, businessName: "Repro Grooming", reviewItems: [], calendar: calendar)
+        let document = BusinessReportService.makeDocument(facts: facts, businessName: "Repro Grooming", calendar: calendar)
         let pdf = try XCTUnwrap(PDFDocument(data: BusinessReportService.render(document)))
 
         XCTAssertGreaterThanOrEqual(pdf.pageCount, 2)

@@ -665,7 +665,6 @@
 "dashboard.opens_insights" = "Opens Insights";
 
 "insights.avg_visit" = "Avg Visit";
-"insights.data_quality.title" = "Data Quality";
 "insights.window_days_fmt" = "%d-day window";
 "insights.chart.day" = "Day";
 "insights.chart.count" = "Count";
@@ -805,10 +804,6 @@
 "report.spend" = "Spend";
 "report.monthly" = "Monthly performance";
 "report.month" = "Month";
-"report.data_to_review" = "Data to review";
-"report.issue" = "Issue";
-"report.count" = "Count";
-"report.detail" = "Detail";
 "report.period_fmt" = "Last %1$d days · %2$@ – %3$@";
 "report.generated_fmt" = "Generated %@";
 "report.change_none" = "Nothing earlier to compare";
@@ -844,16 +839,6 @@
 "insights.lapsed.your_pet" = "your pet";
 "insights.lapsed.unnamed_client" = "Unnamed client";
 "insights.lapsed.no_pets_listed" = "No pets listed";
-"insights.data_quality.stale_active_title" = "Stale active visits";
-"insights.data_quality.stale_active_detail" = "Visits checked in for more than 24 hours can distort active workload.";
-"insights.data_quality.missing_payment_title" = "Completed visits without payment";
-"insights.data_quality.missing_payment_detail" = "These visits are finished but do not have a payment record.";
-"insights.data_quality.zero_revenue_title" = "Zero-dollar completed visits";
-"insights.data_quality.zero_revenue_detail" = "Review comped or incomplete checkouts before relying on revenue totals.";
-"insights.data_quality.missing_reference_title" = "Card/Zelle references missing";
-"insights.data_quality.missing_reference_detail" = "Payment references help reconcile deposits and charge disputes.";
-"insights.data_quality.missing_contact_title" = "Clients missing contact info";
-"insights.data_quality.missing_contact_detail" = "Add phone or email so recall campaigns can reach every client.";
 "insights.forecast.confidence.high" = "High confidence";
 "insights.forecast.confidence.medium" = "Medium confidence";
 "insights.forecast.confidence.low" = "Low confidence";

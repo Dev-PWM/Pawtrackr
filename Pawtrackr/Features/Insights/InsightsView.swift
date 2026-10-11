@@ -227,9 +227,6 @@ struct InsightsView: View {
                 VStack(spacing: DS.Spacing.xl) {
                     kpiSummaryRow(vm).walkthroughTarget(.insKpis)
                     revenueCard(vm).walkthroughTarget(.insRevenue)
-                    if !vm.dataQualityIssues.isEmpty {
-                        dataQualityCard(vm)
-                    }
                     monthlyPerformanceCard(vm).walkthroughTarget(.insMonthly)
                     serviceRevenueCard(vm).walkthroughTarget(.insServices)
                     paymentMixCard(vm).walkthroughTarget(.insPaymentMix)
@@ -326,42 +323,6 @@ struct InsightsView: View {
         }
         .accessibilityElement(children: .combine)
         .accessibilityIdentifier(accessibilityIdentifier)
-    }
-
-    // MARK: - Data Quality
-
-    private func dataQualityCard(_ vm: InsightsViewModel) -> some View {
-        Card {
-            VStack(alignment: .leading, spacing: DS.Spacing.md) {
-                Label(localized("insights.data_quality.title", value: "Data Quality"), systemImage: "checklist.checked")
-                    .font(.headline)
-
-                ForEach(vm.dataQualityIssues.prefix(4)) { issue in
-                    HStack(alignment: .top, spacing: 12) {
-                        Image(systemName: dataQualityIcon(for: issue.severity))
-                            .foregroundStyle(dataQualityColor(for: issue.severity))
-                            .frame(width: 24)
-
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(issue.title)
-                                .font(.subheadline.weight(.semibold))
-                            Text(issue.detail)
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                                .fixedSize(horizontal: false, vertical: true)
-                        }
-
-                        Spacer()
-
-                        Text("\(issue.count)")
-                            .font(.headline)
-                            .contentTransition(.numericText())
-                    }
-                    .accessibilityElement(children: .combine)
-                }
-            }
-        }
-        .accessibilityIdentifier("insights.section.dataQuality")
     }
 
     // MARK: - Revenue
@@ -879,22 +840,6 @@ struct InsightsView: View {
 
     private func localized(_ key: String, value: String) -> String {
         NSLocalizedString(key, value: value, comment: "")
-    }
-
-    private func dataQualityIcon(for severity: InsightsViewModel.DataQualityIssue.Severity) -> String {
-        switch severity {
-        case .info: return "info.circle.fill"
-        case .warning: return "exclamationmark.triangle.fill"
-        case .critical: return "xmark.octagon.fill"
-        }
-    }
-
-    private func dataQualityColor(for severity: InsightsViewModel.DataQualityIssue.Severity) -> Color {
-        switch severity {
-        case .info: return DS.ColorToken.primary
-        case .warning: return DS.ColorToken.warning
-        case .critical: return DS.ColorToken.danger
-        }
     }
 
     // MARK: - Skeleton / Loading

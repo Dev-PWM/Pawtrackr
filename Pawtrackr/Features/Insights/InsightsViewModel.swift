@@ -73,20 +73,6 @@ class InsightsViewModel {
         let trendPercent: Double
     }
 
-    struct DataQualityIssue: Identifiable, Sendable {
-        enum Severity: String, Sendable {
-            case info
-            case warning
-            case critical
-        }
-
-        let id = UUID()
-        let title: String
-        let detail: String
-        let count: Int
-        let severity: Severity
-    }
-
     // MARK: - State
     var state: State = .loading
     var revenueSeries:          [RevenueData]       = []
@@ -103,7 +89,6 @@ class InsightsViewModel {
     var revenuePeriodDays:      Int     = 30
     var revenueDrilldown:       [RevenueVisitData] = []
     var serviceProfitability:   [ServiceProfitabilityData] = []
-    var dataQualityIssues:      [DataQualityIssue] = []
     private(set) var isRefreshing  = false
     private(set) var isLoadingActionableInsights = false
     /// Becomes true once `refresh()` completes successfully at least once.
@@ -205,10 +190,7 @@ class InsightsViewModel {
 
     func makeReportExports(businessName: String) async throws -> ReportExports {
         let facts = try await BusinessReportFacts.build(container: dataStore.container, periodDays: revenuePeriodDays)
-        let reviewItems = dataQualityIssues.map {
-            BusinessReportReviewItem(title: $0.title, count: $0.count, detail: $0.detail)
-        }
-        let document = BusinessReportService.makeDocument(facts: facts, businessName: businessName, reviewItems: reviewItems)
+        let document = BusinessReportService.makeDocument(facts: facts, businessName: businessName)
         async let pdfData = BusinessReportService.renderAsync(document)
         let csv = await Task.detached(priority: .userInitiated) {
             BusinessReportCSV.make(facts: facts)
@@ -270,7 +252,6 @@ class InsightsViewModel {
             guard !Task.isCancelled, requestedPeriodDays == revenuePeriodDays else { return }
             revenueDrilldown = result.revenueDrilldown
             serviceProfitability = result.serviceProfitability
-            dataQualityIssues = result.dataQualityIssues
         } catch {
             Logger.insights.error("fetchActionableInsights failed: \(error)")
         }

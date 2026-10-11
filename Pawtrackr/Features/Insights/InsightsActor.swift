@@ -37,7 +37,6 @@ public final actor InsightsActor {
     struct ActionableInsightsResult: Sendable {
         let revenueDrilldown: [InsightsViewModel.RevenueVisitData]
         let serviceProfitability: [InsightsViewModel.ServiceProfitabilityData]
-        let dataQualityIssues: [InsightsViewModel.DataQualityIssue]
     }
     
     // MARK: - Core Analytics
@@ -270,12 +269,10 @@ public final actor InsightsActor {
         }
 
         let serviceProfitability = Self.serviceProfitability(currentVisits: currentVisits, priorVisits: priorVisits)
-        let quality = try fetchDataQualityIssues(calendar: cal, today: today, end: tomorrow)
 
         return ActionableInsightsResult(
             revenueDrilldown: revenueRows,
-            serviceProfitability: serviceProfitability,
-            dataQualityIssues: quality
+            serviceProfitability: serviceProfitability
         )
     }
     
@@ -314,103 +311,6 @@ public final actor InsightsActor {
             churnRiskCount: churn,
             retentionSeries: series
         )
-    }
-
-    private func fetchDataQualityIssues(calendar cal: Calendar, today: Date, end: Date) throws -> [InsightsViewModel.DataQualityIssue] {
-        let staleActiveCutoff = cal.date(byAdding: .day, value: -1, to: .now) ?? .now
-        let qualityStart = cal.date(byAdding: .day, value: -365, to: today) ?? today
-
-        let activeDescriptor = FetchDescriptor<Visit>(
-            predicate: #Predicate<Visit> { visit in
-                visit.endedAt == nil && visit.startedAt < staleActiveCutoff
-            }
-        )
-        let staleActiveCount = try modelContext.fetchCount(activeDescriptor)
-
-        // fetchCount with a predicate avoids loading thousands of Visit objects
-        // just to check a nil relationship.
-        let missingPayment = try modelContext.fetchCount(FetchDescriptor<Visit>(
-            predicate: #Predicate<Visit> { visit in
-                if let endedAt = visit.endedAt {
-                    endedAt >= qualityStart && endedAt < end && visit.payment == nil
-                } else {
-                    false
-                }
-            }
-        ))
-
-        // zeroRevenue and missingReference require in-memory checks (computed
-        // properties / trimming), so we still fetch records — but cap at 2,000
-        // which covers 6+ months of data for a typical salon.
-        var completedDescriptor = FetchDescriptor<Visit>(
-            predicate: #Predicate<Visit> { visit in
-                if let endedAt = visit.endedAt {
-                    endedAt >= qualityStart && endedAt < end
-                } else {
-                    false
-                }
-            }
-        )
-        completedDescriptor.fetchLimit = 2_000
-        let completed = try modelContext.fetch(completedDescriptor)
-
-        let zeroRevenue = completed.filter { $0.total <= .zero }.count
-        let missingReference = completed.filter { visit in
-            guard let payment = visit.payment, payment.method.requiresExternalReference else { return false }
-            return (payment.externalReference ?? "").trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-        }.count
-
-        // fetchCount avoids loading the full Client table just to count missing fields.
-        // Nil-only check: empty-string contacts are rare enough to not affect the metric.
-        let missingContact = try modelContext.fetchCount(FetchDescriptor<Client>(
-            predicate: #Predicate<Client> { client in
-                client.phone == nil && client.email == nil
-            }
-        ))
-
-        var issues: [InsightsViewModel.DataQualityIssue] = []
-        if staleActiveCount > 0 {
-            issues.append(.init(
-                title: NSLocalizedString("insights.data_quality.stale_active_title", value: "Stale active visits", comment: ""),
-                detail: NSLocalizedString("insights.data_quality.stale_active_detail", value: "Visits checked in for more than 24 hours can distort active workload.", comment: ""),
-                count: staleActiveCount,
-                severity: .critical
-            ))
-        }
-        if missingPayment > 0 {
-            issues.append(.init(
-                title: NSLocalizedString("insights.data_quality.missing_payment_title", value: "Completed visits without payment", comment: ""),
-                detail: NSLocalizedString("insights.data_quality.missing_payment_detail", value: "These visits are finished but do not have a payment record.", comment: ""),
-                count: missingPayment,
-                severity: .warning
-            ))
-        }
-        if zeroRevenue > 0 {
-            issues.append(.init(
-                title: NSLocalizedString("insights.data_quality.zero_revenue_title", value: "Zero-dollar completed visits", comment: ""),
-                detail: NSLocalizedString("insights.data_quality.zero_revenue_detail", value: "Review comped or incomplete checkouts before relying on revenue totals.", comment: ""),
-                count: zeroRevenue,
-                severity: .warning
-            ))
-        }
-        if missingReference > 0 {
-            issues.append(.init(
-                title: NSLocalizedString("insights.data_quality.missing_reference_title", value: "Card/Zelle references missing", comment: ""),
-                detail: NSLocalizedString("insights.data_quality.missing_reference_detail", value: "Payment references help reconcile deposits and charge disputes.", comment: ""),
-                count: missingReference,
-                severity: .info
-            ))
-        }
-        if missingContact > 0 {
-            issues.append(.init(
-                title: NSLocalizedString("insights.data_quality.missing_contact_title", value: "Clients missing contact info", comment: ""),
-                detail: NSLocalizedString("insights.data_quality.missing_contact_detail", value: "Add phone or email so recall campaigns can reach every client.", comment: ""),
-                count: missingContact,
-                severity: .info
-            ))
-        }
-
-        return issues
     }
 
     private static func serviceSummary(for visit: Visit) -> String {
