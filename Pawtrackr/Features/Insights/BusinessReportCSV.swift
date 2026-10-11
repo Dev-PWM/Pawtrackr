@@ -29,8 +29,6 @@ enum BusinessReportCSV {
         }
         let money = CSVFormat.money
         let count = CSVFormat.integer
-        let serviceTotal = facts.services.reduce(Decimal.zero) { $0 + $1.amount }
-        let paidTotal = facts.payments.reduce(Decimal.zero) { $0 + $1.amount }
         var rows: [[String]] = [
             [label("report.period", "Period"), dates.day(facts.periodStart), dates.day(facts.periodLastDay)],
             [label("report.generated", "Generated"), dates.stamp(facts.generatedAt)],
@@ -39,28 +37,28 @@ enum BusinessReportCSV {
 
         rows += [
             [label("report.monthly", "Monthly performance")],
-            [label("report.month", "Month"), label("report.visits", "Visits"), label("report.revenue", "Revenue"), label("report.average_ticket", "Average visit")]
+            [label("report.month", "Month"), label("report.visits", "Visits"), label("report.revenue", "Revenue")]
         ]
         rows += facts.months.map {
-            [dates.month($0.start), count($0.visits), money($0.revenue), money(BusinessReportFacts.average($0.revenue, over: $0.visits))]
+            [dates.month($0.start), count($0.visits), money($0.revenue)]
         }
         rows.append([])
 
         rows += [
             [label("report.services", "Services")],
-            [label("report.service", "Service"), label("report.sales", "Sales"), label("report.revenue", "Revenue"), label("report.share_percent", "Share (%)")]
+            [label("report.service", "Service"), label("report.sales", "Sales")]
         ]
         rows += facts.services.map {
-            [CSVFormat.text($0.name), count($0.count), money($0.amount), CSVFormat.percent($0.amount, of: serviceTotal)]
+            [CSVFormat.text($0.name), count($0.count)]
         }
         rows.append([])
 
         rows += [
             [label("report.payment_methods", "Payment methods")],
-            [label("report.method", "Method"), label("report.payments", "Payments"), label("report.amount", "Amount"), label("report.share_percent", "Share (%)")]
+            [label("report.method", "Method"), label("report.payments", "Payments"), label("report.amount", "Amount")]
         ]
         rows += facts.payments.map {
-            [CSVFormat.text($0.name), count($0.count), money($0.amount), CSVFormat.percent($0.amount, of: paidTotal)]
+            [CSVFormat.text($0.name), count($0.count), money($0.amount)]
         }
         rows.append([])
 

@@ -73,13 +73,14 @@ final class BusinessReportTests: XCTestCase {
         XCTAssertEqual(blocks.dropFirst().map { $0.components(separatedBy: "\r\n")[0] }, [
             "Monthly performance", "Services", "Payment methods", "Daily revenue"
         ], "Only the requested business sections are exported, in order.")
-        XCTAssertTrue(lines.contains("Month,Visits,Revenue,Average visit"))
-        XCTAssertTrue(lines.contains("2026-08,1,50.00,50.00"))
-        XCTAssertTrue(lines.contains("2026-09,3,200.00,66.67"))
-        XCTAssertTrue(lines.contains("Service,Sales,Revenue,Share (%)"))
-        XCTAssertTrue(lines.contains("Bath,2,100.00,50"))
-        XCTAssertTrue(lines.contains("Method,Payments,Amount,Share (%)"))
-        XCTAssertTrue(lines.contains("\(Payment.Method.cash.displayName),2,140.00,70"))
+        XCTAssertTrue(lines.contains("Month,Visits,Revenue"))
+        XCTAssertTrue(lines.contains("2026-08,1,50.00"))
+        XCTAssertTrue(lines.contains("2026-09,3,200.00"))
+        XCTAssertEqual(blocks[2], "Services\r\nService,Sales\r\nBath,2\r\nFull Groom,1")
+        XCTAssertTrue(lines.contains("Method,Payments,Amount"))
+        XCTAssertTrue(lines.contains("\(Payment.Method.cash.displayName),2,140.00"))
+        XCTAssertFalse(csv.csvData.contains("Average visit"))
+        XCTAssertFalse(csv.csvData.contains("Share (%)"))
         XCTAssertTrue(lines.contains("Date,Weekday,Visits,Revenue"))
         XCTAssertTrue(lines.contains("2026-09-24,Thursday,2,100.00"))
         XCTAssertEqual(lines.filter { $0.hasPrefix("2026-09-") }.count, 30, "One row per day, including days without visits.")
@@ -107,7 +108,7 @@ final class BusinessReportTests: XCTestCase {
         let lines = csv.csvData.components(separatedBy: "\r\n")
 
         XCTAssertTrue(lines.contains("2026-09-30,Wednesday,2,120.00"))
-        XCTAssertTrue(lines.contains("\(Payment.Method.cash.displayName),1,100.00,100"))
+        XCTAssertTrue(lines.contains("\(Payment.Method.cash.displayName),1,100.00"))
         XCTAssertFalse(csv.csvData.contains("Revenue less recorded payments"))
         XCTAssertFalse(csv.csvData.contains("Payment coverage"))
     }
@@ -120,8 +121,8 @@ final class BusinessReportTests: XCTestCase {
 
         XCTAssertEqual(blocks.count, 5, "Dates and four tables, even with no completed visits.")
         XCTAssertEqual(blocks.first, "Period,2026-09-24,2026-09-30\r\nGenerated,2026-09-30 12:00")
-        XCTAssertEqual(blocks[2], "Services\r\nService,Sales,Revenue,Share (%)")
-        XCTAssertEqual(blocks[3], "Payment methods\r\nMethod,Payments,Amount,Share (%)")
+        XCTAssertEqual(blocks[2], "Services\r\nService,Sales")
+        XCTAssertEqual(blocks[3], "Payment methods\r\nMethod,Payments,Amount")
         XCTAssertEqual(lines.filter { $0.hasPrefix("2026-09-") }.count, 7)
         XCTAssertTrue(lines.contains("2026-09-24,Thursday,0,0.00"))
         XCTAssertTrue(lines.contains("2026-09-30,Wednesday,0,0.00"))
