@@ -28,8 +28,6 @@
 	<true/>
 	<key>NSCameraUsageDescription</key>
 	<string>Pawtrackr needs camera access to take photos of pets during grooming sessions.</string>
-	<key>NSBluetoothAlwaysUsageDescription</key>
-	<string>Pawtrackr uses Bluetooth to connect to receipt printers, cash drawers, and collar scanners in your salon.</string>
 	<key>NSFaceIDUsageDescription</key>
 	<string>Pawtrackr uses Face ID to secure your data.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
@@ -52,7 +50,6 @@
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>processing</string>
-		<string>bluetooth-central</string>
 	</array>
 	<key>UILaunchScreen</key>
 	<dict/>

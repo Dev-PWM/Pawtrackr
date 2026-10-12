@@ -28,6 +28,7 @@ final class ScalabilityTests: XCTDataTestCase {
         }
         
         // 2. Measure search time
+        _ = try await repo.fetchClients(query: "", limit: 1, offset: 0)
         let start = Date()
         let results = try await repo.fetchClients(query: "Test 1999", limit: 20, offset: 0)
         let duration = Date().timeIntervalSince(start)

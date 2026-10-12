@@ -43,6 +43,8 @@ struct ClientCard: View {
         let accentColor: Color? = switch state.accentKind {
         case .safety:
             DS.ColorToken.danger
+        case .priorityCare:
+            BehaviorTagIcons.tint(for: .specialNeeds)
         case .inProgress:
             DS.ColorToken.success
         case .attention:
@@ -54,6 +56,7 @@ struct ClientCard: View {
         Card(elevation: .regular, accent: accentColor != nil ? .leading(.color(accentColor!), thickness: 4) : nil) {
             VStack(alignment: .leading, spacing: 10) {
                 if state.showsAggressiveWarning { aggressiveBanner }
+                if state.showsSpecialNeedsWarning { SpecialNeedsPetBadge() }
                 header
                 if showsMissingDetails, let summary = ClientMissingInfo.summary(missingInfo) {
                     Label(summary, systemImage: "exclamationmark.triangle.fill")
@@ -159,11 +162,13 @@ extension ClientCard {
     struct VisualState: Equatable {
         enum AccentKind: String, Equatable {
             case safety
+            case priorityCare
             case inProgress
             case attention
         }
 
         let showsAggressiveWarning: Bool
+        let showsSpecialNeedsWarning: Bool
         let isInProgress: Bool
         let needsAttention: Bool
         let accentKind: AccentKind?
@@ -172,11 +177,14 @@ extension ClientCard {
         init(client: Client, isInProgressOverride: Bool?) {
             let pets = (client.pets ?? []).filter { $0.archivedAt == nil }
             showsAggressiveWarning = pets.contains { $0.isAggressive }
+            showsSpecialNeedsWarning = pets.contains { $0.hasSpecialNeeds }
             isInProgress = isInProgressOverride ?? client.hasActiveVisit
             needsAttention = pets.contains { $0.needsAttention }
 
             if showsAggressiveWarning {
                 accentKind = .safety
+            } else if showsSpecialNeedsWarning {
+                accentKind = .priorityCare
             } else if isInProgress {
                 accentKind = .inProgress
             } else if needsAttention {

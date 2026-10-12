@@ -86,7 +86,9 @@ final class WalkthroughSetupStopsTests: XCTestCase {
         var steps = Dictionary(uniqueKeysWithValues: WalkthroughController.fullTour().map { ($0.id, $0) })
         let client = try XCTUnwrap(steps[WalkthroughStepID.clientLoyalty])
         XCTAssertTrue(client.directive.contains("Loyalty & Rewards"), client.directive)
-        XCTAssertTrue(try XCTUnwrap(client.coachTip).contains("redeem"), "Says how points are spent.")
+        let rewardTip = try XCTUnwrap(client.coachTip)
+        XCTAssertTrue(rewardTip.contains("Payment step"), "Names where the reward is chosen.")
+        XCTAssertTrue(rewardTip.contains("choose a reward"), "Says how points are spent.")
         XCTAssertTrue(try XCTUnwrap(steps[WalkthroughStepID.loyaltyPoints]?.coachTip).contains("How points are calculated"))
 
         UserDefaults.standard.set(AppLanguageOverride.es.rawValue, forKey: AppSettingsKeys.appLanguageOverride)

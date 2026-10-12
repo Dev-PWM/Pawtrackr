@@ -38,6 +38,7 @@ struct PetCard: View {
         Card(elevation: .regular, accent: .leading(.color(DS.ColorToken.gender(pet.gender)), thickness: 4)) {
             cardContent
         }
+        .petBehaviorAura(pet: pet)
         .scaleEffect(isActive ? 1.01 : 1.0)
         .animation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true), value: isActive)
         .accessibilityElement(children: .combine)
@@ -79,7 +80,9 @@ struct PetCard: View {
     private var mainContent: some View {
         VStack(alignment: .leading, spacing: 6) {
             titleRow
+            if pet.hasSpecialNeeds { SpecialNeedsPetBadge() }
             breedLine
+            PetMilestoneView(pet: pet)
             behaviorTags
             healthLine
             sessionLine
@@ -123,28 +126,34 @@ struct PetCard: View {
     private var behaviorTags: some View {
         if !pet.behaviorTags.isEmpty {
             FlowLayout(spacing: 6) {
-                ForEach(Array(pet.behaviorTags), id: \.self) { tag in
-                    let key = tag.folding(options: [.diacriticInsensitive, .caseInsensitive], locale: nil)
+                ForEach(Pet.cleanedBehaviorTags(pet.behaviorTags).filter { Pet.behaviorTagKind(for: $0) != .specialNeeds }, id: \.self) { tag in
                     let isDanger = Pet.isAggressiveTag(tag)
-                    let isHighPriority = key.contains("anxious") || key.contains("ansios") || key.contains("extra care")
                     let disp = BehaviorTagIcons.display(for: tag)
+                    let kind = Pet.behaviorTagKind(for: tag)
 
                     if isDanger {
-                        // Stark, unmistakable safety flag — staff must not miss it.
-                        Chip("⚠️ " + disp.label, style: .filled, size: .xs)
+                        let status = pet.aggressionClearanceStatus
+                        let labelText = status.isProbationary
+                            ? "⚠️ \(disp.label) (\(status.calmStreak)/3)"
+                            : "⚠️ \(disp.label)"
+                        Chip(labelText, style: .filled, size: .xs)
                             .foregroundStyle(.white)
                             .background(DS.ColorToken.danger, in: Capsule())
-                            .accessibilityLabel(NSLocalizedString("pet.safety.aggressive_a11y", value: "Warning: this pet is marked aggressive. Handle with care.", comment: ""))
-                    } else if isHighPriority {
-                        Chip((disp.emoji != nil ? "\(disp.emoji!) " : "") + disp.label,
-                             style: .filled,
-                             size: .xs)
-                        .foregroundStyle(.white)
-                        .background(Color.red.opacity(0.8), in: Capsule())
+                            .accessibilityLabel(
+                                status.isProbationary
+                                    ? String(format: NSLocalizedString("pet.safety.probation_a11y_fmt", value: "Warning: this pet is marked aggressive, %d of 3 visits without aggression to clear.", comment: ""), status.calmStreak)
+                                    : NSLocalizedString("pet.safety.aggressive_a11y", value: "Warning: this pet is marked aggressive. Handle with care.", comment: "")
+                            )
                     } else {
-                        Chip((disp.emoji != nil ? "\(disp.emoji!) " : "") + disp.label,
-                             style: .tinted,
-                             size: .xs)
+                        let tint = BehaviorTagIcons.tint(for: kind)
+                        Text((disp.emoji.map { "\($0) " } ?? "") + disp.label)
+                            .font(.caption2.weight(.semibold))
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 3)
+                            .foregroundStyle(.primary)
+                            .background(tint.opacity(0.12), in: Capsule())
+                            .overlay(Capsule().stroke(tint.opacity(0.3), lineWidth: 1))
+                            .accessibilityLabel(disp.label)
                     }
                 }
             }

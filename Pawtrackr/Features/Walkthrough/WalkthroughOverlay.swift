@@ -101,7 +101,7 @@ enum WalkthroughOverlayLayout {
         }
 
         var cardWidth: CGFloat {
-            min(bubbleMaxWidth, max(260, containerSize.width - horizontalPadding * 2))
+            min(bubbleMaxWidth, max(1, containerSize.width - horizontalPadding * 2))
         }
 
         var bubbleMinHeight: CGFloat {

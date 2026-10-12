@@ -21,6 +21,7 @@ private struct ClientCheckoutRoute: Identifiable {
 
 @MainActor
 struct ClientDetailView: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
@@ -171,6 +172,7 @@ struct ClientDetailView: View {
 
     private func navigationContent(vm: ClientDetailViewModel) -> some View {
         content(vm: vm)
+            .environment(\.modelContext, vm.client.modelContext ?? modelContext)
             .navigationTitle("client_details.title")
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
@@ -840,9 +842,11 @@ struct ClientDetailView: View {
     }
 
     private func confirmDeleteContact(_ contact: EmergencyContact) {
-        modelContext.delete(contact)
+        let context = contact.modelContext ?? modelContext
+        context.delete(contact)
         do {
-            try modelContext.save()
+            try context.save()
+            NotificationCenter.default.post(name: .clientDidUpdate, object: nil)
         } catch {
             Logger.clientDetailView.error("Failed to delete contact: \(error.localizedDescription, privacy: .public)")
             Logger.database.error("Local save failed: \(error.localizedDescription, privacy: .public)")
@@ -904,17 +908,10 @@ struct ClientDetailView: View {
                     Text(NSLocalizedString("client_detail.safety_alert.title", value: "Caution: Aggressive Behavior", comment: ""))
                         .font(.subheadline.weight(.bold))
                         .foregroundStyle(.white)
-                    Text(String(
-                        format: NSLocalizedString(
-                            "client_detail.safety_alert.message_fmt",
-                            value: "%@ is flagged as aggressive. Alert the team and handle with care.",
-                            comment: ""
-                        ),
-                        aggressivePets.map(\.name).joined(separator: ", ")
-                    ))
-                    .font(.caption)
-                    .foregroundStyle(.white.opacity(0.95))
-                    .fixedSize(horizontal: false, vertical: true)
+                    Text(safetyBannerMessage(for: aggressivePets))
+                        .font(.caption)
+                        .foregroundStyle(.white.opacity(0.95))
+                        .fixedSize(horizontal: false, vertical: true)
                 }
                 Spacer(minLength: 0)
             }
@@ -925,21 +922,99 @@ struct ClientDetailView: View {
             .accessibilityElement(children: .combine)
             .accessibilityIdentifier("clientDetail.safetyBanner")
         }
+        let carePets = (client.pets ?? []).filter { $0.archivedAt == nil && $0.hasSpecialNeeds }
+        if !carePets.isEmpty {
+            HStack(alignment: .top, spacing: 10) {
+                Image(systemName: "cross.case.fill").font(.title3)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(AppLocalization.localized("client_detail.special_needs.title", value: "Priority: Special Needs"))
+                        .font(.subheadline.weight(.bold))
+                    Text(String(format: AppLocalization.localized("client_detail.special_needs.message_fmt", value: "%@ needs priority care. Review care notes and adapt handling, comfort, and timing."), carePets.map(\.name).joined(separator: ", ")))
+                        .font(.caption)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                Spacer(minLength: 0)
+            }
+            .foregroundStyle(.white)
+            .padding(12)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(BehaviorTagIcons.tint(for: .specialNeeds), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .padding(.horizontal)
+            .accessibilityElement(children: .combine)
+            .accessibilityIdentifier("clientDetail.specialNeedsBanner")
+        }
     }
 
-    /// Compact red flag rendered on an aggressive pet's row in the pet list.
-    private var aggressivePetBadge: some View {
-        HStack(spacing: 6) {
+    private func safetyBannerMessage(for aggressivePets: [Pet]) -> String {
+        if aggressivePets.count == 1, let pet = aggressivePets.first {
+            let status = pet.aggressionClearanceStatus
+            if status.isProbationary {
+                return String(
+                    format: NSLocalizedString(
+                        "client_detail.safety_alert.probation_fmt",
+                        value: "%@ is flagged aggressive (%d/3 visits without aggression completed). Alert the team and handle with care.",
+                        comment: ""
+                    ),
+                    pet.name,
+                    status.calmStreak
+                )
+            } else {
+                return String(
+                    format: NSLocalizedString(
+                        "client_detail.safety_alert.message_fmt",
+                        value: "%@ is flagged as aggressive. Alert the team and handle with care.",
+                        comment: ""
+                    ),
+                    pet.name
+                )
+            }
+        } else {
+            return String(
+                format: NSLocalizedString(
+                    "client_detail.safety_alert.message_fmt",
+                    value: "%@ is flagged as aggressive. Alert the team and handle with care.",
+                    comment: ""
+                ),
+                aggressivePets.map(\.name).joined(separator: ", ")
+            )
+        }
+    }
+
+    /// Red safety flag rendered on an aggressive pet's row in the pet list.
+    /// Shows clearance progress if pet is on probation (e.g. 1/3 or 2/3 visits without aggression).
+    private func aggressivePetBadge(for pet: Pet) -> some View {
+        let status = pet.aggressionClearanceStatus
+        return HStack(spacing: 6) {
             Image(systemName: "exclamationmark.triangle.fill")
-            Text(NSLocalizedString("pet.safety.aggressive_badge", value: "Aggressive — handle with care", comment: ""))
+            if status.isProbationary {
+                Text(String(
+                    format: NSLocalizedString("pet.safety.probation_badge_fmt", value: "Aggressive — %d/3 visits without aggression to clear", comment: ""),
+                    status.calmStreak
+                ))
                 .font(.caption2.weight(.bold))
+                HStack(spacing: 3) {
+                    ForEach(0..<status.requiredStreak, id: \.self) { index in
+                        Circle()
+                            .fill(index < status.calmStreak ? Color.green : Color.white.opacity(0.4))
+                            .frame(width: 5, height: 5)
+                    }
+                }
+            } else {
+                Text(NSLocalizedString("pet.safety.aggressive_badge", value: "Aggressive — handle with care", comment: ""))
+                    .font(.caption2.weight(.bold))
+            }
         }
         .foregroundStyle(.white)
         .padding(.vertical, 4)
         .padding(.horizontal, 8)
         .background(DS.ColorToken.danger, in: Capsule())
         .frame(maxWidth: .infinity, alignment: .leading)
-        .accessibilityLabel(NSLocalizedString("pet.safety.aggressive_a11y", value: "Warning: this pet is marked aggressive. Handle with care.", comment: ""))
+        .accessibilityLabel(
+            status.isProbationary
+                ? String(format: NSLocalizedString("pet.safety.probation_a11y_fmt", value: "Warning: this pet is marked aggressive, %d of 3 visits without aggression to clear.", comment: ""), status.calmStreak)
+                : NSLocalizedString("pet.safety.aggressive_a11y", value: "Warning: this pet is marked aggressive. Handle with care.", comment: "")
+        )
+        .accessibilityIdentifier("pet.aggression.priorityBadge")
     }
 
     private func petsSection(vm: ClientDetailViewModel) -> some View {
@@ -970,7 +1045,8 @@ struct ClientDetailView: View {
                         HStack(alignment: .top, spacing: 12) {
                             AvatarView(.pet(species: pet.species, gender: pet.gender, name: pet.name, imageData: pet.photoData), size: .md, ringWidth: 3)
                             VStack(alignment: .leading, spacing: 6) {
-                                if pet.isAggressive { aggressivePetBadge }
+                                if pet.isAggressive { aggressivePetBadge(for: pet) }
+                                if pet.hasSpecialNeeds { SpecialNeedsPetBadge() }
                                 HStack(alignment: .firstTextBaseline, spacing: 8) {
                                     VStack(alignment: .leading, spacing: 2) {
                                         PetGenderNameBadge(pet: pet, maxNameWidth: 220)
@@ -986,6 +1062,8 @@ struct ClientDetailView: View {
                                     .accessibilityLabel(AppLocalization.localized("pet.editor.title", value: "Edit Pet"))
                                     .accessibilityIdentifier("clientDetail.pet.\(pet.name).edit")
                                 }
+                                PetMilestoneView(pet: pet)
+                                PetGroomingSignals(pet: pet)
                                 HStack(spacing: 8) {
                                     actionButton(title: NSLocalizedString("client_detail.check_in", comment: ""), systemImage: "play.fill", tint: .blue) {
                                         if activeVisit != nil {
@@ -1044,9 +1122,16 @@ struct ClientDetailView: View {
                             }
                         }
                     }
+                    .petBehaviorAura(pet: pet)
+                    .animation(MotionSystem.resolved(MotionSystem.fluid, reduceMotion: reduceMotion), value: pet.behaviorTagsRaw)
+                    .transition(.opacity.combined(with: .scale(scale: 0.96)))
                     .buttonStyle(.plain)
                 }
+                // ForEach compares model IDs, not which ModelContext owns the objects.
+                // A new committed presentation graph must rebuild its display closures.
+                .id(vm.petPresentationRevision)
             }
+            .animation(MotionSystem.resolved(MotionSystem.fluid, reduceMotion: reduceMotion), value: vm.pets.map(\.uuid))
             .padding(.horizontal)
             let removedPets = (vm.client.pets ?? []).filter { $0.archivedAt != nil }
             if !removedPets.isEmpty {
@@ -1197,6 +1282,7 @@ struct ClientDetailView: View {
         isDeleting = true
 
         let client = vm.client
+        let modelContext = client.modelContext ?? modelContext
         // Gather affected dates before deletion for summary updates
         let clientUUID = client.uuid
         let pets = client.pets ?? []

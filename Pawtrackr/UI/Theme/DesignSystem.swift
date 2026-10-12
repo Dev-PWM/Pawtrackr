@@ -50,6 +50,8 @@ enum DS {
         static let warning    = Color(red: 245/255, green: 158/255, blue: 11/255)  // #F59E0B
         static let danger     = Color(red: 239/255, green: 68/255,  blue: 68/255)  // #EF4444
         static let info       = Color(red: 59/255,  green: 130/255, blue: 246/255) // #3B82F6
+        // Care is semantic, not the customizable brand accent.
+        static let specialCare = Color(red: 124/255, green: 58/255, blue: 237/255) // #7C3AED
 
         static let genderMale = info
         static let genderFemale = Color(red: 236/255, green: 72/255, blue: 153/255) // #EC4899

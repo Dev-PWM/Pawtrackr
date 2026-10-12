@@ -24,3 +24,12 @@
 
 - Don't assume a simulator destination exists — resolve one first with `xcrun simctl list devices available` and pass it as `-destination "id=<UUID>"`. As of 2026-07, the installed runtimes are iOS 18.x and 26.5 (no 17.x); named-device + `OS:latest` lookups have failed on this machine before.
 - The paywall loads live StoreKit products from `Pawtrackr.storekit` — both shared schemes reference it in their LaunchAction. If `Product.products` returns nothing in a dev build, check that scheme reference before suspecting code.
+
+## Live Presentation and Digital Workflows
+
+- Actor commits must refresh the visible model graph, including pet behavior, current sessions, relationships, and loyalty. Fetching IDs into an already-materialized context is not proof of freshness. Use a retained fresh presentation context after committed changes; keep unsaved edits intact and never mirror a background save onto stale models merely to trigger observation.
+- Mutations broadcast the existing local events. Dashboard and Insights retain a pending refresh when a change arrives during an in-flight refresh.
+- Keep the client-level aggressive banner and the pet safety badge. Do not duplicate the aggressive warning as an emoji pill. Behavior auras supplement readable labels, never replace safety warnings, and stop under Reduce Motion, backgrounding, low power, or thermal pressure.
+- Aggression clears only after three completed, explicitly observed non-aggressive visits: calm, cooperative, anxious, or nervous, in any combination. An aggressive visit resets the counter immediately. Untagged and special-needs-only visits do not advance or break the counter. Never preselect a previous temperament on a new checkout.
+- Special needs is a standing priority-care flag, separate from temperament. Checkout must preserve it until explicitly edited on the profile. Display both warnings when aggression and special needs coexist. Card glow precedence is aggression/red, special needs/purple, anxious/orange, nervous/blue, calm-or-cooperative/green. Chips and checkout choices use the same semantic colors; after clearance, display the latest observation rather than accumulating old moods.
+- Pawtrackr is digital-only: no Bluetooth printer discovery, thermal receipt transmission, cash-drawer integration, or peripheral permissions. Keep digital PDF receipts, sharing, and exports. The subscription system remains paused; do not introduce subscriptions.

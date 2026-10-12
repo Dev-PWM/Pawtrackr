@@ -27,6 +27,7 @@ final class PetDetailViewModel {
     private let modelContext: ModelContext
     private let visitRepository: VisitRepositoryProtocol
     private var visitCompleteObserver: PDVMObserverToken?
+    @ObservationIgnored private var presentationContext: ModelContext?
 
     // State
     var sheetDestination: SheetDestination?
@@ -92,6 +93,17 @@ final class PetDetailViewModel {
             Task { @MainActor [weak self] in
                 guard let self else { return }
                 if let completedPetID = note.petID, completedPetID != self.pet.persistentModelID { return }
+                let reader = ModelContext(self.modelContext.container)
+                let uuid = self.pet.uuid
+                do {
+                    if let fresh = try reader.fetch(FetchDescriptor<Pet>(predicate: #Predicate { $0.uuid == uuid })).first {
+                        self.presentationContext = reader
+                        self.pet = fresh
+                    }
+                } catch {
+                    self.appError = .database(error.localizedDescription)
+                    Logger.database.error("Pet presentation refresh failed: \(error.localizedDescription)")
+                }
                 self.activeVisitID = nil
                 self.refreshActiveVisit()
                 self.refreshNonce &+= 1
@@ -193,6 +205,7 @@ struct PetDetailView: View {
                 ScrollView {
                     VStack(spacing: 12) {
                         header(vm)
+                        PetMilestoneView(pet: vm.pet)
                         actionRow(vm)
                         quickStats(vm)
                         transformationGallery(vm)
@@ -340,7 +353,18 @@ struct PetDetailView: View {
                         }
                         Spacer()
                     }
-                    if vm.pet.isAggressive { petAggressiveBanner }
+                    if vm.pet.isAggressive { petAggressiveBanner(vm) }
+                    if vm.pet.hasSpecialNeeds {
+                        VStack(alignment: .leading, spacing: 8) {
+                            SpecialNeedsPetBadge()
+                            Text(AppLocalization.localized("checkout.safety_alert.special_needs", value: "Review care notes, comfort needs, and allow extra time."))
+                                .font(.caption)
+                        }
+                        .padding(12)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(BehaviorTagIcons.tint(for: .specialNeeds).opacity(0.12), in: RoundedRectangle(cornerRadius: 14))
+                        .accessibilityIdentifier("petDetail.specialNeedsBanner")
+                    }
                     if vm.activeVisit != nil { sessionStatus(vm) }
                 }
             }
@@ -349,19 +373,45 @@ struct PetDetailView: View {
 
     /// High-visibility safety flag shown beneath the pet's profile header when
     /// the pet is marked aggressive, so staff are warned before handling.
-    private var petAggressiveBanner: some View {
-        HStack(alignment: .top, spacing: 10) {
+    private func petAggressiveBanner(_ vm: PetDetailViewModel) -> some View {
+        let status = vm.pet.aggressionClearanceStatus
+        return HStack(alignment: .top, spacing: 10) {
             Image(systemName: "exclamationmark.triangle.fill")
                 .font(.title3)
                 .foregroundStyle(.white)
-            VStack(alignment: .leading, spacing: 2) {
-                Text(NSLocalizedString("pet.safety_alert.title", value: "Caution: Aggressive Behavior", comment: ""))
+            VStack(alignment: .leading, spacing: 4) {
+                if status.isProbationary {
+                    Text(String(
+                        format: NSLocalizedString("pet.safety_alert.probation_title_fmt", value: "Caution: Aggressive Behavior (%d/3 Visits Without Aggression)", comment: ""),
+                        status.calmStreak
+                    ))
                     .font(.subheadline.weight(.bold))
                     .foregroundStyle(.white)
-                Text(NSLocalizedString("pet.safety_alert.message", value: "This pet is flagged as aggressive. Alert the team and handle with care.", comment: ""))
+                    Text(String(
+                        format: NSLocalizedString("pet.safety_alert.probation_message_fmt", value: "This pet is on behavior probation (%d more visit(s) without aggression needed to clear safety warning). Alert the team and handle with care.", comment: ""),
+                        status.remainingVisits
+                    ))
                     .font(.caption)
                     .foregroundStyle(.white.opacity(0.95))
                     .fixedSize(horizontal: false, vertical: true)
+
+                    HStack(spacing: 4) {
+                        ForEach(0..<status.requiredStreak, id: \.self) { index in
+                            Capsule()
+                                .fill(index < status.calmStreak ? Color.green : Color.white.opacity(0.35))
+                                .frame(height: 4)
+                        }
+                    }
+                    .padding(.top, 2)
+                } else {
+                    Text(NSLocalizedString("pet.safety_alert.title", value: "Caution: Aggressive Behavior", comment: ""))
+                        .font(.subheadline.weight(.bold))
+                        .foregroundStyle(.white)
+                    Text(NSLocalizedString("pet.safety_alert.message", value: "This pet is flagged as aggressive. Alert the team and handle with care. (Requires 3 consecutive visits without aggression to clear).", comment: ""))
+                        .font(.caption)
+                        .foregroundStyle(.white.opacity(0.95))
+                        .fixedSize(horizontal: false, vertical: true)
+                }
             }
             Spacer(minLength: 0)
         }

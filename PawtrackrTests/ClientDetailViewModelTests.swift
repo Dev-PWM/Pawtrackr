@@ -37,6 +37,59 @@ final class ClientDetailViewModelTests: XCTestCase {
         XCTAssertEqual(vm.pets.first?.uuid, pet.uuid)
     }
 
+    func testRefreshPetsReadsCommittedBehaviorAndNewPetWithoutDirtyingOldGraph() throws {
+        let vm = ClientDetailViewModel(client: client, modelContext: context)
+        _ = vm.pets.first?.behaviorTags
+        let originalRevision = vm.petPresentationRevision
+        let writer = ModelContext(container)
+        let storedPet = try XCTUnwrap(writer.model(for: pet.persistentModelID) as? Pet)
+        storedPet.behaviorTags = ["Nervous"]
+        let added = Pet(name: "Luna", species: .dog)
+        added.owner = storedPet.owner
+        writer.insert(added)
+        try writer.save()
+
+        vm.refreshPets()
+
+        XCTAssertGreaterThan(vm.petPresentationRevision, originalRevision, "Same model IDs still need a new display revision after graph replacement.")
+        XCTAssertEqual(vm.pets.count, 2)
+        XCTAssertEqual(vm.pets.first(where: { $0.uuid == pet.uuid })?.behaviorTags, ["Nervous"])
+        XCTAssertFalse(context.hasChanges, "Refreshing committed data must not dirty the original graph.")
+        XCTAssertFalse(vm.client.modelContext?.hasChanges ?? true)
+    }
+
+    func testRefreshPetsPreservesUnsavedClientEdits() throws {
+        let vm = ClientDetailViewModel(client: client, modelContext: context)
+        let originalRevision = vm.petPresentationRevision
+        client.firstName = "Unsaved"
+        vm.refreshPets()
+        XCTAssertTrue(vm.client === client)
+        XCTAssertEqual(vm.petPresentationRevision, originalRevision, "Unsaved editor graphs must not be replaced or remounted.")
+        XCTAssertEqual(vm.client.firstName, "Unsaved")
+        XCTAssertTrue(context.hasChanges)
+    }
+
+    func testContactEditorSurvivesPresentationRefreshAndPreservesUntouchedFields() throws {
+        let contact = EmergencyContact(name: "Riley", relation: "friend", phone: "+13125550112")
+        contact.owner = client
+        context.insert(contact)
+        try context.save()
+        let vm = ClientDetailViewModel(client: client, modelContext: context)
+        let writer = ModelContext(container)
+        let stored = try XCTUnwrap(writer.model(for: contact.persistentModelID) as? EmergencyContact)
+        stored.relation = "sibling"
+        try writer.save()
+        vm.refreshPets()
+
+        let result = vm.saveEmergencyContact(editing: contact, name: "Riley Updated", relation: "friend", phone: contact.phone)
+        XCTAssertEqual(result, .saved)
+        let reader = ModelContext(container)
+        let saved = try XCTUnwrap(reader.model(for: contact.persistentModelID) as? EmergencyContact)
+        XCTAssertEqual(saved.name, "Riley Updated")
+        XCTAssertEqual(saved.relation, "sibling")
+        XCTAssertFalse(context.hasChanges)
+    }
+
     func testInit_PopulatesEmergencyContactsFromClientRelationship() async throws {
         let contact = EmergencyContact(name: "Riley Backup", relation: "friend", phone: "+13125550111")
         contact.owner = client

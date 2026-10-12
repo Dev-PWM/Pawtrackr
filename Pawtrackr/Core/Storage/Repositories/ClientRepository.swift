@@ -104,7 +104,7 @@ final actor ClientRepository: ClientRepositoryProtocol {
             let book = try await ClientBackgroundQuery.run(container: modelContainer) { context in
                 let activeIDs = try Self.activeClientIDs(in: context)
                 var descriptor = FetchDescriptor<Client>(sortBy: [SortDescriptor(\.lastName), SortDescriptor(\.firstName)])
-                descriptor.relationshipKeyPathsForPrefetching = [\Client.pets]
+                descriptor.relationshipKeyPathsForPrefetching = [\Client.pets, \Client.emergencyContacts]
                 var records: [ClientSearchRecord] = []
                 for (index, client) in try context.fetch(descriptor).enumerated() {
                     if index.isMultiple(of: 128) { try Task.checkCancellation() }

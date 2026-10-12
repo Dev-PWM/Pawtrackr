@@ -109,13 +109,6 @@ struct PawtrackrApp: App {
                     await RemoteConfigService.shared.fetchConfig()
                 }
 
-                #if targetEnvironment(simulator)
-                Logger(subsystem: "com.pawtrackr", category: "PawtrackrApp").debug("Skipping Bluetooth printer discovery on simulator (unsupported).")
-                #else
-                Task.detached(priority: .utility) {
-                    await BluetoothPeripheralManager.shared.startPrinterDiscovery(autoConnect: true)
-                }
-                #endif
             }
 
             // Access UserDefaults directly to avoid using StateObject before it is installed on a view

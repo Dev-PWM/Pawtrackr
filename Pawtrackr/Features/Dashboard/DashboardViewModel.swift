@@ -179,6 +179,7 @@ final class DashboardViewModel {
         // NotificationCenter Observers
         let notifications = [
             Notification.Name.clientDidCreate,
+            Notification.Name.clientDidUpdate,
             Notification.Name.visitDidStart,
             Notification.Name.visitDidComplete,
             Notification.Name.serviceDidUpdate
@@ -204,6 +205,7 @@ final class DashboardViewModel {
     func refresh() async {
         dashboardLog.info("DashboardViewModel: Refresh initiated.")
         guard !isRefreshing else {
+            refreshPending = true
             dashboardLog.info("DashboardViewModel: Refresh already in progress, skipping.")
             return
         }
@@ -235,8 +237,13 @@ final class DashboardViewModel {
         }
         
         isRefreshing = false
+        if refreshPending {
+            refreshPending = false
+            await refresh()
+        }
         dashboardLog.info("DashboardViewModel: Refresh complete.")
     }
+    private var refreshPending = false
     private func fetchChecklistStatus() async {
         // A fresh background context: the counts walk sample relationships,
         // which shouldn't touch the main context's objects.

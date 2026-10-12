@@ -3,6 +3,21 @@ import XCTest
 
 @MainActor
 final class ClientCardVisualStateTests: XCTestCase {
+    func testSpecialNeedsRemainsPriorityAfterAggressionIsCleared() {
+        let client = Client(firstName: "Priority", lastName: "Care")
+        let pet = Pet(name: "Care Buddy", species: .dog)
+        client.addPet(pet)
+        pet.setBehaviorTags(["Aggressive", "Special Needs"])
+        let both = ClientCard.VisualState(client: client, isInProgressOverride: false)
+        XCTAssertTrue(both.showsAggressiveWarning)
+        XCTAssertTrue(both.showsSpecialNeedsWarning)
+        XCTAssertEqual(both.accentKind, .safety)
+        pet.setBehaviorTags(["Calm", "Special Needs"])
+        let care = ClientCard.VisualState(client: client, isInProgressOverride: true)
+        XCTAssertFalse(care.showsAggressiveWarning)
+        XCTAssertTrue(care.showsSpecialNeedsWarning)
+        XCTAssertEqual(care.accentKind, .priorityCare)
+    }
     func testClearingAggressiveBehaviorDropsSafetyAccentAndChangesCardIdentity() {
         let client = Client(firstName: "Hello", lastName: "World", phone: "3157818455")
         let pet = Pet(name: "Why", species: .dog)

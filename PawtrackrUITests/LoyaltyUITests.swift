@@ -234,6 +234,11 @@ final class LoyaltyUITests: XCTestCase {
 
     private func tapTab(_ title: String) {
         let tab = app.tabBars.buttons[title]
+        let sidebar = app.buttons["sidebar.row.\(title.lowercased())"]
+        if sidebar.waitForHittable(timeout: 2) {
+            sidebar.tap()
+            return
+        }
         XCTAssertTrue(tab.waitForHittable(timeout: 8), "\(title) tab was not hittable.")
         tab.tap()
     }

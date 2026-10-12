@@ -15,6 +15,7 @@ struct CheckoutLoyaltyPaymentCard: View {
             }
             HStack(alignment: .firstTextBaseline, spacing: 7) {
                 Text(viewModel.loyaltyPoints.formatted()).font(.system(.title, design: .serif)).monospacedDigit()
+                    .contentTransition(.numericText())
                 Text(AppLocalization.localized("checkout.loyalty.saved_points", value: "saved points"))
                     .font(.subheadline).foregroundStyle(.secondary)
             }
@@ -62,7 +63,13 @@ struct CheckoutLoyaltyPaymentCard: View {
             .buttonStyle(.plain).pressScaleStyle()
             .accessibilityLabel(AppLocalization.localized("checkout.loyalty.choose", value: "Choose a reward"))
             .accessibilityIdentifier("checkout.loyalty.choose")
-            .disabled(viewModel.isLoadingLoyalty || viewModel.isSaving || viewModel.loyaltyRewards.isEmpty)
+            .disabled(viewModel.isLoadingLoyalty || viewModel.isSaving)
+            if viewModel.isLoadingLoyalty {
+                ProgressView()
+            } else if viewModel.loyaltyRewards.isEmpty && viewModel.loyaltyError == nil {
+                Text(AppLocalization.localized("checkout.loyalty.no_rewards", value: "No rewards are configured yet. Add a reward in Loyalty settings."))
+                    .font(.footnote).foregroundStyle(.secondary)
+            }
             Text(AppLocalization.localized("loyalty.points.keep_note", value: "Use points when you choose. They never expire, and there’s no balance limit."))
                 .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             if let error = viewModel.loyaltyError {
@@ -84,19 +91,16 @@ struct CheckoutLoyaltyPaymentCard: View {
 /// Choosing here is reversible and never calls a redemption persistence API.
 struct CheckoutRewardSelectionView: View {
     @Environment(\.dismiss) private var dismiss
-    let points: Int
-    let rewards: [LoyaltyReward]
-    let subtotal: Decimal
-    let onChoose: (LoyaltyReward) -> Void
+    @Bindable var viewModel: CheckoutViewModel
 
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 22) {
-                    Text(LoyaltyCopy.points(points)).font(.system(.title, design: .serif))
+                    Text(LoyaltyCopy.points(viewModel.loyaltyPoints)).font(.system(.title, design: .serif))
                     Text(AppLocalization.localized("checkout.loyalty.selection_note", value: "Choose one reward for this visit. Points are used only when you confirm payment."))
                         .font(.subheadline).foregroundStyle(.secondary)
-                    ForEach(rewards) { reward in
+                    ForEach(viewModel.loyaltyRewards) { reward in
                         VStack(alignment: .leading, spacing: 10) {
                             HStack(alignment: .top, spacing: 12) {
                                 Image(systemName: reward.systemImage).foregroundStyle(DS.ColorToken.primary)
@@ -110,15 +114,14 @@ struct CheckoutRewardSelectionView: View {
                                 Text(LoyaltyCopy.points(reward.pointCost)).font(.subheadline)
                                 Spacer(minLength: 12)
                                 Button(AppLocalization.localized("checkout.loyalty.select", value: "Select")) {
-                                    onChoose(reward)
-                                    dismiss()
+                                    viewModel.chooseLoyaltyReward(reward)
                                 }
                                 .pressScaleStyle()
                                 .accessibilityLabel(String(format: AppLocalization.localized("checkout.loyalty.select_fmt", value: "Select %@"), LoyaltyRewardCatalog.displayTitle(for: reward)))
                                 .accessibilityIdentifier("checkout.reward.\(reward.id)")
-                                .disabled(!reward.isRedeemable(with: points) || !reward.isApplicable(to: subtotal))
+                                .disabled(viewModel.isLoadingLoyalty || !reward.isRedeemable(with: viewModel.loyaltyPoints) || !reward.isApplicable(to: viewModel.servicesTotalDecimal))
                             }
-                            if reward.isRedeemable(with: points), !reward.isApplicable(to: subtotal) {
+                            if reward.isRedeemable(with: viewModel.loyaltyPoints), !reward.isApplicable(to: viewModel.servicesTotalDecimal) {
                                 Text(AppLocalization.localized("checkout.loyalty.credit_exceeds_total", value: "This visit total is below the reward's full credit. Choose another reward or keep the points."))
                                     .font(.caption).foregroundStyle(.secondary)
                             }
@@ -127,11 +130,15 @@ struct CheckoutRewardSelectionView: View {
                         .background(DS.ColorToken.surface, in: RoundedRectangle(cornerRadius: 18))
                         .hairlineBorder(DS.ColorToken.border, cornerRadius: 18)
                     }
+                    if viewModel.loyaltyRewards.isEmpty {
+                        ContentUnavailableView(AppLocalization.localized("checkout.loyalty.no_rewards", value: "No rewards are configured yet. Add a reward in Loyalty settings."), systemImage: "gift")
+                    }
                 }
                 .padding(24)
             }
             .background(DS.ColorToken.background)
             .navigationTitle(AppLocalization.localized("checkout.loyalty.choose", value: "Choose a reward"))
+            .task { await viewModel.refreshLoyaltyOptions() }
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button(AppLocalization.localized("common.cancel", value: "Cancel")) { dismiss() }

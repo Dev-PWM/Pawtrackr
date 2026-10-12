@@ -170,6 +170,18 @@ struct NewClientSheet: View {
                         } else {
                             ForEach($viewModel.contacts) { $contact in
                                 VStack(alignment: .leading, spacing: 8) {
+                                    HStack {
+                                        Spacer()
+                                        Button(role: .destructive) {
+                                            viewModel.removeContact(id: contact.id)
+                                        } label: {
+                                            Image(systemName: "trash")
+                                                .font(.caption)
+                                        }
+                                        .buttonStyle(.borderless)
+                                        .tint(.red)
+                                        .accessibilityLabel(AppLocalization.localized("common.delete", value: "Delete"))
+                                    }
                                     inputField(
                                         NSLocalizedString("new_client.contact_name", comment: ""),
                                         text: $contact.name,
@@ -218,68 +230,29 @@ struct NewClientSheet: View {
                                 .foregroundStyle(.secondary)
                         }
                         ForEach($viewModel.pets) { $pet in
-                            VStack(alignment: .leading, spacing: 0) {
-                                // Gender accent bar
-                                Rectangle()
-                                    .fill(DS.ColorToken.gender(pet.gender))
-                                    .frame(height: 4)
-
-                                VStack(alignment: .leading, spacing: 8) {
-                                    // Photo section
+                            VStack(alignment: .leading, spacing: 8) {
+                                if viewModel.pets.count > 1 {
                                     HStack {
                                         Spacer()
-                                        ImagePicker(imageData: $pet.photoData) {
-                                            VStack(alignment: .center, spacing: 8) {
-                                                AvatarView(.pet(species: pet.species, gender: pet.gender, name: pet.name, imageData: pet.photoData), size: .lg)
-                                                Text(NSLocalizedString("new_client.choose_photo", comment: ""))
-                                                    .font(.caption)
-                                                    .foregroundStyle(.secondary)
-                                            }
+                                        Button(role: .destructive) {
+                                            viewModel.removePet(id: pet.id)
+                                        } label: {
+                                            Label(NSLocalizedString("new_client.remove_pet", comment: ""), systemImage: "trash")
+                                                .font(.caption)
                                         }
-                                        Spacer()
+                                        .buttonStyle(.borderless)
+                                        .tint(.red)
+                                        .accessibilityLabel(NSLocalizedString("new_client.remove_pet", comment: ""))
                                     }
-
-                                    inputField(
-                                        NSLocalizedString("new_client.pet_name", comment: ""),
-                                        text: $pet.name,
-                                        focus: .petName(pet.id),
-                                        nextFocus: .petBreed(pet.id)
-                                    )
-
-                                    HStack(spacing: 12) {
-                                        inputField(
-                                            NSLocalizedString("add_pet.breed", comment: ""),
-                                            text: $pet.breed,
-                                            focus: .petBreed(pet.id),
-                                            nextFocus: .petColor(pet.id)
-                                        )
-                                        inputField(
-                                            NSLocalizedString("add_pet.color", comment: ""),
-                                            text: $pet.color,
-                                            focus: .petColor(pet.id),
-                                            nextFocus: nil,
-                                            submitLabel: .done
-                                        )
-                                    }
-
-                                    Picker(NSLocalizedString("new_client.species", comment: ""), selection: $pet.species) {
-                                        ForEach(Species.allCases) { species in
-                                            Text(species.rawValue.capitalized).tag(species)
-                                        }
-                                    }
-                                    .pickerStyle(.segmented)
-
-                                    Picker(NSLocalizedString("new_client.gender", comment: ""), selection: $pet.gender) {
-                                        Text(PetGender.male.displayName).tag(PetGender.male as PetGender?)
-                                        Text(PetGender.female.displayName).tag(PetGender.female as PetGender?)
-                                    }
-                                    .pickerStyle(.segmented)
                                 }
-                                .padding()
+                                PetProfileForm(
+                                    name: $pet.name, species: $pet.species,
+                                    gender: Binding($pet.gender, replacingNilWith: .male),
+                                    breed: $pet.breed, color: $pet.color, photoData: $pet.photoData,
+                                    birthdate: $pet.knownBirthdate, identifierPrefix: "newClient.pet",
+                                    focusName: focusedField == .petName(pet.id)
+                                )
                             }
-                            .background(DS.ColorToken.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-                            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-                            .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).stroke(DS.ColorToken.border.opacity(0.5), lineWidth: 1))
                         }
                     }
                 }

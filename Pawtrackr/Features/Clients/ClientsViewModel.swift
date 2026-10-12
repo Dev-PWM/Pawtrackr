@@ -88,6 +88,7 @@ final class ClientsViewModel {
     
     // MARK: - Private Properties
     private let modelContext: ModelContext
+    @ObservationIgnored private var presentationContext: ModelContext?
     private let repository: ClientRepositoryProtocol
     private let eventBus: GlobalEventBus?
     private var searchTask: Task<Void, Never>? = nil
@@ -157,9 +158,11 @@ final class ClientsViewModel {
             do {
                 if let presentation = try await repository.fetchClientPresentation(query: trimmedSearch, filter: selectedFilter, sort: sortOption) {
                     guard !Task.isCancelled else { return }
-                    self.inProgressClients = presentation.groups.active.compactMap { self.modelContext.model(for: $0) as? Client }
-                    self.otherClients = presentation.groups.inactive.compactMap { self.modelContext.model(for: $0) as? Client }
-                    self.needsAttentionClients = presentation.needsAttention.compactMap { self.modelContext.model(for: $0) as? Client }
+                    let reader = ModelContext(self.modelContext.container)
+                    self.presentationContext = reader
+                    self.inProgressClients = presentation.groups.active.compactMap { reader.model(for: $0) as? Client }
+                    self.otherClients = presentation.groups.inactive.compactMap { reader.model(for: $0) as? Client }
+                    self.needsAttentionClients = presentation.needsAttention.compactMap { reader.model(for: $0) as? Client }
                     self.fetchOffset = self.otherClients.count
                     self.canLoadMore = false
                     self.isLoadingMore = false
@@ -223,7 +226,7 @@ final class ClientsViewModel {
                 pet.recordAttentionOutreach()
             }
 
-            try modelContext.save()
+            try (client.modelContext ?? modelContext).save()
             NotificationCenter.default.post(name: .serviceDidUpdate, object: nil)
             eventBus?.publish(.refreshRequired)
             fetchClients()

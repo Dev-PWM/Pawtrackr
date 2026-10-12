@@ -158,6 +158,7 @@ final class CheckoutViewModel {
     private(set) var isLoadingLoyalty = false
     var isChoosingLoyaltyReward = false
     private var loyaltyContainer: ModelContainer?
+    @ObservationIgnored private var completionContext: ModelContext?
 
     var loyaltyCredit: Decimal {
         guard let selectedLoyaltyReward, selectedLoyaltyReward.isApplicable(to: servicesTotalDecimal) else { return .zero }
@@ -296,6 +297,15 @@ final class CheckoutViewModel {
         self.eventRecorder = eventRecorder
         self.eventBus = eventBus
 
+        if visit.behaviorTags.isEmpty {
+            let standingTags = pet.behaviorTags.filter { tag in
+                !Pet.isAggressiveTag(tag) && !Pet.isNonAggressiveObservation(tag)
+            }
+            self.tags = Set(standingTags)
+        } else {
+            self.tags = Set(visit.behaviorTags)
+        }
+
         // Bind to the real ModelContainer the pet/visit already lives in. Never construct
         // a fallback container — that path would route the entire checkout to an orphan
         // in-memory store and silently lose revenue. If neither object is attached to a
@@ -365,7 +375,14 @@ final class CheckoutViewModel {
         sessionNotes = TextInputLimits.limited(visit.note?.trimmed ?? "", to: TextInputLimits.notes)
 
         if visit.behaviorTags.isEmpty {
-            tags = Set(pet.behaviorTags)
+            // For a new visit session, we want to record this visit's observed behavior.
+            // Preserve standing care tags like Special Needs, but do not pre-select
+            // Aggressive or Calm/Cooperative so groomers can explicitly rate this session
+            // without being trapped by old states.
+            let standingTags = pet.behaviorTags.filter { tag in
+                !Pet.isAggressiveTag(tag) && !Pet.isNonAggressiveObservation(tag)
+            }
+            tags = Set(standingTags)
         } else {
             tags = Set(visit.behaviorTags)
         }
@@ -482,7 +499,23 @@ final class CheckoutViewModel {
     }
 
     func toggleTag(_ raw: String) {
-        if tags.contains(raw) { tags.remove(raw) } else { tags.insert(raw) }
+        if tags.contains(raw) {
+            tags.remove(raw)
+        } else {
+            tags.insert(raw)
+            // Care needs are independent; aggression and non-aggressive observations cannot coexist.
+            if Pet.isAggressiveTag(raw) {
+                tags.subtract(tags.filter { Pet.isNonAggressiveObservation($0) })
+            } else if Pet.isNonAggressiveObservation(raw) {
+                tags.subtract(tags.filter { Pet.isAggressiveTag($0) })
+                tags.subtract(tags.filter {
+                    $0 != raw && Pet.isNonAggressiveObservation($0)
+                        && !(Pet.isCalmOrCooperativeTag(raw) && Pet.isCalmOrCooperativeTag($0))
+                })
+            }
+        }
+        recalculateCachedStrings()
+        scheduleCriticalDraftSave(reason: "behavior_tags_changed")
     }
 
     func choosePayment(_ method: Payment.Method) {
@@ -696,9 +729,12 @@ final class CheckoutViewModel {
 
             if let mainContext = context {
                 do {
+                    let reader = ModelContext(mainContext.container)
                     let descriptor = FetchDescriptor<Visit>(predicate: #Predicate<Visit> { $0.persistentModelID == visitID })
-                    if let refreshed = try mainContext.fetch(descriptor).first {
+                    if let refreshed = try reader.fetch(descriptor).first {
+                        completionContext = reader
                         self.visit = refreshed
+                        if let freshPet = refreshed.pet { self.pet = freshPet }
                     } else {
                         Logger.checkout.error("CheckoutViewModel: Checkout saved but refreshed visit was not found in the main context")
                     }
@@ -733,7 +769,6 @@ final class CheckoutViewModel {
             if let clientID = result.clientID { userInfo[VisitDidCompleteKey.clientID.rawValue] = clientID }
             
             NotificationCenter.default.post(name: .visitDidComplete, object: nil, userInfo: userInfo)
-            queuePhysicalReceiptPrint()
             
             Logger.checkout.info("CheckoutViewModel: Checkout saved successfully via Actor")
             trace("checkout_saved")
@@ -937,23 +972,6 @@ final class CheckoutViewModel {
         }
     }
 
-    private func queuePhysicalReceiptPrint() {
-        let snapshot = PDFReceiptService.shared.makeSnapshot(for: visit)
-        let transactionToken = "checkout:\(visit.uuid.uuidString)"
-        let opensCashDrawer = selectedPaymentMethod == .cash
-
-        Task.detached(priority: .utility) {
-            let payload = ThermalReceiptPayloadBuilder.payload(for: snapshot, opensCashDrawer: opensCashDrawer)
-            do {
-                try await BluetoothPeripheralManager.shared.transmitThermalReceiptPayload(
-                    transactionToken: transactionToken,
-                    payload: payload
-                )
-            } catch {
-                Logger.checkout.error("Physical receipt print failed for \(transactionToken, privacy: .public): \(error.localizedDescription, privacy: .public)")
-            }
-        }
-    }
 }
 
 private extension Logger {

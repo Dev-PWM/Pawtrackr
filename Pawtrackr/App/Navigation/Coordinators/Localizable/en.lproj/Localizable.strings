@@ -583,10 +583,15 @@
 /* Aggressive-pet safety flags (client center, pet detail, pet/client cards) */
 "client_detail.safety_alert.title" = "Caution: Aggressive Behavior";
 "client_detail.safety_alert.message_fmt" = "%@ is flagged as aggressive. Alert the team and handle with care.";
+"client_detail.safety_alert.probation_fmt" = "%@ is flagged aggressive (%d/3 visits without aggression completed). Alert the team and handle with care.";
 "pet.safety_alert.title" = "Caution: Aggressive Behavior";
 "pet.safety_alert.message" = "This pet is flagged as aggressive. Alert the team and handle with care.";
+"pet.safety_alert.probation_title_fmt" = "Caution: Aggressive Behavior (%d/3 Visits Without Aggression)";
+"pet.safety_alert.probation_message_fmt" = "This pet is on behavior probation (%d more visit(s) without aggression needed to clear safety warning). Alert the team and handle with care.";
 "pet.safety.aggressive_badge" = "Aggressive — handle with care";
+"pet.safety.probation_badge_fmt" = "Aggressive — %d/3 visits without aggression to clear";
 "pet.safety.aggressive_a11y" = "Warning: this pet is marked aggressive. Handle with care.";
+"pet.safety.probation_a11y_fmt" = "Warning: this pet is marked aggressive, %d of 3 visits without aggression to clear.";
 
 "checkout.step.services" = "Services";
 "checkout.step.details" = "Notes & Photos";
@@ -969,9 +974,21 @@
 "checkout.no_active_session_message" = "This pet is not checked in right now. Start a visit before opening checkout.";
 "checkout.no_active_session_title" = "No Active Session";
 "checkout.safety_alert.aggressive" = "Aggressive behavior selected. Warn the team before handling, use a second worker if needed, and avoid rushed movements.";
+"checkout.safety_alert.aggressive_resets_streak" = "Aggressive behavior selected. This resets the non-aggressive clearance streak back to 0. Warn the team before handling.";
 "checkout.safety_alert.aggressive_special_needs" = "Aggressive and special-needs handling selected. Assign an experienced worker, use a calm approach, and review notes before continuing.";
+"checkout.safety_alert.aggressive_active_title" = "Caution: Aggressive Handling Flag";
+"checkout.safety_alert.aggressive_active_fmt" = "%@ is flagged as aggressive. Handle with care. Record Calm, Cooperative, Anxious, or Nervous only if there was no aggression today to start the 3-visit clearance.";
+"checkout.safety_alert.aggressive_active_probation_fmt" = "%@ is on behavior probation (%d/3 visits without aggression completed). Record Calm, Cooperative, Anxious, or Nervous only if there was no aggression today. Select Aggressive if unsafe.";
+"checkout.safety_alert.calm_selected_title" = "Observation recorded — warning remains until checkout";
+"checkout.safety_alert.calm_selected_clears_fmt" = "Visit %d of %d! Completing checkout will clear the aggressive warning. The card will reflect today's observation; special-needs care remains.";
+"checkout.safety_alert.calm_selected_progress_fmt" = "Visit %d of %d to clear aggressive safety flag (%d more visit(s) without aggression needed after this).";
 "checkout.safety_alert.special_needs" = "Special needs selected. Review handling notes, medical or comfort needs, and assign extra time.";
+"checkout.safety_alert.special_needs_title" = "Special Needs Handling";
+"checkout.safety_alert.special_needs_addon" = " Special needs handling also noted — review medical/comfort needs.";
 "checkout.safety_alert.title" = "Safety alert";
+"client_detail.special_needs.title" = "Priority: Special Needs";
+"client_detail.special_needs.message_fmt" = "%@ needs priority care. Review care notes and adapt handling, comfort, and timing.";
+"pet.safety.special_needs_badge" = "Special needs — priority care";
 "client_detail.message" = "Message";
 "client_detail.pet_already_in_session" = "%@ is already in session";
 "common.copied" = "Copied!";
@@ -1049,7 +1066,7 @@
 "settings.wipe.title" = "Wipe Everything & Start Fresh?";
 "tour.done" = "Done";
 "tour.back" = "Back";
-"tour.cd.addpet.tip" = "One owner can have any number of pets. Add them anytime as the family grows.";
+"tour.cd.addpet.tip" = "Green: calm/cooperative. Orange: anxious. Blue: nervous. Purple: special needs. Red: aggression. Always read priority warnings.";
 "tour.next" = "Next";
 "tour.skip" = "Skip tour";
 "visit.add_on_a11y_fmt" = "Add-on %@";
@@ -1331,12 +1348,12 @@
 "tour.nc.owner.tip" = "Only a name is required. Add the rest now or fill it in later.";
 "tour.nc.pets.title" = "Add their pets";
 "tour.nc.pets.directive" = "Capture the details the team needs before handling.";
-"tour.nc.pets.purpose" = "Add each pet’s name, photo, species, breed, color, gender, health notes, grooming preferences, and behavior tags like aggressive for safety.";
+"tour.nc.pets.purpose" = "Add each pet’s name, photo, species, breed, color, gender and birthday. Record handling observations during checkout.";
 "tour.nc.pets.tip" = "A good pet profile turns the next visit into a quick check-in instead of a memory test.";
 "tour.nc.save.title" = "Save the client";
 "tour.cd.emergency.title" = "Emergency Contacts";
 "tour.cd.emergency.purpose" = "Each backup person shows relation and phone. Call dials them, and the row’s menu offers Message, Copy Phone, Edit, and Delete. A “Missing:” note lists what’s left to add.";
-"tour.cd.loyalty.tip" = "To redeem, open Loyalty & Rewards and pick a reward. Its points come off the balance, then you give the reward, like a discount at checkout.";
+"tour.cd.loyalty.tip" = "At checkout’s Payment step, choose a reward. Review the lower total. Points are used only when you confirm payment.";
 "tour.cd.checkin.title" = "Check In";
 "tour.cd.checkin.purpose" = "Check In creates an active visit, starts the timer, changes the pet status to in session, and makes checkout available when the groom is finished.";
 "tour.cd.checkin.tip" = "Use it when the pet is physically in your care so duration and dashboard counts stay accurate.";
@@ -1664,7 +1681,7 @@
 "tour.academy.cd_loyalty.what" = "Loyalty & Rewards shows this client’s points. The badge color shows their tier.";
 "tour.academy.cd_loyalty.why" = "Every checkout adds points on its own, by default from what the client pays. Points buy rewards like a visit credit, so regulars have a reason to come back.";
 "tour.academy.cd_addpet.title" = "Pets & Add Pet";
-"tour.academy.cd_addpet.what" = "Each pet card shows breed, color and a gender dot. Add Pet adds another.";
+"tour.academy.cd_addpet.what" = "Pet cards show profile details, handling cues and birthdays. Add Pet adds another.";
 "tour.academy.cd_addpet.why" = "Every pet keeps its own photo, health notes, behavior tags and visit history, so multi-pet families stay organized.";
 "tour.academy.cd_addpet.try" = "Tap Add Pet, then save a pet or close the form.";
 "tour.academy.cd_checkin.what" = "Starts a visit for a pet that just arrived.";
@@ -1875,3 +1892,29 @@
 "checkout.loyalty.earned_fmt" = "+%@ saved to the client’s account";
 
 "loyalty.error.credit_zero" = "Credit amount must be greater than zero.";
+
+/* Pet profile birthdays and life stages */
+"pet.stage.kitten" = "Kitten";
+"pet.stage.puppy" = "Puppy";
+"pet.stage.adult" = "Adult";
+"pet.stage.senior" = "Senior";
+"pet.birthday.title" = "Birthday";
+"pet.birthday.date_type" = "Birthday details";
+"pet.birthday.unknown" = "Not known yet";
+"pet.birthday.known" = "Known birthdate";
+"pet.birthday.celebration" = "Chosen celebration day";
+"pet.birthday.date" = "Date";
+"pet.birthday.celebration_help" = "Starts with today, your day together at the salon. Celebrate it each year; it does not set the pet’s age or the owner’s birthday.";
+"pet.stage.title" = "Life stage";
+"pet.stage.automatic" = "Estimate from birthdate";
+"pet.stage.help" = "Age gives a general guide: puppy/kitten under 1, adult, senior at 8+ for dogs or 11+ for cats. Dogs vary by breed and size. Choose the owner’s or vet’s reported stage when needed. Senior does not automatically mean special needs.";
+"pet.stage.senior_care" = "Senior · Check comfort and handling needs with the owner.";
+"pet.birthday.honorary_today" = "It’s %@’s celebration day today!";
+"pet.birthday.today" = "It’s %@’s birthday today!";
+
+"pet.stage.about" = "About life stages";
+"pet.stage.unknown" = "Unknown";
+"pet.stage.estimated" = "%@ · estimated";
+"pet.stage.age_unknown" = "Age unknown";
+"new_client.remove_pet" = "Remove Pet";
+"checkout.loyalty.no_rewards" = "No rewards are configured yet. Add a reward in Loyalty settings.";

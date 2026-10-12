@@ -240,10 +240,14 @@ enum DemoDataSeeder {
 enum SamplePriceRecord {
     static let userDefaultsKey = "pawtrackr.sampleData.appliedPrices"
 
-    struct Entry: Equatable {
+    struct Entry: Equatable, Hashable, Comparable {
         let serviceUUID: UUID
         let price: Decimal
         let stampedAt: Date
+
+        static func < (lhs: Entry, rhs: Entry) -> Bool {
+            lhs.serviceUUID.uuidString < rhs.serviceUUID.uuidString
+        }
 
         /// Persisted dates keep millisecond precision, so a stamp that made a
         /// round trip may differ by less than that. A person's edit can't.
@@ -277,7 +281,7 @@ enum SamplePriceRecord {
                   let stamp = fields["stampedAt"] as? Double
             else { return nil }
             return Entry(serviceUUID: id, price: price, stampedAt: Date(timeIntervalSinceReferenceDate: stamp))
-        }
+        }.sorted()
     }
 
     /// Services that still hold the example price they were given, untouched.

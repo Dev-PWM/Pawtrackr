@@ -14,6 +14,7 @@ import UIKit
 #endif
 
 struct ClientsView: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.modelContext) private var modelContext
     @Environment(GlobalEventBus.self) private var eventBus
     @Environment(NavigationRouter.self) private var router
@@ -60,6 +61,8 @@ struct ClientsView: View {
                 .padding(.bottom, 80)
                 .frame(maxWidth: clientsContentMaxWidth)
                 .frame(maxWidth: .infinity)
+                .animation(MotionSystem.resolved(MotionSystem.fluid, reduceMotion: reduceMotion), value: viewModel?.inProgressClients.count)
+                .animation(MotionSystem.resolved(MotionSystem.fluid, reduceMotion: reduceMotion), value: viewModel?.otherClients.count)
             }
             .clientsSearchable(
                 text: searchTextBinding,

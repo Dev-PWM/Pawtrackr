@@ -425,7 +425,6 @@
 				"INFOPLIST_FILE[sdk=iphoneos*]" = "Pawtrackr-iOS-Info.plist";
 				"INFOPLIST_FILE[sdk=iphonesimulator*]" = "Pawtrackr-iOS-Info.plist";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.business";
-				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "Pawtrackr uses Bluetooth to connect to receipt printers, cash drawers, and collar scanners in your salon.";
 				INFOPLIST_KEY_NSCameraUsageDescription = "Pawtrackr needs camera access to take photos of pets during grooming sessions.";
 				INFOPLIST_KEY_NSFaceIDUsageDescription = "Pawtrackr uses Face ID to secure your data.";
 				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "Pawtrackr needs permission to save grooming photos to your photo library.";
@@ -474,7 +473,6 @@
 				"INFOPLIST_FILE[sdk=iphoneos*]" = "Pawtrackr-iOS-Info.plist";
 				"INFOPLIST_FILE[sdk=iphonesimulator*]" = "Pawtrackr-iOS-Info.plist";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.business";
-				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "Pawtrackr uses Bluetooth to connect to receipt printers, cash drawers, and collar scanners in your salon.";
 				INFOPLIST_KEY_NSCameraUsageDescription = "Pawtrackr needs camera access to take photos of pets during grooming sessions.";
 				INFOPLIST_KEY_NSFaceIDUsageDescription = "Pawtrackr uses Face ID to secure your data.";
 				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "Pawtrackr needs permission to save grooming photos to your photo library.";

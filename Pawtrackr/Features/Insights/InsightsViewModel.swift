@@ -4,6 +4,7 @@
 //
 
 import Foundation
+import Combine
 import SwiftData
 import Observation
 import OSLog
@@ -103,16 +104,26 @@ class InsightsViewModel {
 
     private let dataStore: DataStoreService
     private let eventBus: GlobalEventBus
-    private let actor: InsightsActor
+    private var actor: InsightsActor
     private var observationTask: Task<Void, Never>?
     private var revenueFetchTask: Task<Void, Never>?
     private var actionableInsightsTask: Task<Void, Never>?
     private var refreshDebounceTask: Task<Void, Never>?
+    private var changeSubscriptions: Set<AnyCancellable> = []
+    private var refreshPending = false
 
     init(dataStore: DataStoreService, eventBus: GlobalEventBus = GlobalEventBus()) {
         self.dataStore = dataStore
         self.eventBus = eventBus
         self.actor = InsightsActor(modelContainer: dataStore.container)
+        for name in [Notification.Name.clientDidCreate, .clientDidUpdate, .visitDidComplete, .serviceDidUpdate] {
+            NotificationCenter.default.publisher(for: name)
+                .receive(on: DispatchQueue.main)
+                .sink { [weak self] _ in
+                    Task { @MainActor [weak self] in await self?.refresh() }
+                }
+                .store(in: &changeSubscriptions)
+        }
 
         self.observationTask = Task { [weak self] in
             for await event in eventBus.stream {
@@ -144,9 +155,16 @@ class InsightsViewModel {
     // MARK: - Public
 
     func refresh() async {
-        guard !isRefreshing else { return }
+        guard !isRefreshing else { refreshPending = true; return }
         isRefreshing = true
-        defer { isRefreshing = false }
+        actor = InsightsActor(modelContainer: dataStore.container)
+        defer {
+            isRefreshing = false
+            if refreshPending {
+                refreshPending = false
+                refreshDebounceTask = Task { [weak self] in await self?.refresh() }
+            }
+        }
 
         _ = await PerformanceMonitor.measureAsyncNoThrow(label: "Insights.refresh") {
             await withTaskGroup(of: Void.self) { group in

@@ -107,6 +107,18 @@ final class Pet {
         behaviorTags.contains { Pet.isAggressiveTag($0) }
     }
 
+    /// Standing care needs remain independent of the latest temperament observation.
+    var hasSpecialNeeds: Bool {
+        behaviorTags.contains { Self.behaviorTagKind(for: $0) == .specialNeeds }
+    }
+
+    /// Safety takes precedence over temperament when choosing the card's visual cue.
+    var prominentBehavior: BehaviorTag? {
+        let kinds = Set(behaviorTags.compactMap(Self.behaviorTagKind(for:)))
+        return [.aggressive, .specialNeeds, .anxious, .nervous, .cooperative, .calm]
+            .first { kinds.contains($0) }
+    }
+
     /// True when a behavior tag denotes aggression/danger, in English OR Spanish.
     /// Behavior tags are stored as their localized label (e.g. "Agresivo" on a
     /// Spanish device), so matching only English keywords misses them — which is
@@ -116,6 +128,49 @@ final class Pet {
         let key = tag.folding(options: [.diacriticInsensitive, .caseInsensitive], locale: nil)
         let needles = ["aggressive", "agresiv", "bite", "muerde", "muerd", "dangerous", "danger", "peligros"]
         return needles.contains { key.contains($0) }
+    }
+
+    struct AggressionClearanceStatus: Equatable, Sendable {
+        let isAggressive: Bool
+        let calmStreak: Int
+        let requiredStreak: Int // 3
+
+        var isCleared: Bool { !isAggressive }
+        var isProbationary: Bool { isAggressive && calmStreak > 0 }
+        var remainingVisits: Int { max(0, requiredStreak - calmStreak) }
+    }
+
+    /// Returns the pet's progress toward clearing an aggressive handling warning.
+    ///
+    /// When an aggressive flag is placed on a pet, they must complete 3 consecutive
+    /// observed visits marked calm, cooperative, anxious, or nervous (without aggression)
+    /// before the staff safety warning is retired.
+    var aggressionClearanceStatus: AggressionClearanceStatus {
+        let required = 3
+        guard isAggressive else {
+            return AggressionClearanceStatus(isAggressive: false, calmStreak: required, requiredStreak: required)
+        }
+
+        let completedSnapshots = Self.recentCompletedBehaviorTagSnapshots(from: visits ?? [])
+        var streak = 0
+        for snapshot in completedSnapshots {
+            let cleaned = Self.cleanedBehaviorTags(snapshot.tags)
+            if cleaned.isEmpty || cleaned.allSatisfy({ Self.behaviorTagKind(for: $0) == .specialNeeds }) {
+                // Untagged visits neither advance nor break the clearance streak
+                continue
+            }
+            if Self.containsAggressiveBehavior(in: cleaned) {
+                break
+            }
+            if Self.isAggressionClearanceVisit(tags: cleaned) {
+                streak += 1
+                if streak >= required { break }
+            } else {
+                // Unknown observations do not establish a qualifying streak.
+                break
+            }
+        }
+        return AggressionClearanceStatus(isAggressive: true, calmStreak: streak, requiredStreak: required)
     }
     
     /// Returns a list of before/after photo pairs from completed visits.
@@ -367,30 +422,43 @@ final class Pet {
     ///
     /// Aggressive handling is intentionally sticky for staff safety: a non-aggressive visit
     /// cannot clear the pet warning until the three most recent completed visits all contain
-    /// calm/cooperative evidence and no aggressive/bite/danger evidence.
+    /// calm/cooperative/anxious/nervous evidence and no aggressive/bite/danger evidence.
     func reconcileBehaviorTagsFromCompletedVisits(requiredClearVisitCount: Int = 3) {
         let completedVisitTags = Self.recentCompletedBehaviorTagSnapshots(from: visits ?? [])
         guard let latestVisitTags = completedVisitTags.first else { return }
 
+        let careTags = behaviorTags.filter { Self.behaviorTagKind(for: $0) == .specialNeeds }
         let latestTags = Self.cleanedBehaviorTags(latestVisitTags.tags)
+        // If the visit did not record any behavior tags, retain existing pet profile tags.
+        guard !latestTags.isEmpty else { return }
+
+        if latestTags.allSatisfy({ Self.behaviorTagKind(for: $0) == .specialNeeds }) {
+            setBehaviorTags(Self.cleanedBehaviorTags(behaviorTags + latestTags))
+            return
+        }
+
         if Self.containsAggressiveBehavior(in: latestTags) {
-            setBehaviorTags(latestTags)
+            setBehaviorTags(Self.cleanedBehaviorTags(latestTags + careTags))
             return
         }
 
         guard isAggressive else {
-            setBehaviorTags(latestTags)
+            setBehaviorTags(Self.cleanedBehaviorTags(latestTags + careTags))
             return
         }
 
-        let recentClearanceWindow = Array(completedVisitTags.prefix(requiredClearVisitCount))
-        let hasClearanceStreak = recentClearanceWindow.count == requiredClearVisitCount
+        let taggedSnapshots = completedVisitTags.filter {
+            !$0.tags.isEmpty && !$0.tags.allSatisfy { Self.behaviorTagKind(for: $0) == .specialNeeds }
+        }
+        let required = max(1, requiredClearVisitCount)
+        let recentClearanceWindow = Array(taggedSnapshots.prefix(required))
+        let hasClearanceStreak = recentClearanceWindow.count == required
             && recentClearanceWindow.allSatisfy { Self.isAggressionClearanceVisit(tags: $0.tags) }
 
         if hasClearanceStreak {
-            setBehaviorTags(Self.tagsAfterAggressionClearance(latestTags: latestTags, streak: recentClearanceWindow))
+            setBehaviorTags(Self.cleanedBehaviorTags(latestTags.filter { !Self.isAggressiveTag($0) } + careTags))
         } else {
-            setBehaviorTags(Self.tagsRetainingAggressiveWarning(existingTags: behaviorTags, latestTags: latestTags))
+            setBehaviorTags(Self.cleanedBehaviorTags(Self.tagsRetainingAggressiveWarning(existingTags: behaviorTags, latestTags: latestTags) + careTags))
         }
     }
 
@@ -570,6 +638,14 @@ extension Pet {
         return kind == .calm || kind == .cooperative
     }
 
+    /// An explicit non-aggressive observation counts once per completed visit.
+    static func isNonAggressiveObservation(_ tag: String) -> Bool {
+        switch behaviorTagKind(for: tag) {
+        case .calm, .cooperative, .anxious, .nervous: return true
+        default: return false
+        }
+    }
+
     /// Returns true when any supplied tag denotes aggressive, bite, or danger behavior.
     static func containsAggressiveBehavior(in tags: [String]) -> Bool {
         tags.contains { isAggressiveTag($0) }
@@ -619,31 +695,14 @@ extension Pet {
 
     private static func isAggressionClearanceVisit(tags: [String]) -> Bool {
         let cleaned = cleanedBehaviorTags(tags)
-        return !containsAggressiveBehavior(in: cleaned) && cleaned.contains { isCalmOrCooperativeTag($0) }
-    }
-
-    private static func tagsAfterAggressionClearance(
-        latestTags: [String],
-        streak: [BehaviorVisitSnapshot]
-    ) -> [String] {
-        var result = cleanedBehaviorTags(latestTags.filter { !isAggressiveTag($0) })
-        var seenKinds = Set(result.compactMap { behaviorTagKind(for: $0) })
-
-        for snapshot in streak {
-            for tag in snapshot.tags where isCalmOrCooperativeTag(tag) {
-                guard let kind = behaviorTagKind(for: tag), !seenKinds.contains(kind) else { continue }
-                result.append(tag)
-                seenKinds.insert(kind)
-            }
-        }
-
-        return cleanedBehaviorTags(result)
+        return !containsAggressiveBehavior(in: cleaned) && cleaned.contains { isNonAggressiveObservation($0) }
     }
 
     private static func tagsRetainingAggressiveWarning(existingTags: [String], latestTags: [String]) -> [String] {
         let aggressiveTag = existingTags.first(where: { isAggressiveTag($0) }) ?? BehaviorTag.aggressive.displayName
-        let nonAggressiveLatestTags = latestTags.filter { !isAggressiveTag($0) }
-        return cleanedBehaviorTags([aggressiveTag] + nonAggressiveLatestTags)
+        // Show today's observation without hiding the standing safety warning.
+        let otherTags = latestTags.filter { !isAggressiveTag($0) }
+        return cleanedBehaviorTags([aggressiveTag] + otherTags)
     }
 
     private static func behaviorTagLookupKey(_ tag: String) -> String {

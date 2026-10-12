@@ -24,13 +24,17 @@ private final class CDVMObserverToken {
 final class ClientDetailViewModel {
 
     // MARK: - Inputs
-    let client: Client
-    private let modelContext: ModelContext
-    private let visitRepository: VisitRepositoryProtocol
+    private(set) var client: Client
+    private var modelContext: ModelContext
+    private var visitRepository: VisitRepositoryProtocol {
+        VisitRepository(modelContext: modelContext, eventBus: eventBus)
+    }
     private let eventBus: GlobalEventBus
 
     // MARK: - Outputs
     var pets: [Pet] = []
+    /// Invalidates display closures when a fresh graph reuses the same model IDs.
+    private(set) var petPresentationRevision: UInt = 0
     var emergencyContacts: [EmergencyContact] = []
     var recentVisits: [Visit] = []
     /// Maps a pet's persistent ID → its currently-open visit's persistent ID.
@@ -68,7 +72,6 @@ final class ClientDetailViewModel {
         self.client        = client
         self.modelContext  = modelContext
         self.eventBus      = eventBus
-        self.visitRepository = VisitRepository(modelContext: modelContext, eventBus: eventBus)
         self.pets          = (client.pets ?? []).filter { $0.archivedAt == nil }
         self.emergencyContacts = []
         self.currentLimit  = max(1, initialLimit)
@@ -115,7 +118,26 @@ final class ClientDetailViewModel {
     }
 
     func refreshPets() {
+        // A fetch on the old context can return the same cached model graph.
+        // Replace the presentation graph after committed writes without copying
+        // values onto stale objects (which would mark them dirty and autosave).
+        if !modelContext.hasChanges {
+            let uuid = client.uuid
+            let freshContext = ModelContext(modelContext.container)
+            do {
+                let descriptor = FetchDescriptor<Client>(predicate: #Predicate { $0.uuid == uuid })
+                if let freshClient = try freshContext.fetch(descriptor).first {
+                    modelContext = freshContext
+                    client = freshClient
+                    petPresentationRevision &+= 1
+                }
+            } catch {
+                Logger.clientDetail.error("Client presentation refresh failed: \(error.localizedDescription)")
+                appError = .database(error.localizedDescription)
+            }
+        }
         pets = (client.pets ?? []).filter { $0.archivedAt == nil }
+        refreshEmergencyContacts()
         refreshActiveVisits()
     }
 
@@ -191,10 +213,23 @@ final class ClientDetailViewModel {
         }
 
         if let editing {
+            let uuid = editing.uuid
+            let target: EmergencyContact
+            do {
+                guard let stored = try modelContext.fetch(FetchDescriptor<EmergencyContact>(predicate: #Predicate { $0.uuid == uuid })).first else {
+                    return .failed(message: AppLocalization.localized("common.save_failed", value: "Save failed. Please try again."))
+                }
+                target = stored
+            } catch {
+                Logger.database.error("Contact refresh before save failed: \(error.localizedDescription)")
+                return .failed(message: error.localizedDescription)
+            }
+            // The editor can outlive a presentation refresh. Resolve its UUID
+            // in the current context and apply only fields the user changed.
             var changed = false
-            if editing.name != name { editing.name = name; changed = true }
-            if editing.relation != relation { editing.relation = relation; changed = true }
-            if editing.phone != storedPhone { editing.phone = storedPhone; changed = true }
+            if editing.name != name { target.name = name; changed = true }
+            if editing.relation != relation { target.relation = relation; changed = true }
+            if editing.phone != storedPhone { target.phone = storedPhone; changed = true }
             guard changed else { return .unchanged }
         } else {
             let contact = EmergencyContact(name: name, relation: relation, phone: storedPhone)
@@ -208,6 +243,7 @@ final class ClientDetailViewModel {
         do {
             try modelContext.save()
             refreshEmergencyContacts()
+            NotificationCenter.default.post(name: .clientDidUpdate, object: nil)
             return .saved
         } catch {
             Logger.clientDetail.error("Failed to save emergency contact: \(error.localizedDescription, privacy: .public)")

@@ -46,7 +46,7 @@ final class PracticeSalonTests: XCTestCase {
         let real = realStore.mainContext
         real.insert(Client(firstName: "Rosa", lastName: "Diaz"))
         try real.save()
-        let pricesBefore = SamplePriceRecord.entries(userDefaults: .standard)
+        let pricesBefore = Set(SamplePriceRecord.entries(userDefaults: .standard))
 
         let salon = PracticeSalon()
         XCTAssertTrue(salon.open())
@@ -56,7 +56,7 @@ final class PracticeSalonTests: XCTestCase {
 
         XCTAssertEqual(try real.fetchCount(FetchDescriptor<Client>()), 1, "Nothing from the practice salon lands in the real one.")
         XCTAssertEqual(try SampleData.sampleClientCount(in: real), 0)
-        XCTAssertEqual(SamplePriceRecord.entries(userDefaults: .standard), pricesBefore, "Example prices are recorded only in the practice suite.")
+        XCTAssertEqual(Set(SamplePriceRecord.entries(userDefaults: .standard)), pricesBefore, "Example prices are recorded only in the practice suite.")
 
         salon.close()
         let practiceDefaults = try XCTUnwrap(UserDefaults(suiteName: PracticeSalon.defaultsSuiteName))

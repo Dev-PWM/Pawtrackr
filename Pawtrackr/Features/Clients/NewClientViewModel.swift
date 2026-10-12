@@ -68,9 +68,19 @@ final class NewClientViewModel {
     func addPet() {
         pets.append(TempPet(index: pets.count + 1))
     }
-    
+
+    func removePet(id: UUID) {
+        guard pets.count > 1 else { return }
+        pets.removeAll { $0.id == id }
+    }
+
     func addContact() {
         contacts.append(TempContact(index: contacts.count + 1))
+    }
+
+    func removeContact(id: UUID) {
+        contacts.removeAll { $0.id == id }
+        contactFieldErrors = contactFieldErrors.filter { $0.key.contactID != id }
     }
 
     func createClient() async -> CreateClientOutcome {
@@ -264,6 +274,10 @@ struct TempPet: Identifiable {
     var health = ""
     var behaviorTags: Set<String> = []
     var photoData: Data? = nil
+    var knownBirthdate: Date? {
+        get { hasBirthdate ? birthdate : nil }
+        set { hasBirthdate = newValue != nil; if let newValue { birthdate = newValue } }
+    }
     var hasBirthdate: Bool = false
     var birthdate: Date = Date()
 }

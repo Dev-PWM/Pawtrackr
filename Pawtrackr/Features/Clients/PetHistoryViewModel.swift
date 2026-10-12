@@ -45,6 +45,7 @@ final class PetHistoryViewModel {
 
     // MARK: - Inputs / Environment
     private let modelContext: ModelContext
+    @ObservationIgnored private var presentationContext: ModelContext?
     var pet: Pet
 
     // MARK: - Filtering
@@ -109,7 +110,9 @@ final class PetHistoryViewModel {
             guard generation == refreshGeneration else { return }
             snapshots = fetched.rows
             canLoadMore = fetched.hasMore
-            visits = snapshots.compactMap { modelContext.model(for: $0.modelID) as? Visit }
+            let reader = ModelContext(modelContext.container)
+            presentationContext = reader
+            visits = snapshots.compactMap { reader.model(for: $0.modelID) as? Visit }
             applyFiltersAndKPIs()
         } catch {
             guard generation == refreshGeneration else { return }

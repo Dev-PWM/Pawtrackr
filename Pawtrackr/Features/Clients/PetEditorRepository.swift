@@ -1,7 +1,7 @@
 import Foundation
 import SwiftData
 
-/// Sendable editor buffer. Weight remains Decimal through parsing and storage.
+/// Sendable editor buffer that preserves legacy care fields outside the profile form.
 struct PetEditFields: Equatable, Sendable {
     var name: String
     var species: Species
@@ -78,7 +78,7 @@ actor PetEditorRepository {
         guard !fields.name.trimmed.isEmpty else {
             throw AppError.validation(.custom(message: AppLocalization.localized("add_pet.name_empty", value: "Enter a pet name.")))
         }
-        if let weight = fields.weight, weight <= 0 {
+        if fields.weight != baseline.weight, let weight = fields.weight, weight <= 0 {
             throw AppError.validation(.custom(message: AppLocalization.localized("pet.editor.invalid_weight", value: "Enter a weight greater than zero.")))
         }
         fields.apply(to: pet, changedFrom: baseline)

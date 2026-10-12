@@ -78,6 +78,11 @@ class QualityControlUITestCase: XCTestCase {
 
     func tapTab(_ title: String) {
         let tab = app.tabBars.buttons[title]
+        let sidebar = app.buttons["sidebar.row.\(title.lowercased())"]
+        if waitUntilHittable(sidebar, timeout: 2) {
+            sidebar.tap()
+            return
+        }
         XCTAssertTrue(waitUntilHittable(tab, timeout: 8), "\(title) tab was not hittable.")
         for attempt in 0..<4 {
             if attempt == 0 || !tab.isHittable {

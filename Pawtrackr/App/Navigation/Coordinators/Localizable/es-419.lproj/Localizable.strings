@@ -575,10 +575,15 @@
 /* Indicadores de seguridad para mascotas agresivas */
 "client_detail.safety_alert.title" = "Precaución: Comportamiento agresivo";
 "client_detail.safety_alert.message_fmt" = "%@ está marcado como agresivo. Avise al equipo y manéjelo con cuidado.";
+"client_detail.safety_alert.probation_fmt" = "%@ está marcado como agresivo (%d/3 visitas sin agresión completadas). Avise al equipo y manéjelo con cuidado.";
 "pet.safety_alert.title" = "Precaución: Comportamiento agresivo";
 "pet.safety_alert.message" = "Esta mascota está marcada como agresiva. Avise al equipo y manéjela con cuidado.";
+"pet.safety_alert.probation_title_fmt" = "Precaución: Comportamiento agresivo (%d/3 Visitas sin agresión)";
+"pet.safety_alert.probation_message_fmt" = "Esta mascota está en período de prueba (%d visita(s) sin agresión más para retirar la advertencia). Avise al equipo y manéjela con cuidado.";
 "pet.safety.aggressive_badge" = "Agresivo: manéjelo con cuidado";
+"pet.safety.probation_badge_fmt" = "Agresivo: %d/3 visitas para retirar";
 "pet.safety.aggressive_a11y" = "Advertencia: esta mascota está marcada como agresiva. Manéjela con cuidado.";
+"pet.safety.probation_a11y_fmt" = "Advertencia: esta mascota está marcada como agresiva, %d de 3 visitas sin agresión completadas para retirar la advertencia.";
 
 "checkout.step.services" = "Servicios";
 "checkout.step.details" = "Notas y fotos";
@@ -974,9 +979,21 @@
 "checkout.no_active_session_message" = "Esta mascota no está registrada en una visita ahora. Inicia una visita antes de abrir el cobro.";
 "checkout.no_active_session_title" = "No hay sesión activa";
 "checkout.safety_alert.aggressive" = "Se seleccionó comportamiento agresivo. Avisa al equipo antes de manipularla, usa una segunda persona si es necesario y evita movimientos apresurados.";
+"checkout.safety_alert.aggressive_resets_streak" = "Se seleccionó comportamiento agresivo. Esto reinicia el progreso de visitas sin agresión a 0. Avisa al equipo antes de manipularla.";
 "checkout.safety_alert.aggressive_special_needs" = "Se seleccionó manejo agresivo y de necesidades especiales. Asigna a una persona con experiencia, usa un enfoque tranquilo y revisa las notas antes de continuar.";
+"checkout.safety_alert.aggressive_active_title" = "Precaución: Advertencia de agresividad";
+"checkout.safety_alert.aggressive_active_fmt" = "%@ está marcado como agresivo. Manéjelo con cuidado. Registre Tranquilo, Cooperativo, Ansioso o Nervioso solo si no hubo agresión hoy para iniciar las 3 visitas.";
+"checkout.safety_alert.aggressive_active_probation_fmt" = "%@ está en período de prueba (%d/3 visitas sin agresión completadas). Registre Tranquilo, Cooperativo, Ansioso o Nervioso solo si no hubo agresión hoy. Seleccione Agresivo si hubo peligro.";
+"checkout.safety_alert.calm_selected_title" = "Observación registrada: la advertencia permanece hasta completar el cobro";
+"checkout.safety_alert.calm_selected_clears_fmt" = "¡Visita %d de %d! Completar el cobro retirará la advertencia de agresividad. La tarjeta reflejará la observación de hoy; las necesidades especiales permanecen.";
+"checkout.safety_alert.calm_selected_progress_fmt" = "Visita %d de %d para retirar la advertencia de agresividad (se necesitan %d visita(s) sin agresión más después de esta).";
 "checkout.safety_alert.special_needs" = "Se seleccionaron necesidades especiales. Revisa notas de manejo, necesidades médicas o de comodidad, y asigna tiempo extra.";
+"checkout.safety_alert.special_needs_title" = "Manejo de necesidades especiales";
+"checkout.safety_alert.special_needs_addon" = " Manejo de necesidades especiales también seleccionado — revise requerimientos médicos/comodidad.";
 "checkout.safety_alert.title" = "Alerta de seguridad";
+"client_detail.special_needs.title" = "Prioridad: Necesidades especiales";
+"client_detail.special_needs.message_fmt" = "%@ necesita atención prioritaria. Revise las notas de cuidado y adapte el manejo, la comodidad y el tiempo.";
+"pet.safety.special_needs_badge" = "Necesidades especiales: atención prioritaria";
 "client_detail.message" = "Mensaje";
 "client_detail.pet_already_in_session" = "%@ ya está en sesión";
 "common.copied" = "¡Copiado!";
@@ -1167,13 +1184,13 @@
 "tour.nc.owner.tip" = "Solo el nombre es obligatorio. Agrega lo demás ahora o después.";
 "tour.nc.pets.title" = "Agrega sus mascotas";
 "tour.nc.pets.directive" = "Captura los detalles que el equipo necesita antes de atenderlas.";
-"tour.nc.pets.purpose" = "Agrega nombre, foto, especie, raza, color, género, notas de salud, preferencias de aseo y etiquetas de comportamiento como agresivo para seguridad.";
+"tour.nc.pets.purpose" = "Agrega nombre, foto, especie, raza, color, género y cumpleaños. Registra cómo se comportó la mascota al terminar la visita.";
 "tour.nc.pets.tip" = "Un buen perfil de mascota convierte la próxima visita en una entrada rápida en lugar de una prueba de memoria.";
 "tour.nc.save.title" = "Guarda el cliente";
 "tour.cd.emergency.title" = "Contactos de emergencia";
 "tour.cd.emergency.purpose" = "Cada contacto muestra relación y teléfono. El botón Llamar marca su número y el menú ofrece Enviar mensaje, Copiar teléfono, Editar y Eliminar. La nota “Falta:” indica qué agregar.";
-"tour.cd.loyalty.tip" = "Para canjear, abre Lealtad y recompensas y elige una recompensa. Sus puntos se descuentan del saldo y tú entregas la recompensa, como un descuento.";
-"tour.cd.addpet.tip" = "Un dueño puede tener cualquier número de mascotas. Agrégalas cuando la familia crezca.";
+"tour.cd.loyalty.tip" = "En el paso Pago, elige una recompensa. Revisa el total con descuento. Los puntos se usan solo al confirmar el pago.";
+"tour.cd.addpet.tip" = "Verde: calma/cooperación. Naranja: ansiedad. Azul: nervios. Morado: necesidades especiales. Rojo: agresividad. Lea los avisos.";
 "tour.cd.checkin.title" = "Registrar entrada";
 "tour.cd.checkin.purpose" = "Registrar entrada crea una visita activa, inicia el cronómetro, cambia el estado de la mascota a en sesión y habilita el cobro cuando el aseo termina.";
 "tour.cd.checkin.tip" = "Úsalo cuando la mascota ya está físicamente bajo tu cuidado para que duración y conteos del panel sean precisos.";
@@ -1677,7 +1694,7 @@
 "tour.academy.cd_loyalty.what" = "Lealtad y recompensas muestra los puntos. El color de la insignia indica el nivel.";
 "tour.academy.cd_loyalty.why" = "Cada cobro suma puntos solo, por defecto según lo que paga el cliente. Se canjean por recompensas como un crédito de visita, así los clientes habituales vuelven.";
 "tour.academy.cd_addpet.title" = "Mascotas y Agregar mascota";
-"tour.academy.cd_addpet.what" = "Cada mascota muestra raza, color y un punto de género. Agregar mascota suma otra.";
+"tour.academy.cd_addpet.what" = "Cada tarjeta muestra datos, cuidados y cumpleaños. Agregar mascota suma otra.";
 "tour.academy.cd_addpet.why" = "Cada mascota guarda su foto, notas de salud, etiquetas de conducta e historial, así las familias con varias mascotas se mantienen en orden.";
 "tour.academy.cd_addpet.try" = "Toca Agregar mascota y luego guarda una mascota o cierra el formulario.";
 "tour.academy.cd_checkin.what" = "Inicia una visita para una mascota que acaba de llegar.";
@@ -1888,3 +1905,29 @@
 "checkout.loyalty.earned_fmt" = "+%@ guardados en la cuenta del cliente";
 
 "loyalty.error.credit_zero" = "El importe del crédito debe ser mayor que cero.";
+
+/* Pet profile birthdays and life stages */
+"pet.stage.kitten" = "Gatito";
+"pet.stage.puppy" = "Cachorro";
+"pet.stage.adult" = "Adulto";
+"pet.stage.senior" = "Mayor";
+"pet.birthday.title" = "Cumpleaños";
+"pet.birthday.date_type" = "Datos del cumpleaños";
+"pet.birthday.unknown" = "Aún no se conoce";
+"pet.birthday.known" = "Fecha de nacimiento conocida";
+"pet.birthday.celebration" = "Día de celebración elegido";
+"pet.birthday.date" = "Fecha";
+"pet.birthday.celebration_help" = "Empieza con hoy, su día juntos en el salón. Celébralo cada año; no establece la edad de la mascota ni el cumpleaños de su dueño.";
+"pet.stage.title" = "Etapa de vida";
+"pet.stage.automatic" = "Estimar según nacimiento";
+"pet.stage.help" = "La edad es una guía general: cachorro o gatito menor de 1 año, adulto, o mayor desde los 8 años en perros y 11 en gatos. Los perros varían según raza y tamaño. Elige la etapa indicada por el dueño o veterinario cuando sea necesario. Ser mayor no implica necesidades especiales.";
+"pet.stage.senior_care" = "Mayor · Consulta con el dueño sus necesidades de comodidad y manejo.";
+"pet.birthday.honorary_today" = "¡Hoy es el día de celebración de %@!";
+"pet.birthday.today" = "¡Hoy es el cumpleaños de %@!";
+
+"pet.stage.about" = "Acerca de las etapas de vida";
+"pet.stage.unknown" = "Desconocida";
+"pet.stage.estimated" = "%@ · estimada";
+"pet.stage.age_unknown" = "Edad desconocida";
+"new_client.remove_pet" = "Eliminar mascota";
+"checkout.loyalty.no_rewards" = "Aún no hay recompensas configuradas. Agrega una en los ajustes de Lealtad.";

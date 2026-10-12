@@ -45,6 +45,12 @@ enum UITestDataSeeder {
         pet.setBreed("Poodle")
         pet.setColor("Apricot")
         pet.setPreferredGroomingFrequency(.monthly)
+        if ProcessInfo.processInfo.environment["PAWTRACKR_UI_BEHAVIOR_SCENARIO"] == "aggressive-special-needs" {
+            pet.setBehaviorTags(["Aggressive", "Special Needs"])
+        } else if let raw = ProcessInfo.processInfo.environment["PAWTRACKR_UI_BEHAVIOR_SCENARIO"],
+                  let behavior = Pet.BehaviorTag(rawValue: raw) {
+            pet.setBehaviorTags([behavior.displayName])
+        }
         pet.owner = owner
         owner.pets = [pet]
 

@@ -57,9 +57,7 @@ struct CheckoutView: View {
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("checkout.content")
         .sheet(isPresented: $viewModel.isChoosingLoyaltyReward) {
-            CheckoutRewardSelectionView(points: viewModel.loyaltyPoints, rewards: viewModel.loyaltyRewards, subtotal: viewModel.servicesTotalDecimal) { reward in
-                viewModel.chooseLoyaltyReward(reward)
-            }
+            CheckoutRewardSelectionView(viewModel: viewModel)
         }
         .interactiveDismissDisabled(viewModel.isSaving)
         .safeAreaPadding(.bottom)
@@ -1048,6 +1046,7 @@ struct CheckoutView: View {
             viewModel.toggleTag(raw)
         } label: {
             HStack(spacing: 4) {
+                if isSelected { Image(systemName: "checkmark") }
                 if let emoji = display.emoji { Text(emoji) }
                 Text(display.label)
             }
@@ -1056,9 +1055,11 @@ struct CheckoutView: View {
             .padding(.vertical, 8)
             .background(Capsule().fill(isSelected ? tint.opacity(0.15) : Color.clear))
             .overlay(Capsule().stroke(isSelected ? tint : Color.gray.opacity(0.3), lineWidth: 1))
-            .foregroundStyle(isSelected ? tint : Color.secondary)
+            .foregroundStyle(isSelected ? Color.primary : Color.secondary)
         }
         .buttonStyle(.plain)
+        .accessibilityIdentifier("checkout.behavior.\(Pet.behaviorTagKind(for: raw)?.rawValue ?? raw)")
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 
     private var safetyBehaviorTags: [Pet.BehaviorTag] {
@@ -1073,36 +1074,58 @@ struct CheckoutView: View {
     }
 
     private var hasSafetyBehaviorWarning: Bool {
-        !safetyBehaviorTags.isEmpty
+        viewModel.pet.isAggressive || viewModel.pet.hasSpecialNeeds ||
+        viewModel.tags.contains { Pet.isAggressiveTag($0) || Pet.behaviorTagKind(for: $0) == .specialNeeds }
     }
 
     private var behaviorSafetyBanner: some View {
-        let tags = safetyBehaviorTags
-        let message: String
-        if tags.contains(.aggressive), tags.contains(.specialNeeds) {
-            message = localized(
-                "checkout.safety_alert.aggressive_special_needs",
-                value: "Aggressive and special-needs handling selected. Assign an experienced worker, use a calm approach, and review notes before continuing."
-            )
-        } else if tags.contains(.aggressive) {
-            message = localized(
-                "checkout.safety_alert.aggressive",
-                value: "Aggressive behavior selected. Warn the team before handling, use a second worker if needed, and avoid rushed movements."
-            )
-        } else {
-            message = localized(
-                "checkout.safety_alert.special_needs",
-                value: "Special needs selected. Review handling notes, medical or comfort needs, and assign extra time."
-            )
-        }
+        let pet = viewModel.pet
+        let isAggressiveSelected = viewModel.tags.contains { Pet.isAggressiveTag($0) }
+        let isNonAggressiveSelected = viewModel.tags.contains { Pet.isNonAggressiveObservation($0) }
+        let isSpecialNeedsSelected = pet.hasSpecialNeeds || viewModel.tags.contains { Pet.behaviorTagKind(for: $0) == .specialNeeds }
+        let status = pet.aggressionClearanceStatus
+
+        let (tint, icon, title, baseMessage): (Color, String, String, String) = {
+            if isAggressiveSelected {
+                let msg = status.isProbationary
+                    ? localized("checkout.safety_alert.aggressive_resets_streak", value: "Aggressive behavior selected. This resets the non-aggressive clearance streak back to 0. Warn the team before handling.")
+                    : localized("checkout.safety_alert.aggressive", value: "Aggressive behavior selected. Warn the team before handling, use a second worker if needed, and avoid rushed movements.")
+                return (DS.ColorToken.danger, "exclamationmark.triangle.fill", localized("checkout.safety_alert.title", value: "Safety alert"), msg)
+            } else if pet.isAggressive && isNonAggressiveSelected {
+                let nextStreak = min(status.requiredStreak, status.calmStreak + 1)
+                let msg: String
+                if nextStreak >= status.requiredStreak {
+                    msg = String(format: localized("checkout.safety_alert.calm_selected_clears_fmt", value: "Visit %d of %d! Completing checkout will clear the aggressive warning. The card will reflect today's observation; special-needs care remains."), nextStreak, status.requiredStreak)
+                } else {
+                    let remainingAfter = status.requiredStreak - nextStreak
+                    msg = String(format: localized("checkout.safety_alert.calm_selected_progress_fmt", value: "Visit %d of %d to clear aggressive safety flag (%d more visit(s) without aggression needed after this)."), nextStreak, status.requiredStreak, remainingAfter)
+                }
+                return (DS.ColorToken.danger, "exclamationmark.triangle.fill", localized("checkout.safety_alert.calm_selected_title", value: "Observation recorded — warning remains until checkout"), msg)
+            } else if pet.isAggressive {
+                let msg = status.isProbationary
+                    ? String(format: localized("checkout.safety_alert.aggressive_active_probation_fmt", value: "%@ is on behavior probation (%d/3 visits without aggression completed). Record Calm, Cooperative, Anxious, or Nervous only if there was no aggression today. Select Aggressive if unsafe."), pet.name, status.calmStreak)
+                    : String(format: localized("checkout.safety_alert.aggressive_active_fmt", value: "%@ is flagged as aggressive. Handle with care. Record Calm, Cooperative, Anxious, or Nervous only if there was no aggression today to start the 3-visit clearance."), pet.name)
+                return (DS.ColorToken.danger, "exclamationmark.triangle.fill", localized("checkout.safety_alert.aggressive_active_title", value: "Caution: Aggressive Handling Flag"), msg)
+            } else {
+                return (BehaviorTagIcons.tint(for: .specialNeeds), "cross.case.fill", localized("checkout.safety_alert.special_needs_title", value: "Special Needs Handling"), localized("checkout.safety_alert.special_needs", value: "Special needs selected. Review handling notes, medical or comfort needs, and assign extra time."))
+            }
+        }()
+
+        let finalMessage: String = {
+            if isSpecialNeedsSelected && (isAggressiveSelected || pet.isAggressive) {
+                let addOn = localized("checkout.safety_alert.special_needs_addon", value: " Special needs handling also noted — review medical/comfort needs.")
+                return baseMessage + addOn
+            }
+            return baseMessage
+        }()
 
         return HStack(alignment: .top, spacing: 10) {
-            Image(systemName: "exclamationmark.triangle.fill")
-                .foregroundStyle(DS.ColorToken.danger)
+            Image(systemName: icon)
+                .foregroundStyle(tint)
             VStack(alignment: .leading, spacing: 4) {
-                Text(localized("checkout.safety_alert.title", value: "Safety alert"))
+                Text(title)
                     .font(.subheadline.weight(.bold))
-                Text(message)
+                Text(finalMessage)
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -1110,29 +1133,16 @@ struct CheckoutView: View {
         }
         .padding(12)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(DS.ColorToken.danger.opacity(0.10), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .background(tint.opacity(0.10), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .stroke(DS.ColorToken.danger.opacity(0.35), lineWidth: 1)
+                .stroke(tint.opacity(0.35), lineWidth: 1)
         )
         .accessibilityIdentifier("checkout.behavior.safetyAlert")
     }
 
     private func behaviorTagTint(for raw: String) -> Color {
-        switch Pet.behaviorTagKind(for: raw) {
-        case .calm, .cooperative:
-            return DS.ColorToken.success
-        case .anxious:
-            return DS.ColorToken.warning
-        case .nervous:
-            return DS.ColorToken.info
-        case .aggressive:
-            return DS.ColorToken.danger
-        case .specialNeeds:
-            return DS.ColorToken.primary
-        case nil:
-            return DS.ColorToken.warning
-        }
+        BehaviorTagIcons.tint(for: Pet.behaviorTagKind(for: raw))
     }
 
     func paymentCard(for option: PaymentOption) -> some View {

@@ -112,6 +112,129 @@ final class ClientDetailUITests: XCTestCase {
 
     // MARK: - Helpers
 
+    func testBehaviorClearanceUpdatesClientWithoutReopeningAndPreservesPriorityCare() throws {
+        app.terminate()
+        app.launchEnvironment["PAWTRACKR_UI_BEHAVIOR_SCENARIO"] = "aggressive-special-needs"
+        app.launch()
+        waitForDashboard()
+        openSeededClient()
+        let aggression = app.descendants(matching: .any)["clientDetail.safetyBanner"].firstMatch
+        let care = app.descendants(matching: .any)["clientDetail.specialNeedsBanner"].firstMatch
+        XCTAssertTrue(aggression.waitForExistence(timeout: 8))
+        XCTAssertTrue(care.exists)
+        captureBehaviorScreen("Initial aggression and independent priority care")
+
+        for (index, behavior) in ["calm", "anxious", "nervous"].enumerated() {
+            if index > 0 { startNextBehaviorVisit() }
+            completeBehaviorCheckout(behavior)
+            XCTAssertTrue(care.waitForExistence(timeout: 8), "Care warning must survive every completed visit.")
+            if index < 2 {
+                XCTAssertTrue(aggression.exists, "Warning must remain for the first two qualifying visits.")
+                XCTAssertTrue(aggression.label.contains("\(index + 1)/3"), "Clearance progress must refresh immediately.")
+                scrollToBehaviorElement(app.buttons["clientDetail.pet.UITest Pet.history"])
+                let badge = app.descendants(matching: .any)["pet.aggression.priorityBadge"].firstMatch
+                XCTAssertTrue(badge.label.contains("\(index + 1) of 3"), "Pet badge and client banner must agree.")
+                XCTAssertTrue(app.staticTexts["pet.behavior.\(behavior)"].exists, "Today's observation must not disappear during clearance.")
+            } else {
+                XCTAssertFalse(aggression.exists, "The third mixed qualifying visit must remove aggression without leaving the client.")
+                scrollToBehaviorElement(app.buttons["clientDetail.pet.UITest Pet.history"])
+                captureBehaviorScreen("Cleared aggression with current nervous observation")
+                XCTAssertTrue(app.staticTexts["pet.behavior.nervous"].waitForExistence(timeout: 5))
+            }
+            captureBehaviorScreen("After \(behavior) checkout \(index + 1)")
+        }
+        startNextBehaviorVisit()
+        completeBehaviorCheckout("aggressive")
+        XCTAssertTrue(aggression.waitForExistence(timeout: 8), "An aggressive relapse must restore the warning immediately.")
+        XCTAssertFalse(aggression.label.contains("/3"), "Relapse must reset progress.")
+        XCTAssertTrue(care.exists)
+        captureBehaviorScreen("Aggressive relapse resets progress; care remains")
+    }
+
+    func testBehaviorCardsShowDistinctCuesAndOnlyPriorityWarnings() throws {
+        for (behavior, label) in [("calm", "Calm"), ("cooperative", "Cooperative"), ("anxious", "Anxious"), ("nervous", "Nervous"), ("specialNeeds", "Special Needs"), ("aggressive", "Aggressive")] {
+            app.terminate()
+            app.launchEnvironment["PAWTRACKR_UI_BEHAVIOR_SCENARIO"] = behavior
+            app.launch()
+            waitForDashboard()
+            openSeededClient()
+            let aggression = app.descendants(matching: .any)["clientDetail.safetyBanner"].firstMatch
+            let care = app.descendants(matching: .any)["clientDetail.specialNeedsBanner"].firstMatch
+            XCTAssertTrue(app.staticTexts["UITest Pet"].waitForExistence(timeout: 8))
+            XCTAssertEqual(aggression.exists, behavior == "aggressive")
+            XCTAssertEqual(care.exists, behavior == "specialNeeds")
+            let history = app.buttons["clientDetail.pet.UITest Pet.history"]
+            scrollToBehaviorElement(history)
+            XCTAssertTrue(history.waitForHittable(timeout: 8), "Glow must not intercept card controls.")
+            if behavior != "aggressive" && behavior != "specialNeeds" {
+                XCTAssertTrue(app.staticTexts["pet.behavior.\(behavior)"].waitForExistence(timeout: 5), label)
+            }
+            captureBehaviorScreen("Behavior card — \(behavior)")
+            history.tap()
+            XCTAssertTrue(app.navigationBars.firstMatch.waitForExistence(timeout: 8))
+        }
+    }
+
+    private func startNextBehaviorVisit() {
+        let checkIn = app.buttons["clientDetail.pet.UITest Pet.checkIn"]
+        scrollToBehaviorElement(checkIn)
+        XCTAssertTrue(checkIn.waitForHittable(timeout: 8))
+        checkIn.tap()
+    }
+
+    private func completeBehaviorCheckout(_ behavior: String) {
+        let checkout = app.buttons["clientDetail.pet.UITest Pet.checkOut"]
+        scrollToBehaviorElement(checkout)
+        XCTAssertTrue(checkout.waitForHittable(timeout: 8))
+        checkout.tap()
+        let discard = app.buttons["checkout.recovery.discard"]
+        if discard.waitForExistence(timeout: 2) { discard.tap() }
+        let service = app.buttons["checkout.service.Full Package"]
+        XCTAssertTrue(service.waitForHittable(timeout: 8))
+        service.tap()
+        app.buttons["checkout.primaryButton"].tap()
+        waitForCheckoutLayoutToSettle()
+        let choice = app.buttons["checkout.behavior.\(behavior)"]
+        scrollToBehaviorElement(choice)
+        XCTAssertTrue(choice.waitForHittable(timeout: 8))
+        choice.tap()
+        app.buttons["checkout.primaryButton"].tap()
+        app.buttons["checkout.primaryButton"].tap()
+        let confirm = app.buttons["Confirm & Pay"]
+        XCTAssertTrue(confirm.waitForHittable(timeout: 8))
+        confirm.tap()
+        XCTAssertTrue(app.staticTexts["Checkout Complete!"].waitForExistence(timeout: 15))
+        app.buttons["checkout.doneButton"].tap()
+    }
+
+    private func scrollToBehaviorElement(_ element: XCUIElement) {
+        for _ in 0..<8 {
+            if element.exists && element.isHittable { return }
+            app.scrollViews.firstMatch.swipeUp()
+        }
+    }
+
+    private func waitForCheckoutLayoutToSettle() {
+        let content = app.descendants(matching: .any)["checkout.content"].firstMatch
+        let settled = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
+            guard content.exists else { return false }
+            let viewport = self.app.frame
+            let frame = content.frame
+            // During a slide transition the accessibility union spans both pages.
+            return frame.width > 0 && frame.width <= viewport.width + 1
+                && frame.minX >= viewport.minX - 1 && frame.maxX <= viewport.maxX + 1
+        }, object: content)
+        XCTAssertEqual(XCTWaiter.wait(for: [settled], timeout: 8), .completed,
+                       "Wait for the native page transition before asking for button hit points.")
+    }
+
+    private func captureBehaviorScreen(_ name: String) {
+        let attachment = XCTAttachment(screenshot: app.screenshot())
+        attachment.name = name
+        attachment.lifetime = .keepAlways
+        add(attachment)
+    }
+
     private func openSeededClient() {
         tapTab("Clients")
         let row = app.buttons["clients.row.UITest Owner"]
@@ -145,6 +268,11 @@ final class ClientDetailUITests: XCTestCase {
 
     private func tapTab(_ title: String) {
         let tab = app.tabBars.buttons[title]
+        let sidebar = app.buttons["sidebar.row.\(title.lowercased())"]
+        if sidebar.waitForHittable(timeout: 2) {
+            sidebar.tap()
+            return
+        }
         XCTAssertTrue(tab.waitForHittable(timeout: 8), "\(title) tab was not hittable.")
         for attempt in 0..<4 {
             if attempt == 0 || !tab.isHittable {

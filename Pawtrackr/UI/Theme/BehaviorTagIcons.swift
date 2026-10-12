@@ -6,8 +6,20 @@
 //
 
 import Foundation
+import SwiftUI
 
 enum BehaviorTagIcons {
+    /// Shared semantic color for chips, checkout choices, and card glows.
+    static func tint(for tag: Pet.BehaviorTag?) -> Color {
+        switch tag {
+        case .aggressive: return DS.ColorToken.danger
+        case .specialNeeds: return DS.ColorToken.specialCare
+        case .anxious: return DS.ColorToken.warning
+        case .nervous: return DS.ColorToken.info
+        case .calm, .cooperative: return DS.ColorToken.success
+        case nil: return .secondary
+        }
+    }
     /// Map a raw tag string to a display tuple (emoji, label).
     /// Falls back to just the label when unknown.
     static func display(for raw: String) -> (emoji: String?, label: String) {
