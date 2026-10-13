@@ -133,8 +133,7 @@ final class DashboardViewModel {
     private var dataStore: DataStoreService
     private var eventBus: GlobalEventBus
     private var observers: [AnyCancellable] = []
-    private var notificationObservers: [NSObjectProtocol] = []
-    private var observationTask: Task<Void, Never>?
+    @ObservationIgnored private let observationLifetime = EventObservationLifetime()
     // Set (not array) so the per-refresh `contains` filters stay O(1) and don't
     // degrade as completed-visit history grows during a long session. Not pruned:
     // an entry must persist as long as the store can still return that visit as
@@ -161,14 +160,14 @@ final class DashboardViewModel {
         dashboardLog.info("DashboardViewModel: Setting up observers...")
         // EventBus Stream
         let stream = eventBus.stream
-        observationTask = Task { @MainActor [weak self] in
+        observationLifetime.task = Task { @MainActor [weak self] in
             for await event in stream {
                 guard let self else { return }
                 switch event {
                 case .checkoutCompleted(let completion):
                     self.markVisitCompleted(completion.visitID)
                     await self.refresh()
-                case .refreshRequired:
+                case .storeCommitted, .refreshRequired, .clientCreated, .dataStoreReset:
                     await self.refresh()
                 default:
                     break
@@ -197,7 +196,7 @@ final class DashboardViewModel {
                     await self?.refresh()
                 }
             }
-            notificationObservers.append(observer)
+            observationLifetime.notificationTokens.append(observer)
         }
     }
 

@@ -83,6 +83,12 @@ final class CheckoutFlowTests: XCTestCase {
         XCTAssertEqual(visit.payment?.amount, Decimal(string: "80.00"))
         XCTAssertEqual(visit.payment?.externalReference, "ZELLE-48291")
 
+        let day = Calendar.current.startOfDay(for: result.endedAt)
+        let summaries = try freshContext.fetch(FetchDescriptor<DaySummary>(predicate: #Predicate { $0.day == day }))
+        XCTAssertEqual(summaries.count, 1)
+        XCTAssertEqual(summaries.first?.revenue, Decimal(80))
+        XCTAssertEqual(summaries.first?.visitCount, 1)
+
         // 3. PDF receipt snapshot — the consumer that the audit explicitly named.
         let snapshot = PDFReceiptService.shared.makeSnapshot(for: visit)
         XCTAssertEqual(snapshot.totalString, "$80.00",

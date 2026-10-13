@@ -18,6 +18,7 @@ struct CheckoutCompletionContext: Equatable {
 }
 
 enum AppEvent: Equatable {
+    case storeCommitted
     case checkoutCompleted(CheckoutCompletionContext)
     case dataStoreReset
     case refreshRequired
@@ -30,7 +31,8 @@ enum AppEvent: Equatable {
     
     static func == (lhs: AppEvent, rhs: AppEvent) -> Bool {
         switch (lhs, rhs) {
-        case (.dataStoreReset, .dataStoreReset),
+        case (.storeCommitted, .storeCommitted),
+             (.dataStoreReset, .dataStoreReset),
              (.refreshRequired, .refreshRequired),
              (.showNewClientSheet, .showNewClientSheet):
             return true

@@ -105,7 +105,7 @@ class InsightsViewModel {
     private let dataStore: DataStoreService
     private let eventBus: GlobalEventBus
     private var actor: InsightsActor
-    private var observationTask: Task<Void, Never>?
+    @ObservationIgnored private let observationLifetime = EventObservationLifetime()
     private var revenueFetchTask: Task<Void, Never>?
     private var actionableInsightsTask: Task<Void, Never>?
     private var refreshDebounceTask: Task<Void, Never>?
@@ -125,11 +125,12 @@ class InsightsViewModel {
                 .store(in: &changeSubscriptions)
         }
 
-        self.observationTask = Task { [weak self] in
-            for await event in eventBus.stream {
+        let stream = eventBus.stream
+        self.observationLifetime.task = Task { [weak self] in
+            for await event in stream {
                 guard let self else { return }
                 switch event {
-                case .checkoutCompleted(_):
+                case .checkoutCompleted, .storeCommitted, .clientCreated, .dataStoreReset:
                     // Checkout completion: refresh immediately so the user sees updated totals.
                     await self.refresh()
                 case .refreshRequired:

@@ -85,94 +85,96 @@ enum SummaryUpdater {
     /// Recalculate the DaySummary for the calendar day that contains `date`.
     /// Optimized to fetch only the data needed for the specific day.
     static func rebuildDay(for date: Date, in context: ModelContext) {
+        do {
+            try stageDayRebuild(for: date, in: context)
+            if context.hasChanges { try context.save() }
+        } catch {
+            Logger.summaries.error("Summary rebuild failed: \(String(describing: error))")
+        }
+    }
+
+    /// Stages day, service, category and client aggregates in the caller's
+    /// transaction. Errors propagate so checkout can roll back every model.
+    static func stageDayRebuild(for date: Date, in context: ModelContext) throws {
         let cal = Calendar.current
         let start = cal.startOfDay(for: date)
         guard let end = cal.date(byAdding: .day, value: 1, to: start) else { return }
 
-        do {
-            // Fetch only visits that ended on this specific day
-            let visits = try fetchVisitsEndedInRange(start: start, end: end, in: context)
-            let count = visits.count
-            
-            // Primary revenue source: Sum of completed visit totals.
-            // Fallback: Sum of payments for the day if no visits are found (e.g. legacy or unlinked payments).
-            var revenue = visits.reduce(Decimal.zero) { $0 +~ $1.total }
-            if revenue == .zero {
-                let payments = try fetchPaymentsInRange(start: start, end: end, in: context)
-                revenue = payments.reduce(Decimal.zero) { $0 +~ $1.amount }
-            }
+        // Fetch only visits that ended on this specific day
+        let visits = try fetchVisitsEndedInRange(start: start, end: end, in: context)
+        let count = visits.count
 
-            // Upsert DaySummary - fetch only for this day
-            let existingSummaries = try fetchDaySummaries(for: start, in: context)
-            let existingSummary = canonicalDaySummary(from: existingSummaries, in: context)
-            if let s = existingSummary {
-                s.revenue = revenue
-                s.visitCount = count
+        // Primary revenue source: Sum of completed visit totals.
+        // Fallback: Sum of payments for the day if no visits are found (e.g. legacy or unlinked payments).
+        var revenue = visits.reduce(Decimal.zero) { $0 +~ $1.total }
+        if revenue == .zero {
+            let payments = try fetchPaymentsInRange(start: start, end: end, in: context)
+            revenue = payments.reduce(Decimal.zero) { $0 +~ $1.amount }
+        }
+
+        // Upsert DaySummary - fetch only for this day
+        let existingSummaries = try fetchDaySummaries(for: start, in: context)
+        let existingSummary = canonicalDaySummary(from: existingSummaries, in: context)
+        if let s = existingSummary {
+            s.revenue = revenue
+            s.visitCount = count
+        } else {
+            context.insert(DaySummary(day: start, revenue: revenue, visitCount: count))
+        }
+
+        // Rebuild per-service counts
+        var svcCounts: [String: Int] = [:]
+        for v in visits {
+            for item in v.items ?? [] { svcCounts[item.displayName, default: 0] += 1 }
+        }
+
+        let existingSvc = try fetchServiceDaySummaries(for: start, in: context)
+        var existingSvcDict = canonicalServiceSummaries(from: existingSvc, in: context)
+
+        for (name, svcCount) in svcCounts {
+            if let summary = existingSvcDict[name] {
+                summary.count = svcCount
+                existingSvcDict.removeValue(forKey: name)
             } else {
-                context.insert(DaySummary(day: start, revenue: revenue, visitCount: count))
+                context.insert(ServiceDaySummary(day: start, serviceName: name, count: svcCount))
             }
+        }
 
-            // Rebuild per-service counts
-            var svcCounts: [String: Int] = [:]
-            for v in visits {
-                for item in v.items ?? [] { svcCounts[item.displayName, default: 0] += 1 }
-            }
+        for summary in existingSvcDict.values {
+            context.delete(summary)
+        }
 
-            let existingSvc = try fetchServiceDaySummaries(for: start, in: context)
-            var existingSvcDict = canonicalServiceSummaries(from: existingSvc, in: context)
-
-            for (name, svcCount) in svcCounts {
-                if let summary = existingSvcDict[name] {
-                    summary.count = svcCount
-                    existingSvcDict.removeValue(forKey: name)
-                } else {
-                    context.insert(ServiceDaySummary(day: start, serviceName: name, count: svcCount))
+        // Rebuild per-category counts
+        var catCounts: [String: Int] = [:]
+        for v in visits {
+            for item in v.items ?? [] {
+                if let raw = item.serviceCategoryRaw ?? item.service?.category?.rawValue {
+                    catCounts[raw, default: 0] += 1
                 }
             }
+        }
 
-            for summary in existingSvcDict.values {
-                context.delete(summary)
+        let existingCat = try fetchCategoryDaySummaries(for: start, in: context)
+        var existingCatDict = canonicalCategorySummaries(from: existingCat, in: context)
+
+        for (raw, catCount) in catCounts {
+            if let summary = existingCatDict[raw] {
+                summary.count = catCount
+                existingCatDict.removeValue(forKey: raw)
+            } else {
+                context.insert(CategoryDaySummary(day: start, categoryRaw: raw, count: catCount))
             }
+        }
 
-            // Rebuild per-category counts
-            var catCounts: [String: Int] = [:]
-            for v in visits {
-                for item in v.items ?? [] {
-                    if let raw = item.serviceCategoryRaw ?? item.service?.category?.rawValue {
-                        catCounts[raw, default: 0] += 1
-                    }
-                }
-            }
+        for summary in existingCatDict.values {
+            context.delete(summary)
+        }
 
-            let existingCat = try fetchCategoryDaySummaries(for: start, in: context)
-            var existingCatDict = canonicalCategorySummaries(from: existingCat, in: context)
-
-            for (raw, catCount) in catCounts {
-                if let summary = existingCatDict[raw] {
-                    summary.count = catCount
-                    existingCatDict.removeValue(forKey: raw)
-                } else {
-                    context.insert(CategoryDaySummary(day: start, categoryRaw: raw, count: catCount))
-                }
-            }
-
-            for summary in existingCatDict.values {
-                context.delete(summary)
-            }
-
-            var updatedClientUUIDs = Set<UUID>()
-            for visit in visits {
-                guard let client = visit.pet?.owner, !updatedClientUUIDs.contains(client.uuid) else { continue }
-                try upsertClientInsightSummary(for: client, in: context)
-                updatedClientUUIDs.insert(client.uuid)
-            }
-
-            if context.hasChanges {
-                try context.save()
-            }
-            Logger.summaries.info("Summary rebuilt for \(start, privacy: .public): \(count) visits, \(revenue) revenue")
-        } catch {
-            Logger.summaries.error("Summary rebuild failed for \(start, privacy: .public): \(String(describing: error))")
+        var updatedClientUUIDs = Set<UUID>()
+        for visit in visits {
+            guard let client = visit.pet?.owner, !updatedClientUUIDs.contains(client.uuid) else { continue }
+            try upsertClientInsightSummary(for: client, in: context)
+            updatedClientUUIDs.insert(client.uuid)
         }
     }
 
@@ -204,7 +206,7 @@ enum SummaryUpdater {
     // MARK: - Optimized Fetch Helpers
 
     private static func fetchVisitsEndedInRange(start: Date, end: Date, in context: ModelContext) throws -> [Visit] {
-        // SwiftData #Predicate supports date comparisons. Using a precise predicate 
+        // SwiftData #Predicate supports date comparisons. Using a precise predicate
         // ensures the database (SQLite) does the heavy lifting, not the main CPU.
         var descriptor = FetchDescriptor<Visit>(
             predicate: #Predicate<Visit> { v in
@@ -489,8 +491,8 @@ enum SummaryUpdater {
 
     /// Synchronous version that reuses already-fetched visits for efficiency
     private static func rebuildDaySync(
-        for date: Date, 
-        allVisits: [Visit], 
+        for date: Date,
+        allVisits: [Visit],
         existingSummary: DaySummary?,
         existingServiceSummaries: [ServiceDaySummary],
         in context: ModelContext

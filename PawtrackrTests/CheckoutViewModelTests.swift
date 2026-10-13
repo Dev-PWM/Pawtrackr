@@ -426,7 +426,7 @@ final class CheckoutViewModelTests: XCTestCase {
             hadBeforePhoto: true,
             hadAfterPhoto: true,
             externalReference: "",
-            tags: ["Friendly"]
+            tags: ["Calm"]
         )
         try await store.saveDraft(draft)
 
@@ -440,7 +440,7 @@ final class CheckoutViewModelTests: XCTestCase {
         XCTAssertEqual(vm.servicesTotalDecimal, Decimal(40), "A tip saved by an earlier version stays out of the total.")
         XCTAssertTrue(vm.isServiceSelected(bath))
         XCTAssertTrue(vm.isAddOnSelected(nailTrim))
-        XCTAssertEqual(vm.tags, Set(["Friendly"]))
+        XCTAssertEqual(vm.tags, Set(["Calm"]))
         XCTAssertEqual(vm.draftRecoveryNotice?.missingBeforePhoto, true)
         XCTAssertEqual(vm.draftRecoveryNotice?.missingAfterPhoto, true)
     }

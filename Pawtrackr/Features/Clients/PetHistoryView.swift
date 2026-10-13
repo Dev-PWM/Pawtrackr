@@ -33,6 +33,7 @@ struct CSVDoc: Transferable {
 }
 
 struct PetHistoryView: View {
+    @Environment(GlobalEventBus.self) private var eventBus
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var envModelContext
     @Namespace private var visitHeroNamespace
@@ -60,7 +61,7 @@ struct PetHistoryView: View {
                     .task {
                         // Initialize using the pet's context if available, else environment.
                         let ctx = pet.modelContext ?? envModelContext
-                        viewModel = PetHistoryViewModel(pet: pet, modelContext: ctx)
+                        viewModel = PetHistoryViewModel(pet: pet, modelContext: ctx, eventBus: eventBus)
                     }
             }
         }

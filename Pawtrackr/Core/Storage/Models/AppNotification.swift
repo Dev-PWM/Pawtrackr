@@ -9,7 +9,7 @@ final class AppNotification {
     var message: String = ""
     var timestamp: Date = Date()
     var isRead: Bool = false
-    @Attribute(.unique) var sourceKey: String = ""
+    var sourceKey: String = ""
 
     init(title: String, message: String, sourceKey: String) {
         self.title = title

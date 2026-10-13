@@ -63,6 +63,7 @@ final class ClientDetailViewModel {
     /// Retains the committed history graph independently of unsaved profile edits.
     @ObservationIgnored private var historyPresentationContext: ModelContext?
     private var visitCompleteObserver: CDVMObserverToken?
+    @ObservationIgnored private let observationLifetime = EventObservationLifetime()
     private var checkingInPetIDs: Set<PersistentIdentifier> = []
 
     init(
@@ -98,6 +99,18 @@ final class ClientDetailViewModel {
             }
         }
         self.visitCompleteObserver = CDVMObserverToken(token)
+        let stream = eventBus.stream
+        observationLifetime.task = Task { [weak self] in
+            for await event in stream {
+                switch event {
+                case .storeCommitted, .refreshRequired:
+                    self?.refreshPets()
+                    self?.refreshRecentVisits()
+                default:
+                    break
+                }
+            }
+        }
         refreshPets()
         refreshRecentVisits()
     }

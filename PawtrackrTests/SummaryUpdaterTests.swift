@@ -59,4 +59,25 @@ final class SummaryUpdaterTests: XCTestCase {
         XCTAssertEqual(summaries.first?.visitCount, 2)
         XCTAssertEqual(summaries.first?.revenue, 150)
     }
+
+    func testStagedSummaryIncludesPendingCheckoutAndRollsBackTogether() throws {
+        let now = Date()
+        let pet = Pet(name: "Pending", species: .dog)
+        context.insert(pet)
+        let visit = Visit(pet: pet, startedAt: now.addingTimeInterval(-3600))
+        context.insert(visit)
+        try context.save()
+
+        visit.endedAt = now
+        visit.total = Decimal(85)
+        try SummaryUpdater.stageDayRebuild(for: now, in: context)
+        let staged = try context.fetch(FetchDescriptor<DaySummary>())
+        XCTAssertEqual(staged.first?.revenue, Decimal(85))
+        XCTAssertEqual(staged.first?.visitCount, 1)
+
+        context.rollback()
+        let reader = ModelContext(container)
+        XCTAssertEqual(try reader.fetchCount(FetchDescriptor<DaySummary>()), 0)
+        XCTAssertNil(try reader.fetch(FetchDescriptor<Visit>()).first?.endedAt)
+    }
 }

@@ -3,7 +3,7 @@ import SwiftData
 
 @Model
 final class DeviceStatus {
-    @Attribute(.unique) var deviceID: String
+    var deviceID: String
     var deviceName: String
     var lastSyncTimestamp: Date
     var isOnline: Bool

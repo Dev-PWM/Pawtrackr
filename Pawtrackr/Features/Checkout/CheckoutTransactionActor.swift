@@ -155,15 +155,13 @@ final actor CheckoutTransactionActor {
                 config: loyaltyConfig
             )
             
-            // 8. Commit
+            // 8. Stage summaries in the same transaction, then commit once.
+            try SummaryUpdater.stageDayRebuild(for: endedAt, in: context)
             transaction.markSucceeded(completedAt: endedAt)
             try context.save()
             if let clientUUID = pet.owner?.uuid {
                 NotificationCenter.default.post(name: .loyaltyBalanceDidChange, object: clientUUID)
             }
-            
-            // 9. Rebuild Summaries (Off-actor utility)
-            SummaryUpdater.rebuildDay(for: endedAt, in: context)
             
             return CheckoutResult(
                 visitID: visit.persistentModelID,

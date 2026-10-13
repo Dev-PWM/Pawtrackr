@@ -84,7 +84,7 @@ struct ClientsView: View {
                 actions: clientDeleteActions,
                 message: clientDeleteMessage
             )
-            .fabOverlay {
+            .fabOverlay(padding: EdgeInsets(top: 0, leading: 0, bottom: 88, trailing: 24)) {
                 #if os(iOS)
                 FAB(systemImage: "person.fill.badge.plus", accessibilityLabel: NSLocalizedString("clients.add_client", comment: "")) {
                     showingNewClientSheet = true
@@ -240,7 +240,7 @@ struct ClientsView: View {
                         }
                         reportFilterMission(viewModel)
                     } label: {
-                        Text(filter.displayName)
+                        Text("\(filter.displayName) (\(viewModel.filterCounts[filter, default: 0]))")
                             .font(.subheadline.weight(.medium))
                             .padding(.horizontal, 16)
                             .padding(.vertical, 8)

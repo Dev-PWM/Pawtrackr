@@ -24,6 +24,7 @@ struct PawtrackrApp: App {
     let dataStore: DataStoreService?
     let router = NavigationRouter()
     let eventBus = GlobalEventBus()
+    private var commitBridge: LocalStoreCommitBridge?
     @State private var appSettings = AppSettings()
     @State private var authViewModel: AuthenticationViewModel
     /// StoreKit 2 entitlement layer (Pawtrackr Pro). Started with the main scene;
@@ -95,6 +96,7 @@ struct PawtrackrApp: App {
         self._authViewModel = State(initialValue: initialAuthVM)
         if let container = initialContainer {
             self.dataStore = DataStoreService(container: container)
+            self.commitBridge = LocalStoreCommitBridge(container: container, eventBus: eventBus)
         } else {
             self.dataStore = nil
         }

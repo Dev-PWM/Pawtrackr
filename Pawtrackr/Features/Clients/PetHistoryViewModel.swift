@@ -81,9 +81,10 @@ final class PetHistoryViewModel {
     private var snapshots: [PetHistoryVisitSnapshot] = []
     private var filteredSnapshots: [PetHistoryVisitSnapshot] = []
     private var visitCompleteObserver: NotificationObserverToken?
+    @ObservationIgnored private let observationLifetime = EventObservationLifetime()
 
     // MARK: - Init
-    init(pet: Pet, modelContext: ModelContext) {
+    init(pet: Pet, modelContext: ModelContext, eventBus: GlobalEventBus = GlobalEventBus()) {
         self.pet = pet
         self.modelContext = modelContext
         let petID = pet.persistentModelID
@@ -97,6 +98,17 @@ final class PetHistoryViewModel {
             }
         }
         visitCompleteObserver = NotificationObserverToken(token)
+        let stream = eventBus.stream
+        observationLifetime.task = Task { [weak self] in
+            for await event in stream {
+                switch event {
+                case .storeCommitted, .refreshRequired:
+                    await self?.refresh()
+                default:
+                    break
+                }
+            }
+        }
     }
 
     // MARK: - Public

@@ -31,7 +31,8 @@ final class RecentHistoryViewModel {
     private var refreshTask: Task<Void, Never>?
     private var workSeq: UInt64 = 0
     private var observationTask: Task<Void, Never>?
-    private var eventTask: Task<Void, Never>?
+    @ObservationIgnored private let eventLifetime = EventObservationLifetime()
+    @ObservationIgnored private var presentationContext: ModelContext?
 
     init(dataStore: DataStoreService, eventBus: GlobalEventBus = GlobalEventBus()) {
         self.dataStore = dataStore
@@ -46,11 +47,12 @@ final class RecentHistoryViewModel {
                 self.fetchVisits()
             }
         }
-        self.eventTask = Task { [weak self] in
-            for await event in eventBus.stream {
+        let stream = eventBus.stream
+        self.eventLifetime.task = Task { [weak self] in
+            for await event in stream {
                 guard let self else { return }
                 switch event {
-                case .checkoutCompleted(_), .refreshRequired:
+                case .checkoutCompleted, .storeCommitted, .refreshRequired, .dataStoreReset:
                     self.fetchVisits()
                 default:
                     break
@@ -103,8 +105,9 @@ final class RecentHistoryViewModel {
                 let filteredModelIDs = snaps
                     .filter { result.filteredIDs.contains($0.id) }
                     .map(\.modelID)
-                let mainContext = self.dataStore.container.mainContext
-                let filtered = filteredModelIDs.compactMap { mainContext.model(for: $0) as? Visit }
+                let reader = ModelContext(self.dataStore.container)
+                self.presentationContext = reader
+                let filtered = filteredModelIDs.compactMap { reader.model(for: $0) as? Visit }
                 let calendar = Calendar.current
                 self.summaryVisitCount = filtered.count
                 self.summaryRevenueString = result.totalRevenue.moneyString

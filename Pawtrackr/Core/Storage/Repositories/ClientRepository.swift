@@ -60,6 +60,7 @@ struct ClientListGroups: Sendable {
 struct ClientListPresentation: Sendable {
     let groups: ClientListGroups
     let needsAttention: [PersistentIdentifier]
+    var filterCounts: [ClientsViewModel.Filter: Int] = [:]
 }
 
 extension ClientRepositoryProtocol {
@@ -159,11 +160,16 @@ final actor ClientRepository: ClientRepositoryProtocol {
             var seen: Set<UUID> = []
             var active: [ClientSearchRecord] = []
             var inactive: [ClientSearchRecord] = []
+            var counts: [ClientsViewModel.Filter: Int] = [:]
             for (index, record) in book.records.enumerated() {
                 if index.isMultiple(of: 128) { try Task.checkCancellation() }
                 guard search.matches(record), seen.insert(record.ordering.uuid).inserted else { continue }
                 let isActive = book.activeIDs.contains(record.id)
                 let attention = record.attentionDueAt.map { now > $0 } ?? false
+                counts[.all, default: 0] += 1
+                if isActive { counts[.active, default: 0] += 1 }
+                if !isActive && attention { counts[.overdue, default: 0] += 1 }
+                if record.incomplete { counts[.missingInfo, default: 0] += 1 }
                 switch filter {
                 case .all: break
                 case .active: guard isActive else { continue }
@@ -175,7 +181,7 @@ final actor ClientRepository: ClientRepositoryProtocol {
             let orderedActive = active.sorted { ClientListOrdering.precedes($0.ordering, $1.ordering, by: sort) }
             let orderedInactive = inactive.sorted { ClientListOrdering.precedes($0.ordering, $1.ordering, by: sort) }
             let attention = orderedInactive.filter { $0.attentionDueAt.map { now > $0 } ?? false }.map(\.id)
-            return ClientListPresentation(groups: ClientListGroups(active: orderedActive.map(\.id), inactive: orderedInactive.map(\.id)), needsAttention: attention)
+            return ClientListPresentation(groups: ClientListGroups(active: orderedActive.map(\.id), inactive: orderedInactive.map(\.id)), needsAttention: attention, filterCounts: counts)
         }
     }
 

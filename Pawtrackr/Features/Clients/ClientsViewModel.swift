@@ -66,6 +66,7 @@ final class ClientsViewModel {
     var inProgressClients: [Client] = []
     var otherClients: [Client] = []
     var needsAttentionClients: [Client] = []
+    private(set) var filterCounts: [Filter: Int] = [:]
     
     var searchText = "" {
         didSet { scheduleFetch() }
@@ -123,8 +124,11 @@ final class ClientsViewModel {
             let stream = eventBus.stream
             eventTaskOwner.task = Task { [weak self] in
                 for await event in stream {
-                    if event == .refreshRequired {
+                    switch event {
+                    case .storeCommitted, .refreshRequired, .clientCreated, .checkoutCompleted, .dataStoreReset:
                         self?.fetchClients()
+                    default:
+                        break
                     }
                 }
             }
@@ -160,6 +164,7 @@ final class ClientsViewModel {
                     guard !Task.isCancelled else { return }
                     let reader = ModelContext(self.modelContext.container)
                     self.presentationContext = reader
+                    self.filterCounts = presentation.filterCounts
                     self.inProgressClients = presentation.groups.active.compactMap { reader.model(for: $0) as? Client }
                     self.otherClients = presentation.groups.inactive.compactMap { reader.model(for: $0) as? Client }
                     self.needsAttentionClients = presentation.needsAttention.compactMap { reader.model(for: $0) as? Client }
@@ -175,6 +180,13 @@ final class ClientsViewModel {
                     .filter { seen.insert($0.uuid).inserted }
                 var others = groups.inactive.compactMap { self.modelContext.model(for: $0) as? Client }
                     .filter { seen.insert($0.uuid).inserted }
+
+                self.filterCounts = [
+                    .all: inProgress.count + others.count,
+                    .active: inProgress.count,
+                    .overdue: others.filter { ($0.pets ?? []).contains { $0.archivedAt == nil && $0.needsAttention } }.count,
+                    .missingInfo: (inProgress + others).filter(ClientMissingInfo.isIncomplete).count
+                ]
 
                 // Apply Smart Filters
                 switch selectedFilter {

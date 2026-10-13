@@ -27,6 +27,7 @@ final class PetDetailViewModel {
     private let modelContext: ModelContext
     private let visitRepository: VisitRepositoryProtocol
     private var visitCompleteObserver: PDVMObserverToken?
+    @ObservationIgnored private let observationLifetime = EventObservationLifetime()
     @ObservationIgnored private var presentationContext: ModelContext?
 
     // State
@@ -93,24 +94,41 @@ final class PetDetailViewModel {
             Task { @MainActor [weak self] in
                 guard let self else { return }
                 if let completedPetID = note.petID, completedPetID != self.pet.persistentModelID { return }
-                let reader = ModelContext(self.modelContext.container)
-                let uuid = self.pet.uuid
-                do {
-                    if let fresh = try reader.fetch(FetchDescriptor<Pet>(predicate: #Predicate { $0.uuid == uuid })).first {
-                        self.presentationContext = reader
-                        self.pet = fresh
-                    }
-                } catch {
-                    self.appError = .database(error.localizedDescription)
-                    Logger.database.error("Pet presentation refresh failed: \(error.localizedDescription)")
-                }
-                self.activeVisitID = nil
-                self.refreshActiveVisit()
-                self.refreshNonce &+= 1
+                self.refreshCommittedPresentation()
             }
         }
         self.visitCompleteObserver = PDVMObserverToken(token)
+        let stream = eventBus.stream
+        observationLifetime.task = Task { [weak self] in
+            for await event in stream {
+                switch event {
+                case .storeCommitted, .refreshRequired:
+                    self?.refreshCommittedPresentation()
+                default:
+                    break
+                }
+            }
+        }
         refreshActiveVisit()
+    }
+
+    /// Replaces committed presentation state while preserving a live editor's changes.
+    private func refreshCommittedPresentation() {
+        if !(pet.modelContext ?? modelContext).hasChanges {
+            let reader = ModelContext(modelContext.container)
+            let uuid = pet.uuid
+            do {
+                if let fresh = try reader.fetch(FetchDescriptor<Pet>(predicate: #Predicate { $0.uuid == uuid })).first {
+                    presentationContext = reader
+                    pet = fresh
+                }
+            } catch {
+                appError = .database(error.localizedDescription)
+                Logger.database.error("Pet presentation refresh failed: \(error.localizedDescription)")
+            }
+        }
+        refreshActiveVisit()
+        refreshNonce &+= 1
     }
 
     /// Re-derive the open visit for this pet from the store. Filters at the
