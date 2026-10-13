@@ -30,7 +30,7 @@ final class RecentHistoryViewModel {
     private var searchTask: Task<Void, Never>?
     private var refreshTask: Task<Void, Never>?
     private var workSeq: UInt64 = 0
-    private var observationTask: Task<Void, Never>?
+    @ObservationIgnored private let changeLifetime = EventObservationLifetime()
     @ObservationIgnored private let eventLifetime = EventObservationLifetime()
     @ObservationIgnored private var presentationContext: ModelContext?
 
@@ -41,7 +41,7 @@ final class RecentHistoryViewModel {
         // captures self strongly, and since neither stream terminates on its
         // own, the VM would never deallocate when the view dismisses.
         let changeStream = dataStore.observeChanges(Visit.self)
-        self.observationTask = Task { [weak self] in
+        self.changeLifetime.task = Task { [weak self] in
             for await _ in changeStream {
                 guard let self else { return }
                 self.fetchVisits()
@@ -115,6 +115,7 @@ final class RecentHistoryViewModel {
                 self.sortedDays = self.groupedVisits.keys.sorted(by: >)
                 self.isLoading = false
             } catch {
+                guard currentSeq == self.workSeq, !Task.isCancelled else { return }
                 self.appError = .database(error.localizedDescription)
                 self.groupedVisits = [:]
                 self.sortedDays = []

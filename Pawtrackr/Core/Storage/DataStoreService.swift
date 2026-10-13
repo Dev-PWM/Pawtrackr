@@ -43,16 +43,6 @@ public final class DataStoreService {
         return try mainContext.fetch(descriptor)
     }
 
-    /// Performs an asynchronous fetch in a detached context to keep the UI responsive.
-    nonisolated func fetchAsync<T: PersistentModel>(_ predicate: Predicate<T>? = nil, sortBy: [SortDescriptor<T>] = []) async throws -> [T] {
-        let container = self.container
-        return try await Task.detached(priority: .userInitiated) {
-            let bgContext = ModelContext(container)
-            let descriptor = FetchDescriptor<T>(predicate: predicate, sortBy: sortBy)
-            return try bgContext.fetch(descriptor)
-        }.value
-    }
-
     /// Reads fresh account presentation values without passing model instances across actors.
     nonisolated func fetchLoyaltyAccount(clientUUID: UUID) async throws -> CheckoutLoyaltyOptions? {
         let container = self.container
@@ -78,22 +68,18 @@ public final class DataStoreService {
         }.value
     }
 
-    /// Yields a tick whenever the main context records changes.
-    ///
-    /// FRAGILE: SwiftData wraps Core Data, so the Core Data
-    /// `NSManagedObjectContextObjectsDidChange` notification *currently* fires
-    /// when a SwiftData ModelContext mutates. This is undocumented — Apple
-    /// could rev SwiftData's internals at any release and silently break this
-    /// stream. If the UI stops reacting to writes after a future iOS update,
-    /// this observer is the first thing to suspect; replace with a SwiftData-
-    /// native subscription if/when one ships.
+    /// Yields a value-only invalidation after a successful save in this container.
+    /// The saving context is inspected on its own executor, including background actors.
     func observeChanges<T: PersistentModel>(_ modelType: T.Type) -> AsyncStream<Void> {
-        AsyncStream { continuation in
+        let container = self.container
+        return AsyncStream { continuation in
             let observer = NotificationCenter.default.addObserver(
-                forName: .NSManagedObjectContextObjectsDidChange,
-                object: mainContext,
-                queue: .main
-            ) { _ in
+                forName: ModelContext.didSave,
+                object: nil,
+                queue: nil
+            ) { notification in
+                guard let writer = notification.object as? ModelContext,
+                      writer.container === container else { return }
                 continuation.yield(())
             }
             continuation.onTermination = { _ in

@@ -53,7 +53,6 @@ enum AppEvent: Equatable {
 
 @Observable
 final class GlobalEventBus {
-    private var continuations: [ObjectIdentifier: AsyncStream<AppEvent>.Continuation] = [:]
     
     // We use a broadcast-like pattern or a simple publisher
     private var subject = PassthroughSubject<AppEvent, Never>()
