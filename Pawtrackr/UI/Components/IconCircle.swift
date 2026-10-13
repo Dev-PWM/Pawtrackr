@@ -344,14 +344,18 @@ private struct AsyncDecodedImage<Fallback: View>: View {
             }
             #endif
         }
-        .task(id: cacheKey) {
+        .task(id: decodeRequest) {
             await decode()
         }
     }
 
-    private var cacheKey: String {
-        let sizes = dataSources.map { String($0.count) }.joined(separator: "-")
-        return "\(sizes)|\(Int(maxDimension.rounded()))"
+    private struct DecodeRequest: Equatable {
+        let sources: [Data]
+        let dimension: CGFloat
+    }
+
+    private var decodeRequest: DecodeRequest {
+        DecodeRequest(sources: dataSources, dimension: maxDimension)
     }
 
     private func decode() async {
@@ -377,6 +381,7 @@ private struct AsyncDecodedImage<Fallback: View>: View {
         }.value
         let result: NSImage? = boxed.image
         #endif
+        guard !Task.isCancelled else { return }
         decoded = result
     }
 }

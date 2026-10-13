@@ -9,6 +9,7 @@
 import Foundation
 import CoreGraphics
 import ImageIO
+import CryptoKit
 
 #if canImport(UIKit)
 import UIKit
@@ -38,7 +39,7 @@ final class ImageCache: @unchecked Sendable {
     /// Returns a decoded, downsampled UIImage for the given data and max dimension.
     /// Thread-safe: can be called from any thread.
     func image(data: Data, maxDimension: CGFloat) -> UIImage? {
-        let key = cacheKey(for: data, maxDimension: maxDimension) as NSString
+        let key = contentCacheKey(for: data, maxDimension: maxDimension) as NSString
 
         // Check cache first (fast lock-based read)
         lock.lock()
@@ -67,26 +68,16 @@ final class ImageCache: @unchecked Sendable {
 
     /// Removes a specific image from cache. Thread-safe.
     func removeImage(for data: Data, maxDimension: CGFloat) {
-        let key = cacheKey(for: data, maxDimension: maxDimension) as NSString
+        let key = contentCacheKey(for: data, maxDimension: maxDimension) as NSString
         lock.lock()
         cache.removeObject(forKey: key)
         lock.unlock()
     }
 
-    private func cacheKey(for data: Data, maxDimension: CGFloat) -> String {
-        // Use a quick hash composed of count + a few bytes from start/end + dimension.
-        // Avoid (data as NSData).hash which is O(N) and causes main-thread freezes.
-        let count = data.count
-        var quickHash = 5381
-        for byte in data.prefix(16) {
-            quickHash = (quickHash &* 33) &+ Int(byte)
-        }
-        if count > 16 {
-            for byte in data.suffix(16) {
-                quickHash = (quickHash &* 33) &+ Int(byte)
-            }
-        }
-        return "\(count)-\(quickHash)-\(Int(maxDimension.rounded()))"
+    /// Keys the complete image content; matching file headers and lengths are insufficient.
+    private func contentCacheKey(for data: Data, maxDimension: CGFloat) -> String {
+        let digest = SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined()
+        return "\(digest)-\(Int(maxDimension.rounded()))"
     }
 
     /// Decodes and downsamples image data to a smaller Data representation for storage.
@@ -140,7 +131,7 @@ final class ImageCache: @unchecked Sendable {
     }
 
     func image(data: Data, maxDimension: CGFloat) -> NSImage? {
-        let key = cacheKey(for: data, maxDimension: maxDimension) as NSString
+        let key = contentCacheKey(for: data, maxDimension: maxDimension) as NSString
 
         lock.lock()
         let cachedImage = cache.object(forKey: key)
@@ -164,24 +155,16 @@ final class ImageCache: @unchecked Sendable {
     }
 
     func removeImage(for data: Data, maxDimension: CGFloat) {
-        let key = cacheKey(for: data, maxDimension: maxDimension) as NSString
+        let key = contentCacheKey(for: data, maxDimension: maxDimension) as NSString
         lock.lock()
         cache.removeObject(forKey: key)
         lock.unlock()
     }
 
-    private func cacheKey(for data: Data, maxDimension: CGFloat) -> String {
-        let count = data.count
-        var quickHash = 5381
-        for byte in data.prefix(16) {
-            quickHash = (quickHash &* 33) &+ Int(byte)
-        }
-        if count > 16 {
-            for byte in data.suffix(16) {
-                quickHash = (quickHash &* 33) &+ Int(byte)
-            }
-        }
-        return "\(count)-\(quickHash)-\(Int(maxDimension.rounded()))"
+    /// Keys the complete image content; matching file headers and lengths are insufficient.
+    private func contentCacheKey(for data: Data, maxDimension: CGFloat) -> String {
+        let digest = SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined()
+        return "\(digest)-\(Int(maxDimension.rounded()))"
     }
 
     func downsampleToData(data: Data, maxDimension: CGFloat = 1024, compressionQuality: CGFloat = 0.7) -> Data? {

@@ -1,7 +1,40 @@
 import XCTest
+import ImageIO
+import UniformTypeIdentifiers
 @testable import Pawtrackr
 
 final class ImageCacheTests: XCTestCase {
+
+    func testMatchingImageHeadersLengthsAndFootersCannotReuseAnotherPhoto() throws {
+        let red = try makePNG(red: 255, blue: 0)
+        let blue = try makePNG(red: 0, blue: 255)
+        let length = max(red.count, blue.count) + 32
+        let redPadded = red + Data(repeating: 0, count: length - red.count)
+        let bluePadded = blue + Data(repeating: 0, count: length - blue.count)
+        XCTAssertEqual(redPadded.prefix(16), bluePadded.prefix(16))
+        XCTAssertEqual(redPadded.suffix(16), bluePadded.suffix(16))
+        XCTAssertEqual(redPadded.count, bluePadded.count)
+        ImageCache.shared.clearCache()
+        let first = try XCTUnwrap(ImageCache.shared.image(data: redPadded, maxDimension: 50))
+        let second = try XCTUnwrap(ImageCache.shared.image(data: bluePadded, maxDimension: 50))
+        XCTAssertFalse(first === second, "Distinct photos must not collide on matching metadata bytes.")
+    }
+
+    /// Creates a deterministic PNG without depending on platform drawing state.
+    private func makePNG(red: UInt8, blue: UInt8) throws -> Data {
+        let pixels = Data([red, 0, blue, 255, red, 0, blue, 255,
+                           red, 0, blue, 255, red, 0, blue, 255])
+        let provider = try XCTUnwrap(CGDataProvider(data: pixels as CFData))
+        let image = try XCTUnwrap(CGImage(width: 2, height: 2, bitsPerComponent: 8,
+            bitsPerPixel: 32, bytesPerRow: 8, space: CGColorSpaceCreateDeviceRGB(),
+            bitmapInfo: CGBitmapInfo(rawValue: CGImageAlphaInfo.last.rawValue),
+            provider: provider, decode: nil, shouldInterpolate: false, intent: .defaultIntent))
+        let output = NSMutableData()
+        let destination = try XCTUnwrap(CGImageDestinationCreateWithData(output, UTType.png.identifier as CFString, 1, nil))
+        CGImageDestinationAddImage(destination, image, nil)
+        XCTAssertTrue(CGImageDestinationFinalize(destination))
+        return output as Data
+    }
     
     func testDownsampleToData_ReducesSize() {
         // Create a fake large-ish red square image
