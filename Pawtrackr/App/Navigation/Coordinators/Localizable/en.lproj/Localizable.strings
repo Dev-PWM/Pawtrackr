@@ -1930,3 +1930,7 @@
 "loyalty.preview.redeem_spa" = "Choose an available reward on the Payment step of checkout, or keep points for later. Credits lower the amount due automatically; redeeming VIP Spa with Spa Package selected makes the entered service amount free.";
 "checkout.loyalty.spa_fulfillment" = "Select Spa Package to redeem. The entered service amount becomes free at checkout.";
 "settings.help.loyalty_fixed_detail" = "Each completed, settled visit earns 20 points. Choose a reward in Payment or keep the points. Credits lower the amount due. Select Spa Package and redeem VIP Spa to make the entered service amount free.";
+
+/* Context-aware tactile feedback */
+"settings.preferences.smart_haptics" = "Feedback adapts to selections, rewards and saved actions. Rapid repeats are filtered. Supported hardware provides tactile feedback; other devices keep visual feedback.";
+"settings.preferences.try_haptics" = "Try Feedback";

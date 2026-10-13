@@ -76,14 +76,20 @@ struct ContentView: View {
     private var sidebarSelectionBinding: Binding<NavigationItem?> {
         Binding(
             get: { sidebarSelection },
-            set: { sidebarSelection = $0 }
+            set: {
+                if sidebarSelection != $0 { HapticManager.play(.navigation) }
+                sidebarSelection = $0
+            }
         )
     }
 
     private var tabSelectionBinding: Binding<NavigationItem> {
         Binding(
             get: { tabSelection },
-            set: { tabSelection = $0 }
+            set: {
+                if tabSelection != $0 { HapticManager.play(.navigation) }
+                tabSelection = $0
+            }
         )
     }
 

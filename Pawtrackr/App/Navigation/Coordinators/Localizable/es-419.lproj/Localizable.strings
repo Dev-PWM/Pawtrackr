@@ -1943,3 +1943,7 @@
 "loyalty.preview.redeem_spa" = "Elige una recompensa en el paso Pago o guarda los puntos. Los créditos reducen el importe automáticamente; canjear Spa VIP con Paquete Spa seleccionado hace gratis el importe del servicio.";
 "checkout.loyalty.spa_fulfillment" = "Selecciona Paquete Spa para canjear. El importe del servicio será gratis al finalizar.";
 "settings.help.loyalty_fixed_detail" = "Cada visita completada y saldada suma 20 puntos. Elige una recompensa en Pago o guarda los puntos. Los créditos reducen el importe. Selecciona Paquete Spa y canjea Spa VIP para hacer gratis el importe del servicio.";
+
+/* Context-aware tactile feedback */
+"settings.preferences.smart_haptics" = "La respuesta se adapta a selecciones, recompensas y acciones guardadas. Las repeticiones rápidas se filtran. El hardware compatible ofrece respuesta táctil; otros dispositivos mantienen la respuesta visual.";
+"settings.preferences.try_haptics" = "Probar respuesta táctil";

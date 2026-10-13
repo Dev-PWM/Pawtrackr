@@ -43,17 +43,19 @@ enum MotionGovernor {
 struct PressScaleButtonStyle: ButtonStyle {
     var scale: CGFloat = MotionSystem.pressScale
     var hapticsEnabled = false
-    var hapticStyle: HapticManager.Impact = .light
+    var hapticStyle: HapticManager.Impact = .soft
+    var hapticEvent: HapticEvent = .press
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.isEnabled) private var isEnabled
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .scaleEffect(configuration.isPressed ? scale : 1.0)
             .animation(MotionSystem.resolved(MotionSystem.snappy, reduceMotion: reduceMotion), value: configuration.isPressed)
             .onChange(of: configuration.isPressed) { _, isPressed in
-                if isPressed, hapticsEnabled {
-                    HapticManager.impact(hapticStyle)
+                if isPressed, hapticsEnabled, isEnabled {
+                    HapticManager.play(hapticEvent, impact: hapticEvent == .press ? hapticStyle : nil)
                 }
             }
     }
@@ -138,8 +140,9 @@ struct InsightsMeshBackground: View {
 }
 
 extension View {
-    func pressScaleStyle(hapticsEnabled: Bool = false) -> some View {
-        buttonStyle(PressScaleButtonStyle(hapticsEnabled: hapticsEnabled))
+    /// Uses the shared motion policy and an optional semantic tactile cue.
+    func pressScaleStyle(hapticsEnabled: Bool = false, hapticEvent: HapticEvent = .press) -> some View {
+        buttonStyle(PressScaleButtonStyle(hapticsEnabled: hapticsEnabled, hapticEvent: hapticEvent))
     }
 
     func motionAnimation(_ animation: Animation, value: some Equatable) -> some View {

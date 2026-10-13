@@ -816,9 +816,6 @@ struct CheckoutView: View {
         }
         .onChange(of: viewModel.state) { _, newValue in
             if newValue == .confirmed {
-                #if os(iOS)
-                HapticManager.notify(.success)
-                #endif
                 let receiptSnapshot = PDFReceiptService.shared.makeSnapshot(for: viewModel.visit)
                 Task {
                     let data: Data? = await withTaskGroup(of: Data?.self) { group in
@@ -948,7 +945,7 @@ struct CheckoutView: View {
         let isSelected = viewModel.isServiceSelected(service)
         let spaReady = DefaultServiceCatalog.isSpaPackage(service.name) && viewModel.availableSpaReward != nil
         return Button {
-            HapticManager.impact(.light)
+            HapticManager.selectionChanged()
             withAnimation(Animations.responsiveSpring) {
                 viewModel.toggleService(service)
             }
@@ -977,7 +974,7 @@ struct CheckoutView: View {
     func addOnRow(_ service: Service) -> some View {
         let isSelected = viewModel.isAddOnSelected(service)
         return Button {
-            HapticManager.impact(.light)
+            HapticManager.selectionChanged()
             withAnimation(Animations.responsiveSpring) {
                 viewModel.toggleAddOn(service)
             }
@@ -1054,7 +1051,7 @@ struct CheckoutView: View {
         let display = BehaviorTagIcons.display(for: raw)
         let tint = behaviorTagTint(for: raw)
         return Button {
-            HapticManager.impact(.light)
+            HapticManager.selectionChanged()
             viewModel.toggleTag(raw)
         } label: {
             HStack(spacing: 4) {
@@ -1160,7 +1157,7 @@ struct CheckoutView: View {
     func paymentCard(for option: PaymentOption) -> some View {
         let isSelected = viewModel.selectedPaymentMethod == option.method
         return Button {
-            HapticManager.impact(.medium)
+            HapticManager.selectionChanged()
             withAnimation(Animations.responsiveSpring) {
                 viewModel.choosePayment(option.method)
             }

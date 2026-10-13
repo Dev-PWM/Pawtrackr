@@ -1,23 +1,17 @@
 import SwiftUI
 
-/// A button style that combines scale-down animation with haptic feedback.
+/// The legacy entry point shares the same disabled-state and Reduce Motion behavior.
 struct HapticPressButtonStyle: ButtonStyle {
     let style: HapticManager.Impact
 
     func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .scaleEffect(configuration.isPressed ? 0.97 : 1.0)
-            .animation(.snappy, value: configuration.isPressed)
-            .onChange(of: configuration.isPressed) { _, isPressed in
-                if isPressed {
-                    HapticManager.impact(style)
-                }
-            }
+        PressScaleButtonStyle(hapticsEnabled: true, hapticStyle: style).makeBody(configuration: configuration)
     }
 }
 
 extension View {
-    func hapticButtonStyle(_ style: HapticManager.Impact = .light) -> some View {
-        self.buttonStyle(HapticPressButtonStyle(style: style))
+    /// Applies an impact style through the centralized native feedback policy.
+    func hapticButtonStyle(_ style: HapticManager.Impact = .soft) -> some View {
+        buttonStyle(HapticPressButtonStyle(style: style))
     }
 }

@@ -206,6 +206,7 @@ final class CheckoutViewModel {
     /// Saves the choice immediately for recovery. The balance changes only with payment.
     func chooseLoyaltyReward(_ reward: LoyaltyReward?) {
         guard !isSaving, state != .confirmed else { return }
+        if selectedLoyaltyReward != reward { HapticManager.play(reward == nil ? .selection : .reward) }
         selectedLoyaltyReward = reward
         isChoosingLoyaltyReward = false
         recalculateCachedStrings()
@@ -594,6 +595,7 @@ final class CheckoutViewModel {
     func goBack() {
         guard currentStep.rawValue > CheckoutFlowStep.services.rawValue else { return }
         currentStep = CheckoutFlowStep(rawValue: currentStep.rawValue - 1) ?? .services
+        HapticManager.play(.step)
         trace("step_back_to_\(currentStep.rawValue)")
         scheduleCriticalDraftSave(reason: "step_back")
     }
@@ -602,6 +604,7 @@ final class CheckoutViewModel {
         try validate(step: currentStep)
         guard currentStep != .review else { return }
         currentStep = CheckoutFlowStep(rawValue: currentStep.rawValue + 1) ?? .review
+        HapticManager.play(.step)
         trace("step_advanced_to_\(currentStep.rawValue)")
         scheduleCriticalDraftSave(reason: "step_advanced")
     }
@@ -678,6 +681,7 @@ final class CheckoutViewModel {
             try validate(step: .review)
         } catch {
             self.appError = .validation(error as? ValidationError ?? .custom(message: error.localizedDescription))
+            HapticManager.notify(.warning)
             return
         }
 
@@ -701,9 +705,8 @@ final class CheckoutViewModel {
         appError = nil
         Logger.checkout.info("CheckoutViewModel: Checkout started")
         trace("confirm_pay_tapped")
-        #if os(iOS)
-        HapticManager.impact(.medium)
-        #endif
+        HapticManager.play(.confirmation)
+        HapticManager.prepare(.success)
 
         let request = CheckoutRequest(
             visitUUID: visit.uuid,
@@ -785,9 +788,7 @@ final class CheckoutViewModel {
             
             Logger.checkout.info("CheckoutViewModel: Checkout saved successfully via Actor")
             trace("checkout_saved")
-            #if os(iOS)
             HapticManager.notify(.success)
-            #endif
         } catch {
             Logger.checkout.error("CheckoutViewModel: Persistence failed - \(error.localizedDescription)")
             Logger.database.error("Local save failed: \(error.localizedDescription, privacy: .public)")
@@ -796,9 +797,7 @@ final class CheckoutViewModel {
             appError = appErr
             isSaving = false
             trace("checkout_save_failed")
-            #if os(iOS)
             HapticManager.notify(.error)
-            #endif
         }
     }
 

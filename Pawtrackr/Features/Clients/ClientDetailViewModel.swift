@@ -431,13 +431,16 @@ final class ClientDetailViewModel {
             guard let self else { return }
             defer { self.checkingInPetIDs.remove(petID) }
             do {
+                HapticManager.prepare(.success)
                 _ = try await self.visitRepository.checkIn(pet: pet, date: date)
+                HapticManager.notify(.success)
                 self.refreshPets()
                 self.refreshRecentVisits()
             } catch {
                 self.appError = .database(error.localizedDescription)
                 Logger.database.error("Local save failed: \(error.localizedDescription, privacy: .public)")
                 Logger.clientDetail.error("Failed to check in: \(String(describing: error))")
+                HapticManager.notify(.error)
             }
         }
     }

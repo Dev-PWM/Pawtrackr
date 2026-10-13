@@ -1102,7 +1102,6 @@ struct ClientDetailView: View {
                                         DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
                                             withAnimation(Animations.fastEaseOut) { showSessionStartedToast = false }
                                         }
-                                        HapticManager.notify(.success)
                                     }
                                     .opacity(activeVisit == nil && !isCheckingIn ? 1.0 : 0.55)
                                     .disabled(activeVisit != nil || isCheckingIn)
@@ -1114,7 +1113,7 @@ struct ClientDetailView: View {
                                         if let visit = vm.activeVisit(for: pet) {
                                             checkoutRoute = ClientCheckoutRoute(pet: pet, visit: visit)
                                             advanceWalkthroughIntoCheckoutIfNeeded()
-                                            HapticManager.notify(.success)
+                                            HapticManager.play(.navigation)
                                         } else {
                                             vm.refreshPets()
                                             HapticManager.notify(.warning)

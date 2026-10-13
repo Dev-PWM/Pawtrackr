@@ -624,9 +624,7 @@ final class WalkthroughController {
         self.steps = steps
         currentIndex = stepID.flatMap { id in steps.firstIndex { $0.id == id } } ?? 0
         preferredClientDetailID = nil
-        #if os(iOS)
-        HapticManager.impact(.medium)
-        #endif
+        HapticManager.play(.navigation)
         withAnimation(.easeInOut(duration: 0.3)) { isActive = true }
         stepDidChange(backward: false)
     }
@@ -643,9 +641,7 @@ final class WalkthroughController {
     func advance(from stepID: String? = nil) {
         guard isActive, steps.indices.contains(currentIndex) else { return }
         if let stepID, steps[currentIndex].id != stepID { return }
-        #if os(iOS)
-        HapticManager.impact(.light)
-        #endif
+        HapticManager.play(.step)
         let leaving = steps[currentIndex].lesson
         reportCompleted(currentIndex)
         if isLastStep {
@@ -667,9 +663,7 @@ final class WalkthroughController {
     func goBack(from stepID: String? = nil) {
         guard isActive, currentIndex > 0, steps.indices.contains(currentIndex) else { return }
         if let stepID, steps[currentIndex].id != stepID { return }
-        #if os(iOS)
-        HapticManager.impact(.light)
-        #endif
+        HapticManager.play(.step)
         withAnimation(.spring(response: 0.45, dampingFraction: 0.75)) {
             currentIndex -= 1
         }
@@ -680,9 +674,7 @@ final class WalkthroughController {
     /// real modal action, e.g. creating a client from the New Client sheet.
     func completePresentation(_ presentation: WalkthroughPresentation) {
         guard isActive, currentStep?.presents == presentation else { return }
-        #if os(iOS)
-        HapticManager.impact(.light)
-        #endif
+        HapticManager.play(.step)
 
         let remainingIndices = steps.indices.drop(while: { $0 <= currentIndex })
         guard let nextIndex = remainingIndices.first(where: { steps[$0].presents != presentation }) else {
@@ -778,9 +770,7 @@ final class WalkthroughController {
         guard let next = currentStep, next.lesson != chapter else { return }
         let order = chapters
         guard let index = order.firstIndex(of: chapter) else { return }
-        #if os(iOS)
         HapticManager.notify(.success)
-        #endif
         withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
             chapterWin = WalkthroughChapterWin(chapter: chapter, number: index + 1, of: order.count)
         }
@@ -860,9 +850,7 @@ final class WalkthroughController {
     }
 
     private func finish(completed: Bool) {
-        #if os(iOS)
-        HapticManager.notify(completed ? .success : .warning)
-        #endif
+        if completed { HapticManager.notify(.success) }
         watchdogTask?.cancel()
         watchdogTask = nil
         patienceTask?.cancel()

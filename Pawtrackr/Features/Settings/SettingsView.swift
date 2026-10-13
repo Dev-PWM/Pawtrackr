@@ -915,6 +915,21 @@ private struct PreferencesSectionView: View {
                 Toggle(isOn: $appSettings.hapticsEnabled) {
                     Label(settingsLocalized("settings.preferences.haptics", value: "Haptic Feedback"), systemImage: "hand.tap.fill")
                 }
+                .onChange(of: appSettings.hapticsEnabled) { _, _ in
+                    HapticManager.preferenceDidChange()
+                }
+                Text(settingsLocalized("settings.preferences.smart_haptics", value: "Feedback adapts to selections, rewards and saved actions. Rapid repeats are filtered. Supported hardware provides tactile feedback; other devices keep visual feedback."))
+                    .font(.callout).foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                Button {
+                    HapticManager.notify(.success)
+                } label: {
+                    Label(settingsLocalized("settings.preferences.try_haptics", value: "Try Feedback"), systemImage: "hand.tap")
+                }
+                .pressScaleStyle()
+                .accessibilityLabel(settingsLocalized("settings.preferences.try_haptics", value: "Try Feedback"))
+                .accessibilityIdentifier("settings.haptics.preview")
+                .disabled(!appSettings.hapticsEnabled)
             }
         }
     }

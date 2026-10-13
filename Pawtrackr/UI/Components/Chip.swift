@@ -112,7 +112,7 @@ public struct Chip: View {
     }
     
     private func handleTap() {
-        HapticManager.impact(.light)
+        HapticManager.selectionChanged()
         if let onTap {
             onTap()
         } else {

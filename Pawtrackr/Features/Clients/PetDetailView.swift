@@ -142,13 +142,16 @@ final class PetDetailViewModel {
         Task {
             defer { isCheckingIn = false }
             do {
+                HapticManager.prepare(.success)
                 let visit = try await visitRepository.checkIn(pet: pet, date: .now)
+                HapticManager.notify(.success)
                 refreshActiveVisit()
                 refreshNonce &+= 1
                 Logger.petDetail.info("checkIn saved visit \(visit.uuid); pet.activeVisit=\(self.pet.activeVisit?.uuid.uuidString ?? "nil")")
             } catch {
                 appError = .database("Could not start a visit. Please try again.")
                 Logger.petDetail.error("checkIn failed: \(String(describing: error))")
+                HapticManager.notify(.error)
             }
         }
     }
@@ -488,7 +491,6 @@ struct PetDetailView: View {
                         return
                     }
                     vm.checkIn()
-                    HapticManager.notify(.success)
                 }
                 .opacity(vm.activeVisit == nil && !vm.isCheckingIn ? 1.0 : 0.55)
                 actionTile(title: NSLocalizedString("pet.check_out", comment: ""), systemImage: "checkmark.seal.fill", tint: .green, disabled: vm.activeVisit == nil) { vm.showCheckout() }
