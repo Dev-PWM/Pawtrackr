@@ -3,6 +3,57 @@ import XCTest
 
 final class CheckoutDraftStoreTests: XCTestCase {
 
+    func testLateEditorSnapshotCannotReplaceANewerSnapshotOrResurrectDeletion() async throws {
+        for inMemory in [false, true] {
+            let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+            defer { try? FileManager.default.removeItem(at: root) }
+            let store = CheckoutDraftStore(directoryURL: root, inMemory: inMemory)
+            let old = CheckoutDraft(visitID: UUID(), petID: UUID(), currentStepRawValue: 2,
+                sessionNotes: "Old", amountString: "85", selectedServiceUUIDs: [], selectedAddOnUUIDs: [],
+                selectedPaymentMethodRawValue: Payment.Method.cash.rawValue,
+                beforePhotoData: nil, afterPhotoData: nil, externalReference: "", tags: [])
+            var new = old
+            new.selectedPaymentMethodRawValue = Payment.Method.zelle.rawValue
+            new.externalReference = "Newest reference"
+            try await store.saveDraft(new, revision: 2)
+            try await store.saveDraft(old, revision: 1)
+            let loaded = await store.loadDraft(for: old.visitID)
+            XCTAssertEqual(loaded?.externalReference, "Newest reference")
+            XCTAssertEqual(loaded?.selectedPaymentMethodRawValue, Payment.Method.zelle.rawValue)
+            try await store.deleteDraft(for: old.visitID, revision: 3)
+            try await store.saveDraft(old, revision: 1)
+            let deleted = await store.loadDraft(for: old.visitID)
+            XCTAssertNil(deleted)
+            // Discarding a recovered draft must still allow subsequent new editor work.
+            try await store.saveDraft(new, revision: 4)
+            let restarted = await store.loadDraft(for: old.visitID)
+            XCTAssertEqual(restarted?.externalReference, "Newest reference")
+        }
+    }
+
+    @MainActor
+    func testDeleteWaitsForAnEarlierSuspendedDiskWrite() async throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let store = CheckoutDraftStore(directoryURL: root)
+        let draft = CheckoutDraft(visitID: UUID(), petID: UUID(), currentStepRawValue: 2,
+            sessionNotes: String(repeating: "Recovery note. ", count: 1_000_000),
+            amountString: "85", selectedServiceUUIDs: [], selectedAddOnUUIDs: [],
+            selectedPaymentMethodRawValue: Payment.Method.cash.rawValue,
+            beforePhotoData: nil, afterPhotoData: nil, externalReference: "", tags: [])
+        let first = Task { try await store.saveDraft(draft) }
+        // Directory creation happens inside detached I/O, after the store has queued the write.
+        let deadline = ContinuousClock.now.advanced(by: .seconds(3))
+        while !FileManager.default.fileExists(atPath: root.path), ContinuousClock.now < deadline {
+            try await Task.sleep(for: .milliseconds(1))
+        }
+        XCTAssertTrue(FileManager.default.fileExists(atPath: root.path))
+        try await store.deleteDraft(for: draft.visitID)
+        try await first.value
+        let loaded = await store.loadDraft(for: draft.visitID)
+        XCTAssertNil(loaded, "An earlier detached write must not resurrect a completed checkout draft.")
+    }
+
     func testPracticeDraftsNeverReadWriteOrDeleteDiskDrafts() async throws {
         let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         defer { try? FileManager.default.removeItem(at: root) }

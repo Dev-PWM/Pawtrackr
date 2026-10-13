@@ -835,14 +835,12 @@ final class CheckoutViewModel {
     private func scheduleDraftSave(reason: String, immediate: Bool = false) {
         guard !isWalkthroughPreview, !suppressDraftAutosave, !isBootstrappingCheckout, state != .confirmed, !visit.isCompleted else { return }
 
-        let fingerprint = currentFingerprint()
-        if fingerprint == lastSavedDraftFingerprint { return }
-
         autosaveTask?.cancel()
 
         let draft = makeDraft()
+        let revision = CheckoutDraftStore.nextRevision()
 
-        autosaveTask = Task { [draft, fingerprint, draftStore, eventRecorder, visitID = visit.uuid, petName = pet.name, weak self] in
+        autosaveTask = Task { [draft, revision, draftStore, eventRecorder, visitID = visit.uuid, petName = pet.name] in
             if !immediate {
                 do {
                     try await Task.sleep(for: .milliseconds(450))
@@ -852,10 +850,7 @@ final class CheckoutViewModel {
             }
             if Task.isCancelled { return }
             do {
-                try await draftStore.saveDraft(draft)
-                await MainActor.run { [weak self] in
-                    self?.lastSavedDraftFingerprint = fingerprint
-                }
+                try await draftStore.saveDraft(draft, revision: revision)
                 await eventRecorder.record("draft_saved:\(reason)", visitID: visitID, petName: petName)
             } catch {
                 Logger.checkout.error("Checkout draft save failed - \(error.localizedDescription)")

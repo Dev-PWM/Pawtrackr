@@ -397,6 +397,42 @@ final class CheckoutViewModelTests: XCTestCase {
 
     // MARK: - Draft
 
+    func testPaymentMethodSavesWithoutTheTypingDebounce() async throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let visit = makeCheckoutVisit()
+        let vm = makeVM(root: root, visit: visit)
+        vm.choosePayment(.debitCard)
+        let store = CheckoutDraftStore(directoryURL: root)
+        var saved: CheckoutDraft?
+        let deadline = ContinuousClock.now.advanced(by: .milliseconds(300))
+        repeat {
+            saved = await store.loadDraft(for: visit.uuid)
+            if saved?.selectedPaymentMethodRawValue == Payment.Method.debitCard.rawValue { break }
+            try await Task.sleep(for: .milliseconds(10))
+        } while ContinuousClock.now < deadline
+        XCTAssertEqual(saved?.selectedPaymentMethodRawValue, Payment.Method.debitCard.rawValue)
+    }
+
+    func testReturningToSavedAmountCancelsThePendingDifferentAmount() async throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let visit = makeCheckoutVisit()
+        let vm = makeVM(root: root, visit: visit)
+        let store = CheckoutDraftStore(directoryURL: root)
+        vm.setAmountDirectly("85")
+        vm.flushDraft()
+        for _ in 0..<30 {
+            if await store.loadDraft(for: visit.uuid)?.amountString == "85" { break }
+            try await Task.sleep(for: .milliseconds(10))
+        }
+        vm.setAmountDirectly("97.50")
+        vm.setAmountDirectly("85")
+        try await Task.sleep(for: .milliseconds(550))
+        let saved = await store.loadDraft(for: visit.uuid)
+        XCTAssertEqual(saved?.amountString, "85")
+    }
+
     func testMakeDraft_PhotosAreNil() {
         let vm = makeVM()
         vm.beforePhotoData = Data([0x01, 0x02, 0x03])
