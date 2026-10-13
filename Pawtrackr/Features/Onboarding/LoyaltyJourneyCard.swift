@@ -107,48 +107,15 @@ enum LoyaltyRewardCatalog {
 enum LoyaltyExplainer {
     /// How a checkout earns, for the current rules.
     static func earning(config: LoyaltyConfigSnapshot, currencySymbol: String) -> String {
-        switch config.earnMode {
-        case .pointsPerDollar:
-            guard config.pointsPerDollar > .zero else {
-                return String(
-                    format: AppLocalization.localized(
-                        "loyalty.preview.earn_rate_off_fmt",
-                        value: "Checkouts earn no points right now: the rule is 0 points per %@."
-                    ),
-                    money(1, symbol: currencySymbol)
-                )
-            }
-            return String(
-                format: AppLocalization.localized(
-                    "loyalty.preview.earn_rate_fmt",
-                    value: "Each checkout earns %1$@ for every %2$@ the client pays. Points are rounded down to a whole number."
-                ),
-                rate(config.pointsPerDollar),
-                money(1, symbol: currencySymbol)
-            )
-        case .flatPerVisit:
-            guard config.pointsPerVisit > 0 else {
-                return AppLocalization.localized(
-                    "loyalty.preview.earn_flat_off",
-                    value: "Checkouts earn no points right now: the rule is 0 points per visit."
-                )
-            }
-            return String(
-                format: AppLocalization.localized(
-                    "loyalty.preview.earn_flat_fmt",
-                    value: "Each checkout earns %@, whatever the total."
-                ),
-                LoyaltyCopy.points(config.pointsPerVisit)
-            )
-        }
+        AppLocalization.localized("loyalty.earning.completed_visit", value: "Every completed, settled visit earns 20 points, including a free reward visit. Price, membership tier and return timing do not change the award.")
     }
 
     /// The tier ladder: thresholds and what a tier does.
     static var tiers: String {
         String(
             format: AppLocalization.localized(
-                "loyalty.preview.tiers_fmt",
-                value: "Points earned at checkout move a client up: Silver at %1$@, Gold at %2$@ and Platinum at %3$@. Each tier multiplies the points of every visit. Spending points never lowers a tier."
+                "loyalty.preview.tiers_fixed_fmt",
+                value: "Points earned at checkout move a client up: Silver at %1$@, Gold at %2$@ and Platinum at %3$@. Every completed visit earns 20 points. Spending points never lowers a tier."
             ),
             count(LoyaltyTier.silver.threshold),
             count(LoyaltyTier.gold.threshold),
@@ -158,14 +125,7 @@ enum LoyaltyExplainer {
 
     /// The rebook bonus.
     static var rebook: String {
-        String(
-            format: AppLocalization.localized(
-                "loyalty.preview.rebook_fmt",
-                value: "A visit that earns points gets %1$@ more when the client's last visit ended %2$d days ago or less."
-            ),
-            LoyaltyCopy.points(LoyaltyEngine.rebookBonusPoints),
-            LoyaltyEngine.rebookWindowDays
-        )
+        AppLocalization.localized("loyalty.earning.once", value: "Points are saved once per completed visit. Payment retries never add a second award.")
     }
 
     /// How points are spent. Redeeming only lowers the balance: the reward
@@ -178,8 +138,8 @@ enum LoyaltyExplainer {
             )
         }
         return AppLocalization.localized(
-            "loyalty.preview.redeem",
-            value: "Choose an available reward on the Payment step of checkout, or keep points for later. Credits lower the amount due automatically; your salon provides the VIP package."
+            "loyalty.preview.redeem_spa",
+            value: "Choose an available reward on the Payment step of checkout, or keep points for later. Credits lower the amount due automatically; redeeming VIP Spa with Spa Package selected makes the entered service amount free."
         )
     }
 
@@ -202,33 +162,7 @@ enum LoyaltyExplainer {
     /// The lines under the total, e.g. "From the total: 80 points",
     /// "Silver ×1.1: 88 points", "Rebook bonus: +20 points".
     static func breakdown(_ preview: LoyaltyEarnPreview, config: LoyaltyConfigSnapshot) -> [String] {
-        var lines: [String] = []
-        switch config.earnMode {
-        case .pointsPerDollar:
-            lines.append(String(
-                format: AppLocalization.localized("loyalty.preview.base_total_fmt", value: "From the total: %@"),
-                LoyaltyCopy.points(preview.basePoints)
-            ))
-        case .flatPerVisit:
-            lines.append(String(
-                format: AppLocalization.localized("loyalty.preview.base_flat_fmt", value: "Per visit: %@"),
-                LoyaltyCopy.points(preview.basePoints)
-            ))
-        }
-        if preview.tier != .bronze, preview.basePoints > 0 {
-            lines.append(String(
-                format: AppLocalization.localized("loyalty.preview.tier_line_fmt", value: "%1$@: %2$@"),
-                tierChoice(preview.tier),
-                LoyaltyCopy.points(preview.tierPoints)
-            ))
-        }
-        if preview.rebookBonus > 0 {
-            lines.append(String(
-                format: AppLocalization.localized("loyalty.preview.rebook_line_fmt", value: "Rebook bonus: +%@"),
-                LoyaltyCopy.points(preview.rebookBonus)
-            ))
-        }
-        return lines
+        [String(format: AppLocalization.localized("loyalty.preview.base_flat_fmt", value: "Per visit: %@"), LoyaltyCopy.points(preview.total))]
     }
 
     /// Where the rules shown come from.

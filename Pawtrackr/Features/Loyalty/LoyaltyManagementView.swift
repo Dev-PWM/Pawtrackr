@@ -24,7 +24,6 @@ struct LoyaltyManagementView: View {
             DisclosureGroup {
                 VStack(alignment: .leading, spacing: 12) {
                     Text(LoyaltyExplainer.earning(config: config, currencySymbol: appSettings.currencySymbol))
-                    Text(AppLocalization.localized("loyalty.settings.bonuses", value: "Regular visits can earn a return bonus, and membership benefits grow automatically. Pawtrackr calculates everything for you."))
                     Text(LoyaltyExplainer.rebook)
                     Text(LoyaltyExplainer.tiers)
                 }

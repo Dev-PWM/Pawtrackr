@@ -30,6 +30,15 @@ struct LoyaltyReward: Identifiable, Hashable, Codable, Sendable {
         }
     }
 
+    /// Recognizes the shipped VIP Spa benefit without treating custom VIP rewards as free services.
+    var isSpaPackageReward: Bool { style == .vip && (id == "vip-spa-package" || title == "VIP Spa Package") }
+
+    /// Applies the same service waiver in the preview and the persistence actor.
+    func checkoutDiscount(on subtotal: Decimal, includesSpa: Bool) -> Decimal {
+        if isSpaPackageReward && includesSpa { return max(.zero, subtotal).roundedMoney() }
+        return creditDiscount(on: subtotal)
+    }
+
     /// Credits cannot make a payment negative; all currency arithmetic stays Decimal.
     func creditDiscount(on subtotal: Decimal) -> Decimal {
         min(max(.zero, subtotal), checkoutCreditAmount ?? .zero).roundedMoney()
@@ -43,6 +52,9 @@ struct LoyaltyReward: Identifiable, Hashable, Codable, Sendable {
 
     @MainActor
     var fulfillmentDescription: String {
+        if isSpaPackageReward {
+            return AppLocalization.localized("checkout.loyalty.spa_fulfillment", value: "Select Spa Package to redeem. The entered service amount becomes free at checkout.")
+        }
         if let credit = checkoutCreditAmount {
             return String(format: AppLocalization.localized("loyalty.reward.credit_fmt", value: "%@ automatically deducted at checkout"), credit.moneyString)
         }

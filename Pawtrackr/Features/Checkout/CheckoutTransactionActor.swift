@@ -108,7 +108,14 @@ final actor CheckoutTransactionActor {
                     value: "This visit total is below the reward's full credit. Choose another reward or keep the points."
                 )))
             }
-            let credit = reward?.creditDiscount(on: request.amount) ?? .zero
+            let includesSpa = request.selectedServiceIDs.contains { id in
+                guard let service = context.model(for: id) as? Service else { return false }
+                return DefaultServiceCatalog.isSpaPackage(service.name)
+            }
+            if reward?.isSpaPackageReward == true && !includesSpa {
+                throw AppError.validation(.custom(message: AppLocalization.localized("checkout.loyalty.spa_required", value: "Select Spa Package before redeeming the VIP Spa reward.")))
+            }
+            let credit = reward?.checkoutDiscount(on: request.amount, includesSpa: includesSpa) ?? .zero
             let finalTotal = max(.zero, request.amount.roundedMoney() - credit).roundedMoney()
             if let expected = request.expectedPaymentAmount, expected.roundedMoney() != finalTotal {
                 throw AppError.database(AppLocalization.localized("checkout.loyalty.total_changed", value: "The reward or total changed. Review checkout again before paying."))

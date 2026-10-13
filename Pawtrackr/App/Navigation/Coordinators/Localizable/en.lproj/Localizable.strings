@@ -1918,3 +1918,15 @@
 "pet.stage.age_unknown" = "Age unknown";
 "new_client.remove_pet" = "Remove Pet";
 "checkout.loyalty.no_rewards" = "No rewards are configured yet. Add a reward in Loyalty settings.";
+
+/* Adaptive rewards and visit earning */
+"checkout.loyalty.ready" = "Ready to redeem";
+"checkout.loyalty.spa_required" = "Select Spa Package before redeeming the VIP Spa reward.";
+"checkout.loyalty.spa_ready" = "Free spa available: select Spa Package, then redeem VIP Spa in Payment. Points are used only when you confirm.";
+"checkout.loyalty.spa_free" = "VIP Spa redeemed: the entered service amount is free, including selected add-ons. Editing the amount will not add a charge.";
+"loyalty.earning.completed_visit" = "Every completed, settled visit earns 20 points, including a free reward visit. Price, membership tier and return timing do not change the award.";
+"loyalty.earning.once" = "Points are saved once per completed visit. Payment retries never add a second award.";
+"loyalty.preview.tiers_fixed_fmt" = "Points earned at checkout move a client up: Silver at %1$@, Gold at %2$@ and Platinum at %3$@. Every completed visit earns 20 points. Spending points never lowers a tier.";
+"loyalty.preview.redeem_spa" = "Choose an available reward on the Payment step of checkout, or keep points for later. Credits lower the amount due automatically; redeeming VIP Spa with Spa Package selected makes the entered service amount free.";
+"checkout.loyalty.spa_fulfillment" = "Select Spa Package to redeem. The entered service amount becomes free at checkout.";
+"settings.help.loyalty_fixed_detail" = "Each completed, settled visit earns 20 points. Choose a reward in Payment or keep the points. Credits lower the amount due. Select Spa Package and redeem VIP Spa to make the entered service amount free.";

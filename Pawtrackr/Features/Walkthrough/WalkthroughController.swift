@@ -1389,3 +1389,14 @@ extension WalkthroughController {
     }
 
 }
+
+
+extension WalkthroughStep {
+    /// Reveals the menu only for a lesson that points at a navigation destination.
+    var showsNavigation: Bool {
+        switch anchor {
+        case .appNavigation, .dashboard, .clients, .insights, .settings: return true
+        default: return false
+        }
+    }
+}

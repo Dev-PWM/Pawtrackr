@@ -220,15 +220,15 @@ struct IconCircle: View {
             return (bg, fg, fg.opacity(0.85))
 
         case .tinted(let bg):
-            return (bg, .white, .white.opacity(0.9))
+            return (bg, .primary, .primary.opacity(0.65))
 
         case .auto(_, let gender):
             if let gender {
                 let base = DS.ColorToken.gender(gender)
-                return (base.opacity(0.15), .white, .white.opacity(0.9))
+                return (base.opacity(0.15), .primary, base.opacity(0.65))
             } else {
                 let base = Color.secondary.opacity(0.55)
-                return (base.opacity(0.15), .white, .white.opacity(0.9))
+                return (base.opacity(0.15), .primary, base.opacity(0.65))
             }
         }
     }

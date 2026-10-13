@@ -227,6 +227,7 @@ struct ContentView: View {
                     synchronizeWalkthroughStep(walkthrough.currentStep)
                 } else {
                     closeWalkthroughPresentationIfNeeded()
+                    columnVisibility = .doubleColumn
                     walkthroughRoutedClientID = nil
                 }
             }
@@ -444,8 +445,14 @@ struct ContentView: View {
         if let surface = step.surface {
             selectSurface(surface)
             resetRootPathForWalkthroughStepIfNeeded(step)
-            revealSplitSidebarForWalkthroughIfNeeded()
         }
+        #if os(iOS)
+        if horizontalSizeClass != .compact {
+            columnVisibility = step.showsNavigation ? .all : .detailOnly
+        }
+        #else
+        columnVisibility = step.showsNavigation ? .all : .detailOnly
+        #endif
 
         synchronizeWalkthroughPresentation(step.presents)
         synchronizeWalkthroughClientsStack(for: step)
@@ -787,6 +794,7 @@ struct ContentView: View {
             .tabItem { Label(NSLocalizedString("settings.tab", value: "Settings", comment: ""), systemImage: "gear") }
             .tag(NavigationItem.settings)
         }
+        .tint(.primary)
         .accessibilityIdentifier("content.tabView")
         // Invisible anchor cells aligned to the real tab bar so the walkthrough
         // can spotlight tab items precisely (SwiftUI doesn't expose `.tabItem`

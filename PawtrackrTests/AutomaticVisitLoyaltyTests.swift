@@ -42,16 +42,27 @@ final class AutomaticVisitLoyaltyTests: XCTestCase {
         XCTAssertEqual(client.loyaltyPoints, 0)
         visit.payment?.setAmount(80)
         try LoyaltyCheckoutProcessor.applyEarnings(visit: visit, pet: pet, total: 80, in: context)
-        XCTAssertEqual(client.loyaltyPoints, 80)
-        XCTAssertEqual(visit.loyaltyPointsChange, 80)
+        XCTAssertEqual(client.loyaltyPoints, 20)
+        XCTAssertEqual(visit.loyaltyPointsChange, 20)
     }
 
-    func testZeroTotalVisitDoesNotEarnFlatPointsOrReturnBonus() throws {
+    func testZeroTotalSettledVisitEarnsTwentyPoints() throws {
         let visit = makeVisit(payment: 0, completed: true)
         let flat = LoyaltyConfigSnapshot(earnMode: .flatPerVisit, pointsPerDollar: 1, pointsPerVisit: 20, redemptionThreshold: 100, isRewardsCatalogEnabled: true)
         try LoyaltyCheckoutProcessor.applyEarnings(visit: visit, pet: pet, total: 0, in: context, config: flat)
-        XCTAssertEqual(client.loyaltyPoints, 0)
-        XCTAssertEqual(visit.loyaltyPointsChange, 0)
+        XCTAssertEqual(client.loyaltyPoints, 20)
+        XCTAssertEqual(visit.loyaltyPointsChange, 20)
+    }
+
+    func testLegacyAwardAndBalanceSurvivePriceCorrection() throws {
+        let visit = makeVisit(payment: 80, completed: true)
+        visit.loyaltyPointsChange = 80
+        client.loyaltyPoints = 580
+        visit.payment?.setAmount(100)
+        visit.markCheckedOut(total: 100)
+        XCTAssertNil(try LoyaltyCheckoutProcessor.applyEarnings(visit: visit, pet: pet, total: 100, in: context))
+        XCTAssertEqual(visit.loyaltyPointsChange, 80)
+        XCTAssertEqual(client.loyaltyPoints, 580)
     }
 
     func testPaymentRetryAcrossActorInstancesEarnsExactlyOnce() async throws {
@@ -66,8 +77,8 @@ final class AutomaticVisitLoyaltyTests: XCTestCase {
         let fresh = ModelContext(container)
         let savedClient = try XCTUnwrap(fresh.fetch(FetchDescriptor<Client>()).first)
         let savedVisit = try XCTUnwrap(fresh.fetch(FetchDescriptor<Visit>()).first)
-        XCTAssertEqual(savedClient.loyaltyPoints, 80)
-        XCTAssertEqual(savedVisit.loyaltyPointsChange, 80)
+        XCTAssertEqual(savedClient.loyaltyPoints, 20)
+        XCTAssertEqual(savedVisit.loyaltyPointsChange, 20)
         XCTAssertNotNil(savedVisit.endedAt)
         XCTAssertEqual(try fresh.fetchCount(FetchDescriptor<Payment>()), 1)
         XCTAssertEqual(try fresh.fetchCount(FetchDescriptor<LoyaltyLedgerEntry>()), 1)
@@ -84,6 +95,8 @@ final class AutomaticVisitLoyaltyTests: XCTestCase {
 
     func testDisplayedBalanceReadsCommittedActorAwardsAndRedemptions() async throws {
         let visit = makeVisit(payment: nil, completed: false)
+        try context.save()
+        client.loyaltyPoints = 100
         try context.save()
         let displayed = LoyaltyBalanceState(points: client.loyaltyPoints)
         let request = CheckoutRequest(visitUUID: visit.uuid, petUUID: pet.uuid, clientUUID: client.uuid,
@@ -151,8 +164,8 @@ final class AutomaticVisitLoyaltyTests: XCTestCase {
         XCTAssertEqual(saved.loyaltyCreditApplied, 10)
         XCTAssertEqual(saved.loyaltyRedeemedPoints, 100)
         XCTAssertEqual(saved.loyaltyRewardTitle, "$10 Salon Credit")
-        XCTAssertEqual(saved.loyaltyPointsChange, 70)
-        XCTAssertEqual(try fresh.fetch(FetchDescriptor<Client>()).first?.loyaltyPoints, 90)
+        XCTAssertEqual(saved.loyaltyPointsChange, 20)
+        XCTAssertEqual(try fresh.fetch(FetchDescriptor<Client>()).first?.loyaltyPoints, 40)
         let entries = try fresh.fetch(FetchDescriptor<LoyaltyLedgerEntry>())
         XCTAssertEqual(entries.count, 2)
         XCTAssertEqual(entries.filter { $0.kind == .redeemed }.first?.points, -100)
@@ -169,7 +182,7 @@ final class AutomaticVisitLoyaltyTests: XCTestCase {
         try context.save()
         _ = try await CheckoutTransactionActor(modelContainer: container).process(checkoutRequest(visit: visit))
         let fresh = ModelContext(container)
-        XCTAssertEqual(try fresh.fetch(FetchDescriptor<Client>()).first?.loyaltyPoints, 1_000_080)
+        XCTAssertEqual(try fresh.fetch(FetchDescriptor<Client>()).first?.loyaltyPoints, 1_000_020)
         XCTAssertEqual(try fresh.fetch(FetchDescriptor<Visit>()).first?.loyaltyRedeemedPoints, 0)
         XCTAssertFalse(try fresh.fetch(FetchDescriptor<LoyaltyLedgerEntry>()).contains { $0.kind == .redeemed })
     }
@@ -211,19 +224,43 @@ final class AutomaticVisitLoyaltyTests: XCTestCase {
         try assertRejectedCheckoutLeavesBalance(100)
     }
 
-    func testServiceRewardRecordsChoiceWithoutChangingPaymentTotal() async throws {
+    func testSpaRewardWaivesManualPriceAndRetryDoesNotSpendAgain() async throws {
         client.loyaltyPoints = 500
-        let reward = LoyaltyReward.builtInCatalog[2]
+        let spa = Service(name: "Spa Package", category: .package, isPackage: true)
+        context.insert(spa)
         let visit = makeVisit(payment: nil, completed: false)
         try context.save()
-        _ = try await CheckoutTransactionActor(modelContainer: container).process(checkoutRequest(visit: visit, reward: reward, expected: 80))
+        var request = CheckoutRequest(visitUUID: visit.uuid, petUUID: pet.uuid, clientUUID: client.uuid,
+                                      amount: 999, paymentMethod: .cash, externalReference: nil, sessionNotes: nil,
+                                      behaviorTags: [], beforePhotoData: nil, afterPhotoData: nil,
+                                      selectedServiceIDs: [spa.persistentModelID], selectedAddOnIDs: [])
+        request.selectedLoyaltyReward = LoyaltyReward.builtInCatalog[2]
+        request.expectedPaymentAmount = 0
+        let actor = CheckoutTransactionActor(modelContainer: container)
+        _ = try await actor.process(request)
+        _ = try await actor.process(request)
         let fresh = ModelContext(container)
         let saved = try XCTUnwrap(fresh.fetch(FetchDescriptor<Visit>()).first)
-        XCTAssertEqual(saved.payment?.amount, 80)
+        XCTAssertEqual(saved.total, 0)
+        XCTAssertEqual(saved.payment?.amount, 0)
         XCTAssertEqual(saved.loyaltyRedeemedPoints, 500)
-        XCTAssertEqual(saved.loyaltyCreditApplied, 0)
-        XCTAssertEqual(saved.loyaltyRewardTitle, reward.title)
-        XCTAssertEqual(try fresh.fetch(FetchDescriptor<Client>()).first?.loyaltyPoints, 80)
+        XCTAssertEqual(saved.loyaltyCreditApplied, 999)
+        XCTAssertEqual(saved.loyaltyPointsChange, 20)
+        XCTAssertEqual(try fresh.fetch(FetchDescriptor<Client>()).first?.loyaltyPoints, 20)
+        XCTAssertEqual(try fresh.fetchCount(FetchDescriptor<Payment>()), 1)
+        XCTAssertEqual(try fresh.fetchCount(FetchDescriptor<LoyaltyLedgerEntry>()), 2)
+        XCTAssertEqual((saved.items ?? []).reduce(Decimal.zero) { $0 + $1.lineTotal }, 0)
+    }
+
+    func testSpaRewardRequiresSelectedSpaService() async throws {
+        client.loyaltyPoints = 500
+        let visit = makeVisit(payment: nil, completed: false)
+        try context.save()
+        do {
+            _ = try await CheckoutTransactionActor(modelContainer: container).process(checkoutRequest(visit: visit, reward: LoyaltyReward.builtInCatalog[2], expected: 0))
+            XCTFail("A spa reward must not waive a different service")
+        } catch {}
+        try assertRejectedCheckoutLeavesBalance(500)
     }
 
     func testConcurrentConfirmationAcrossActorsSpendsAndEarnsOnlyOnce() async throws {
@@ -237,7 +274,7 @@ final class AutomaticVisitLoyaltyTests: XCTestCase {
         async let two = second.process(request)
         _ = try await (one, two)
         let fresh = ModelContext(container)
-        XCTAssertEqual(try fresh.fetch(FetchDescriptor<Client>()).first?.loyaltyPoints, 70)
+        XCTAssertEqual(try fresh.fetch(FetchDescriptor<Client>()).first?.loyaltyPoints, 20)
         XCTAssertEqual(try fresh.fetchCount(FetchDescriptor<LoyaltyLedgerEntry>()), 2)
         XCTAssertEqual(try fresh.fetchCount(FetchDescriptor<Payment>()), 1)
     }
@@ -262,9 +299,9 @@ final class AutomaticVisitLoyaltyTests: XCTestCase {
         }
         XCTAssertEqual(results.filter { $0 }.count, 1)
         let fresh = ModelContext(container)
-        XCTAssertEqual(try fresh.fetch(FetchDescriptor<Client>()).first?.loyaltyPoints, 0)
+        XCTAssertEqual(try fresh.fetch(FetchDescriptor<Client>()).first?.loyaltyPoints, 20)
         XCTAssertEqual(try fresh.fetchCount(FetchDescriptor<Payment>()), 1)
-        XCTAssertEqual(try fresh.fetchCount(FetchDescriptor<LoyaltyLedgerEntry>()), 1)
+        XCTAssertEqual(try fresh.fetchCount(FetchDescriptor<LoyaltyLedgerEntry>()), 2)
     }
 
     func testCustomCreditUsesExactDecimalCents() async throws {
@@ -278,7 +315,7 @@ final class AutomaticVisitLoyaltyTests: XCTestCase {
         _ = try await CheckoutTransactionActor(modelContainer: container).process(checkoutRequest(visit: visit, amount: Decimal(string: "3.33")!, reward: template.displayReward, expected: Decimal(string: "2.22")!))
         let fresh = ModelContext(container)
         XCTAssertEqual(try fresh.fetch(FetchDescriptor<Visit>()).first?.payment?.amount, Decimal(string: "2.22"))
-        XCTAssertEqual(try fresh.fetch(FetchDescriptor<Client>()).first?.loyaltyPoints, 2)
+        XCTAssertEqual(try fresh.fetch(FetchDescriptor<Client>()).first?.loyaltyPoints, 20)
     }
 
     private func checkoutRequest(visit: Visit, amount: Decimal = 80, reward: LoyaltyReward? = nil, expected: Decimal? = nil) -> CheckoutRequest {
@@ -307,8 +344,8 @@ final class AutomaticVisitLoyaltyTests: XCTestCase {
         try context.save()
         _ = try await actor.process(checkoutRequest(visit: secondVisit))
         let fresh = ModelContext(container)
-        XCTAssertEqual(try fresh.fetch(FetchDescriptor<Client>()).first?.loyaltyPoints, 180,
-                       "100 saved + 80 first visit − 100 redeemed + 100 returning visit")
+        XCTAssertEqual(try fresh.fetch(FetchDescriptor<Client>()).first?.loyaltyPoints, 40,
+                       "100 saved + 20 first visit − 100 redeemed + 20 second visit")
     }
 
     func testReusedLoyaltyActorDoesNotOverwriteNewCheckoutEarnings() async throws {
@@ -321,9 +358,9 @@ final class AutomaticVisitLoyaltyTests: XCTestCase {
         _ = try await service.redeemReward(clientUUID: client.uuid, reward: LoyaltyReward.builtInCatalog[0])
         _ = try await CheckoutTransactionActor(modelContainer: container).process(checkoutRequest(visit: visit))
         let balance = try await service.redeemReward(clientUUID: client.uuid, reward: LoyaltyReward.builtInCatalog[0])
-        XCTAssertEqual(balance, 80, "200 saved − 100 used + 80 earned − 100 used")
+        XCTAssertEqual(balance, 20, "200 saved − 100 used + 20 earned − 100 used")
         let fresh = ModelContext(container)
-        XCTAssertEqual(try fresh.fetch(FetchDescriptor<Client>()).first?.loyaltyPoints, 80)
+        XCTAssertEqual(try fresh.fetch(FetchDescriptor<Client>()).first?.loyaltyPoints, 20)
     }
 
     /// Makes the lifecycle states independently testable without going through the UI.

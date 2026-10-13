@@ -107,6 +107,7 @@ struct CheckoutView: View {
             didLoadViewModel = true
             viewModel = CheckoutViewModel(pet: viewModel.pet, visit: viewModel.visit, eventBus: eventBus)
             viewModel.loadServices(modelContext: modelContext)
+            Task { await viewModel.refreshLoyaltyOptions() }
             notesEditorText = viewModel.sessionNotes
             amountEditorText = viewModel.amountString
             referenceEditorText = viewModel.externalReference
@@ -287,6 +288,12 @@ struct CheckoutView: View {
                 } else {
                     VStack(alignment: .leading, spacing: 12) {
                         Text(localized("checkout.main_services", value: "Main Services")).font(.headline).padding(.horizontal)
+                        if viewModel.availableSpaReward != nil {
+                            Label(AppLocalization.localized("checkout.loyalty.spa_ready", value: "Free spa available: select Spa Package, then redeem VIP Spa in Payment. Points are used only when you confirm."), systemImage: "gift.fill")
+                                .font(.body).foregroundStyle(.primary).padding()
+                                .background(Color.green.opacity(0.12), in: RoundedRectangle(cornerRadius: 12))
+                                .padding(.horizontal)
+                        }
                         Card {
                             if viewModel.allServices.isEmpty {
                                 Text(NSLocalizedString("checkout.no_services_hint", comment: ""))
@@ -939,6 +946,7 @@ struct CheckoutView: View {
 
     func serviceTag(for service: Service) -> some View {
         let isSelected = viewModel.isServiceSelected(service)
+        let spaReady = DefaultServiceCatalog.isSpaPackage(service.name) && viewModel.availableSpaReward != nil
         return Button {
             HapticManager.impact(.light)
             withAnimation(Animations.responsiveSpring) {
@@ -948,16 +956,20 @@ struct CheckoutView: View {
             HStack(spacing: 6) {
                 Image(systemName: service.systemIcon ?? "pawprint.fill")
                 Text(service.name)
+                if spaReady { Image(systemName: "gift.fill") }
             }
             .font(Font.subheadline.weight(.medium))
             .padding(.horizontal, 16)
             .padding(.vertical, 10)
             .background(Capsule().fill(isSelected ? Color.blue.opacity(0.15) : Color.gray.opacity(0.05)))
-            .overlay(Capsule().stroke(isSelected ? Color.blue : Color.gray.opacity(0.2), lineWidth: 1))
+            .overlay(Capsule().stroke(spaReady ? Color.green : (isSelected ? Color.blue : Color.gray.opacity(0.2)), lineWidth: spaReady ? 3 : 1))
+            .shadow(color: spaReady ? Color.green.opacity(0.45) : .clear, radius: 7)
             .foregroundStyle(isSelected ? Color.blue : Color.primary)
             .scaleEffect(isSelected ? 1.04 : 1.0)
         }
         .buttonStyle(.plain)
+        .pressScaleStyle()
+        .accessibilityLabel(service.name + (spaReady ? ". VIP Spa reward available. Redeem on the Payment step." : ""))
         .accessibilityIdentifier("checkout.service.\(service.name)")
         .animation(Animations.responsiveSpring, value: isSelected)
     }

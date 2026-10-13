@@ -95,28 +95,20 @@ struct LoyaltyEngine {
         return rebookBonusPoints
     }
 
-    /// The points one checkout earns, step by step. This is THE earn rule:
-    /// `LoyaltyCheckoutProcessor.applyEarnings` awards `preview(...).total`,
-    /// so the checkout and repository paths always award the same value.
-    ///
-    /// - Parameters:
-    ///   - ticket: what the client pays at checkout: the services, or the
-    ///     amount typed over them.
-    ///   - tier: the client's tier before this visit.
-    ///   - rebook: the client's previous completed visit ended within
-    ///     `rebookWindowDays` (`isRebook`).
+    /// Awards exactly 20 points for a settled completed visit, independent of its price,
+    /// tier or legacy earning configuration. The processor enforces completion and payment.
     static func preview(
         ticket: Decimal,
         config: LoyaltyConfigSnapshot,
         tier: LoyaltyTier,
         rebook: Bool
     ) -> LoyaltyEarnPreview {
-        let base = calculatePoints(for: ticket, config: config)
+        let base = 20 // Every settled completed visit, including a redeemed spa visit.
         return LoyaltyEarnPreview(
             basePoints: base,
             tier: tier,
-            tierPoints: earnedPoints(base: base, tier: tier),
-            rebookBonus: rebookBonus(basePoints: base, isRebook: rebook)
+            tierPoints: base,
+            rebookBonus: 0
         )
     }
 

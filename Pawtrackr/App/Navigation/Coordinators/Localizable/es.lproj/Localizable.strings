@@ -1931,3 +1931,15 @@
 "pet.stage.age_unknown" = "Edad desconocida";
 "new_client.remove_pet" = "Eliminar mascota";
 "checkout.loyalty.no_rewards" = "Aún no hay recompensas configuradas. Agrega una en los ajustes de Lealtad.";
+
+/* Adaptive rewards and visit earning */
+"checkout.loyalty.ready" = "Disponible para canjear";
+"checkout.loyalty.spa_required" = "Selecciona Paquete Spa antes de canjear la recompensa Spa VIP.";
+"checkout.loyalty.spa_ready" = "Spa gratis disponible: selecciona Paquete Spa y canjea Spa VIP en Pago. Los puntos se usan al confirmar.";
+"checkout.loyalty.spa_free" = "Spa VIP canjeado: el importe del servicio es gratis, incluidos los extras seleccionados. Cambiar el importe no añade un cargo.";
+"loyalty.earning.completed_visit" = "Cada visita completada y saldada suma 20 puntos, incluidas las visitas gratis por recompensa. El precio, el nivel y la fecha de regreso no cambian los puntos.";
+"loyalty.earning.once" = "Los puntos se guardan una vez por visita completada. Reintentar el pago no los duplica.";
+"loyalty.preview.tiers_fixed_fmt" = "Los puntos suben el nivel: Plata con %1$@, Oro con %2$@ y Platino con %3$@. Cada visita completada suma 20 puntos. Canjear puntos no baja el nivel.";
+"loyalty.preview.redeem_spa" = "Elige una recompensa en el paso Pago o guarda los puntos. Los créditos reducen el importe automáticamente; canjear Spa VIP con Paquete Spa seleccionado hace gratis el importe del servicio.";
+"checkout.loyalty.spa_fulfillment" = "Selecciona Paquete Spa para canjear. El importe del servicio será gratis al finalizar.";
+"settings.help.loyalty_fixed_detail" = "Cada visita completada y saldada suma 20 puntos. Elige una recompensa en Pago o guarda los puntos. Los créditos reducen el importe. Selecciona Paquete Spa y canjea Spa VIP para hacer gratis el importe del servicio.";

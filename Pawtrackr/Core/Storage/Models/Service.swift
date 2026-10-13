@@ -219,6 +219,11 @@ enum DefaultServiceCatalog {
         localizedNamesByEnglishName[englishName] ?? englishName
     }
 
+    /// Identifies the shipped spa package in every supported localization.
+    static func isSpaPackage(_ name: String) -> Bool {
+        englishName(forKnownName: name) == "Spa Package"
+    }
+
     /// Resolves a known localized built-in service name back to its English seed identity.
     static func englishName(forKnownName serviceName: String) -> String? {
         let normalized = serviceName.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()

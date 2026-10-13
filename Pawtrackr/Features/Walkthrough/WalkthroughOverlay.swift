@@ -129,7 +129,7 @@ enum WalkthroughOverlayLayout {
         }
 
         var readableBubbleMaxHeight: CGFloat {
-            min(isCompactViewport ? 340 : 400, max(220, containerSize.height - safeTopPadding - safeBottomPadding - 20))
+            min(isCompactViewport ? 420 : 520, max(220, containerSize.height - safeTopPadding - safeBottomPadding - 20))
         }
     }
 
@@ -764,6 +764,7 @@ private struct WalkthroughOverlayView: View {
     /// Gentle, continuous "breathing" of the spotlight ring to draw the eye to
     /// the highlighted control. Disabled under Reduce Motion.
     @State private var ringPulse = false
+    @ScaledMetric(relativeTo: .body) private var lessonTextSize: CGFloat = 18
 
     private var dimOpacity: Double {
         #if os(macOS)
@@ -1043,7 +1044,7 @@ private struct WalkthroughOverlayView: View {
         return VStack(alignment: .leading, spacing: isCompactViewport ? 8 : 10) {
             HStack(spacing: 8) {
                 Label(chapterChipText, systemImage: step.lesson.icon)
-                    .font(.caption2.weight(.bold))
+                    .font(.subheadline.weight(.bold))
                     .textCase(.uppercase)
                     .foregroundStyle(DS.ColorToken.primary)
                     .lineLimit(1)
@@ -1283,7 +1284,7 @@ private struct WalkthroughOverlayView: View {
                         .font(.caption)
                         .padding(.top, 1)
                     Text(coachTip)
-                        .font(isCompactViewport ? .caption2 : .caption)
+                        .font(.callout)
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
@@ -1300,7 +1301,7 @@ private struct WalkthroughOverlayView: View {
     private func anatomyRow(label: String, systemImage: String, text: String, isAction: Bool = false) -> some View {
         VStack(alignment: .leading, spacing: 2) {
             Label(label, systemImage: systemImage)
-                .font(.caption2.weight(.bold))
+                .font(.subheadline.weight(.bold))
                 .textCase(.uppercase)
                 .foregroundStyle(isAction ? DS.ColorToken.primary : Color.secondary)
             Text(text)
@@ -1320,8 +1321,7 @@ private struct WalkthroughOverlayView: View {
     }
 
     private func anatomyFont(isAction: Bool) -> Font {
-        if isAction { return Font.subheadline.weight(.semibold) }
-        return isCompactViewport ? Font.footnote : Font.callout
+        Font.system(size: lessonTextSize, weight: isAction ? .semibold : .regular)
     }
 }
 

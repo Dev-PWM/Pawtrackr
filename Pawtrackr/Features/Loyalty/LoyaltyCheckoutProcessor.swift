@@ -16,10 +16,9 @@ import SwiftData
 
 enum LoyaltyCheckoutProcessor {
 
-    /// Computes and applies the visit's earned points (tier multiplier +
-    /// rebook bonus), delta-adjusts the client balance so re-processing an
-    /// edited checkout is idempotent, and upserts the visit's `.earned`
-    /// ledger entry.
+    /// Awards 20 points once when a completed visit is settled. Preserves historical
+    /// awards and balances when an existing checkout is processed again, and writes
+    /// one earned ledger entry within the caller's atomic transaction.
     ///
     /// Returns the client UUID when the client balance changed (the caller
     /// commits the local transaction), or nil when nothing changed.
@@ -35,6 +34,9 @@ enum LoyaltyCheckoutProcessor {
         guard let endedAt = visit.endedAt, endedAt >= visit.startedAt,
               let payment = visit.payment, payment.amount >= total.roundedMoney(),
               let client = pet.owner else { return nil }
+
+        // Previously earned visits retain their original award and saved balance.
+        guard visit.loyaltyPointsChange == 0 else { return nil }
 
         let tier = LoyaltyEngine.tier(
             forLifetimeEarned: LoyaltyEngine.lifetimeEarnedPoints(for: client, excluding: visit.uuid)

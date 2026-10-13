@@ -69,6 +69,13 @@ final class WalkthroughTourTests: XCTestCase {
         WalkthroughController.tour(for: .frontDeskGroomer, context: .practice)
     }
 
+    func testSidebarOnlyAppearsForNavigationLessons() {
+        for step in practiceTour {
+            let navigationAnchors: Set<WalkthroughAnchorID> = [.appNavigation, .dashboard, .clients, .insights, .settings]
+            XCTAssertEqual(step.showsNavigation, navigationAnchors.contains(step.anchor))
+        }
+    }
+
     // MARK: - Stable IDs and chapters
 
     func testEveryStepHasAStableUniqueID() {

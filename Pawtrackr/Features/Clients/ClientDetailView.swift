@@ -124,6 +124,7 @@ struct ClientDetailView: View {
     @State private var inlineEditBaseline: ClientEditBaseline? = nil
 
     @Environment(NavigationRouter.self) private var router
+    @State private var profileRewards: [LoyaltyReward] = []
     @State private var loyaltyBalance: LoyaltyBalanceState
     private var namespace: Namespace.ID
     /// Every tour stop on this screen, so each one is scrolled into view.
@@ -568,6 +569,15 @@ struct ClientDetailView: View {
             .accessibilityIdentifier("clientDetail.loyaltyRewards")
         }
         .padding(.horizontal)
+        .task(id: loyaltyBalance.points) {
+            do {
+                let options = try await LoyaltyService(modelContainer: modelContext.container).checkoutOptions(clientUUID: client.uuid)
+                profileRewards = options.rewards.sorted { $0.pointCost < $1.pointCost }
+            } catch {
+                profileRewards = []
+                Logger.clientDetailView.error("Reward availability failed: \(error.localizedDescription)")
+            }
+        }
     }
 
     private func loyaltyRowContent(client: Client, isLocked: Bool) -> some View {
@@ -587,6 +597,10 @@ struct ClientDetailView: View {
                      : AppLocalization.localized("client_detail.loyalty.subtitle", value: "Points saved automatically from paid visits"))
                     .font(.caption)
                     .foregroundStyle(.secondary)
+                if !isLocked, let reward = profileRewards.last(where: { $0.isRedeemable(with: loyaltyBalance.points) }) {
+                    Text(LoyaltyRewardCatalog.displayTitle(for: reward) + " · " + AppLocalization.localized("checkout.loyalty.ready", value: "Ready to redeem"))
+                        .font(.body.weight(.semibold)).foregroundStyle(.primary)
+                }
             }
 
             Spacer(minLength: 8)
@@ -1106,7 +1120,7 @@ struct ClientDetailView: View {
                                             HapticManager.notify(.warning)
                                         }
                                     }
-                                    .opacity(activeVisit == nil ? 0.3 : 1.0)
+                                    .opacity(activeVisit == nil ? 0.65 : 1.0)
                                     .disabled(activeVisit == nil)
                                     .id("clientDetail.pet.\(pet.uuid.uuidString).checkOut.\(activeVisit != nil)")
                                     .accessibilityIdentifier("clientDetail.pet.\(pet.name).checkOut")
@@ -1175,6 +1189,7 @@ struct ClientDetailView: View {
                     }
                 }
                 .pickerStyle(.segmented)
+                .tint(.primary)
                 // A segmented picker shows its title beside the segments on
                 // macOS, which read as a second "All" next to [All | Last 90 Days].
                 .labelsHidden()
@@ -1620,7 +1635,7 @@ private struct InitialsCircle: View {
     var body: some View {
         ZStack {
             Circle().fill(LinearGradient(gradient: gradient, startPoint: .topLeading, endPoint: .bottomTrailing))
-            Text(initials).font(.headline.weight(.semibold)).foregroundStyle(.white)
+            Text(initials).font(.headline.weight(.semibold)).foregroundStyle(.primary)
         }
     }
 }
@@ -1660,27 +1675,29 @@ private struct InitialsCircle: View {
     }
 }
 
+/// Adaptive pet actions keep the outlined History label readable in both appearances.
 @ViewBuilder private func actionButton(title: String, systemImage: String, tint: Color = .blue, borderOnly: Bool = false, action: @escaping () -> Void) -> some View {
     Button(action: action) {
         VStack(spacing: 4) {
-            Image(systemName: systemImage)
-                .font(.callout)
+            Image(systemName: systemImage).font(.callout)
             Text(title)
-                .font(.caption2.weight(.semibold))
-                .lineLimit(1)
-                .minimumScaleFactor(0.7)
+                .font(.subheadline.weight(.semibold))
+                .fixedSize(horizontal: false, vertical: true)
         }
+        .foregroundStyle(borderOnly ? Color.primary : Color.white)
         .frame(maxWidth: .infinity)
         .frame(minHeight: 58)
         .padding(.vertical, 8)
-        .contentShape(Rectangle())
+        .background(borderOnly ? DS.ColorToken.surface : tint, in: RoundedRectangle(cornerRadius: 8))
+        .overlay {
+            RoundedRectangle(cornerRadius: 8)
+                .strokeBorder(borderOnly ? Color.primary.opacity(0.25) : .clear, lineWidth: 1)
+        }
+        .contentShape(RoundedRectangle(cornerRadius: 8))
     }
-    .buttonStyle(.borderedProminent)
-    .tint(borderOnly ? .clear : tint)
-    .foregroundStyle(borderOnly ? Color.primary : Color.white)
-    .overlay(
-        RoundedRectangle(cornerRadius: 8).stroke(borderOnly ? Color.gray.opacity(0.3) : .clear, lineWidth: 1)
-    )
+    .buttonStyle(.plain)
+    .pressScaleStyle()
+    .accessibilityLabel(title)
 }
 
 private extension Logger {

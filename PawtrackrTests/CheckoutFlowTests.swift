@@ -159,8 +159,8 @@ final class CheckoutFlowTests: XCTestCase {
             try freshContext.fetch(FetchDescriptor<Visit>(predicate: #Predicate<Visit> { $0.uuid == visitUUID })).first
         )
 
-        XCTAssertEqual(refreshedVisit.loyaltyPointsChange, 85)
-        XCTAssertEqual(refreshedClient.loyaltyPoints, 205)
+        XCTAssertEqual(refreshedVisit.loyaltyPointsChange, 20)
+        XCTAssertEqual(refreshedClient.loyaltyPoints, 140)
 
         // The checkout must also leave an auditable `.earned` ledger row.
         let entries = try freshContext.fetch(
@@ -168,15 +168,14 @@ final class CheckoutFlowTests: XCTestCase {
         )
         XCTAssertEqual(entries.count, 1)
         XCTAssertEqual(entries.first?.kind, .earned)
-        XCTAssertEqual(entries.first?.points, 85)
-        XCTAssertEqual(entries.first?.balanceAfter, 205)
+        XCTAssertEqual(entries.first?.points, 20)
+        XCTAssertEqual(entries.first?.balanceAfter, 140)
         XCTAssertEqual(entries.first?.clientUUID, clientUUID)
         XCTAssertEqual(entries.first?.reason, "Buddy")
     }
 
-    /// A Gold-tier client (≥1500 lifetime visit-earned points) who rebooked
-    /// within the 45-day window earns floor(85 × 1.25) + 20 = 126 points.
-    func testGoldTierRebookingClientEarnsMultiplierPlusBonus() async throws {
+    /// Gold membership and a recent visit retain the same fixed 20-point award.
+    func testGoldTierRebookingClientEarnsSameTwentyPoints() async throws {
         let priorVisit = Visit(pet: pet)
         context.insert(priorVisit)
         priorVisit.loyaltyPointsChange = 1_500
@@ -205,12 +204,11 @@ final class CheckoutFlowTests: XCTestCase {
         let refreshedVisit = try XCTUnwrap(
             try freshContext.fetch(FetchDescriptor<Visit>(predicate: #Predicate<Visit> { $0.uuid == visitUUID })).first
         )
-        XCTAssertEqual(refreshedVisit.loyaltyPointsChange, 126,
-            "Gold multiplier (85 → 106) plus rebook bonus (+20) must both apply.")
+        XCTAssertEqual(refreshedVisit.loyaltyPointsChange, 20,
+            "Tier and return timing do not change the fixed visit award.")
     }
 
-    /// Re-awarding an edited checkout must UPDATE the visit's earned ledger
-    /// row (delta-adjusting the balance), never append a duplicate.
+    /// Editing a price preserves the fixed award and its one earned ledger row.
     func testReprocessedCheckoutUpsertsEarnedLedgerEntry() async throws {
         let visit = Visit(pet: pet)
         context.insert(visit)
@@ -222,10 +220,10 @@ final class CheckoutFlowTests: XCTestCase {
 
         try LoyaltyCheckoutProcessor.applyEarnings(visit: visit, pet: pet, total: Decimal(80), in: context)
         try context.save()
-        XCTAssertEqual(visit.loyaltyPointsChange, 80)
-        XCTAssertEqual(client.loyaltyPoints, 80)
+        XCTAssertEqual(visit.loyaltyPointsChange, 20)
+        XCTAssertEqual(client.loyaltyPoints, 20)
 
-        // The groomer corrects the total and payment upward; the award follows.
+        // The groomer corrects the price; points remain unchanged.
         payment.setAmount(100)
         visit.markCheckedOut(total: 100)
         try LoyaltyCheckoutProcessor.applyEarnings(visit: visit, pet: pet, total: Decimal(100), in: context)
@@ -236,10 +234,10 @@ final class CheckoutFlowTests: XCTestCase {
             FetchDescriptor<LoyaltyLedgerEntry>(predicate: #Predicate<LoyaltyLedgerEntry> { $0.visitUUID == visitUUID })
         )
         XCTAssertEqual(entries.count, 1, "Re-processing must upsert, not duplicate, the earned entry.")
-        XCTAssertEqual(entries.first?.points, 100)
-        XCTAssertEqual(visit.loyaltyPointsChange, 100)
-        XCTAssertEqual(client.loyaltyPoints, 100,
-            "Balance must be delta-adjusted (+20), not re-credited the full award.")
+        XCTAssertEqual(entries.first?.points, 20)
+        XCTAssertEqual(visit.loyaltyPointsChange, 20)
+        XCTAssertEqual(client.loyaltyPoints, 20,
+            "Correcting the price must preserve the original visit award.")
     }
 
     func testLoyaltyProcessor_ReprocessesFlatVisitModeIdempotently() throws {

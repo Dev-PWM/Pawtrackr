@@ -59,8 +59,8 @@ private struct CardElevationModifier: ViewModifier {
     }
 
     private func shadowColor(opacity: CGFloat) -> Color {
-        // Use black in light mode and white in dark mode to mimic material shadows.
-        scheme == .dark ? Color.white.opacity(opacity) : Color.black.opacity(opacity)
+        // Neutral depth keeps colored behavior and reward glows distinct.
+        Color.black.opacity(opacity)
     }
 }
 

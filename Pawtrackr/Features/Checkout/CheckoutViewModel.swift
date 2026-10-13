@@ -160,14 +160,27 @@ final class CheckoutViewModel {
     private var loyaltyContainer: ModelContainer?
     @ObservationIgnored private var completionContext: ModelContext?
 
+    /// Eligible spa service stays purchasable until a reward is explicitly redeemed.
+    var includesSpaPackage: Bool {
+        allServices.contains { selectedServiceIDs.contains($0.persistentModelID) && DefaultServiceCatalog.isSpaPackage($0.name) }
+    }
+
+    var availableSpaReward: LoyaltyReward? {
+        guard !isLoadingLoyalty, loyaltyError == nil else { return nil }
+        return loyaltyRewards.first { $0.isSpaPackageReward && $0.isRedeemable(with: loyaltyPoints) }
+    }
+
+    var isSpaRedeemed: Bool { selectedLoyaltyReward?.isSpaPackageReward == true && includesSpaPackage }
+
     var loyaltyCredit: Decimal {
         guard let selectedLoyaltyReward, selectedLoyaltyReward.isApplicable(to: servicesTotalDecimal) else { return .zero }
-        return selectedLoyaltyReward.creditDiscount(on: servicesTotalDecimal)
+        return selectedLoyaltyReward.checkoutDiscount(on: servicesTotalDecimal, includesSpa: includesSpaPackage)
     }
     var paymentTotalDecimal: Decimal { max(.zero, servicesTotalDecimal - loyaltyCredit).roundedMoney() }
     var isLoyaltySelectionValid: Bool {
         guard let selectedLoyaltyReward else { return true }
         return !isLoadingLoyalty && loyaltyError == nil && loyaltyPoints >= selectedLoyaltyReward.pointCost
+            && (!selectedLoyaltyReward.isSpaPackageReward || includesSpaPackage)
             && selectedLoyaltyReward.isApplicable(to: servicesTotalDecimal)
             && loyaltyRewards.contains { $0.id == selectedLoyaltyReward.id && $0.pointCost == selectedLoyaltyReward.pointCost
                 && $0.style == selectedLoyaltyReward.style && $0.checkoutCreditAmount == selectedLoyaltyReward.checkoutCreditAmount }
@@ -225,7 +238,7 @@ final class CheckoutViewModel {
 
     // MARK: Computed State
     var requiresExternalReference: Bool {
-        selectedPaymentMethod.requiresExternalReference
+        selectedPaymentMethod.requiresExternalReference && paymentTotalDecimal > .zero
     }
 
     var referenceFieldTitle: String {
@@ -245,7 +258,7 @@ final class CheckoutViewModel {
     }
 
     var isConfirmEnabled: Bool {
-        let hasValidAmount = servicesTotalDecimal > 0
+        let hasValidAmount = servicesTotalDecimal >= 0 && (servicesTotalDecimal > 0 || isSpaRedeemed)
         let hasValidReference = selectedPaymentMethod.isValidReference(externalReference)
         return hasValidAmount && !isSaving && isLoyaltySelectionValid && (!requiresExternalReference || hasValidReference)
     }
@@ -814,13 +827,13 @@ final class CheckoutViewModel {
             break
         case .payment, .review:
             let total = servicesTotalDecimal
-            guard total > 0 else {
+            guard total >= 0 && (total > 0 || isSpaRedeemed) else {
                 throw ValidationError.custom(message: AppLocalization.localized("checkout.error.zero_total", value: "Cannot check out with a total amount of zero."))
             }
             guard isLoyaltySelectionValid else {
                 throw ValidationError.custom(message: AppLocalization.localized("loyalty.error.reward_unavailable", value: "This reward is no longer available. Please reopen rewards."))
             }
-            if let message = selectedPaymentMethod.validationMessage(for: externalReference) {
+            if requiresExternalReference, let message = selectedPaymentMethod.validationMessage(for: externalReference) {
                 throw ValidationError.custom(message: message)
             }
         }

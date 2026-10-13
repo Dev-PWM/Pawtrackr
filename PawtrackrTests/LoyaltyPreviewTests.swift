@@ -114,32 +114,20 @@ final class LoyaltyPreviewTests: XCTestCase {
 
     // MARK: - The preview itself
 
-    func testTipIncludedTicketEarnsOnTheWholeAmount() {
-        // $70 of services plus a $10 tip: checkout passes 80.
-        let preview = LoyaltyEngine.preview(ticket: Decimal(70) + Decimal(10), config: .default, tier: .bronze, rebook: false)
-        XCTAssertEqual(preview.basePoints, 80)
-        XCTAssertEqual(preview.total, 80)
-    }
-
-    func testBreakdownAddsUp() {
-        let preview = LoyaltyEngine.preview(ticket: 85, config: .default, tier: .silver, rebook: true)
-        XCTAssertEqual(preview.basePoints, 85)
-        XCTAssertEqual(preview.tierPoints, 93, "85 × 1.10 = 93.5, rounded down.")
-        XCTAssertEqual(preview.rebookBonus, LoyaltyEngine.rebookBonusPoints)
-        XCTAssertEqual(preview.total, 113)
-    }
-
-    func testNoBaseMeansNoRebookBonus() {
-        let zeroRate = LoyaltyConfigSnapshot(earnMode: .pointsPerDollar, pointsPerDollar: 0, pointsPerVisit: 20, redemptionThreshold: 100, isRewardsCatalogEnabled: true)
-        XCTAssertEqual(LoyaltyEngine.preview(ticket: 80, config: zeroRate, tier: .platinum, rebook: true).total, 0)
-        XCTAssertEqual(LoyaltyEngine.preview(ticket: 0, config: .default, tier: .gold, rebook: true).total, 0)
-    }
-
-    func testFlatModeIgnoresTheTicket() {
-        let flat = LoyaltyConfigSnapshot(earnMode: .flatPerVisit, pointsPerDollar: 1, pointsPerVisit: 20, redemptionThreshold: 100, isRewardsCatalogEnabled: true)
-        XCTAssertEqual(LoyaltyEngine.preview(ticket: 15, config: flat, tier: .bronze, rebook: false).total, 20)
-        XCTAssertEqual(LoyaltyEngine.preview(ticket: 190, config: flat, tier: .bronze, rebook: false).total, 20)
-        XCTAssertEqual(LoyaltyEngine.preview(ticket: 190, config: flat, tier: .gold, rebook: false).total, 25)
+    func testEveryPriceTierAndReturnTimingEarnsExactlyTwenty() {
+        for config in Self.configs {
+            for tier in LoyaltyTier.allCases {
+                for ticket in Self.tickets {
+                    for rebook in [false, true] {
+                        let preview = LoyaltyEngine.preview(ticket: ticket, config: config, tier: tier, rebook: rebook)
+                        XCTAssertEqual(preview.basePoints, 20)
+                        XCTAssertEqual(preview.tierPoints, 20)
+                        XCTAssertEqual(preview.rebookBonus, 0)
+                        XCTAssertEqual(preview.total, 20)
+                    }
+                }
+            }
+        }
     }
 
     func testResolverPicksTheOldestConfigFromRowsAsTheFetchDoes() throws {
@@ -189,46 +177,16 @@ final class LoyaltyPreviewTests: XCTestCase {
         XCTAssertEqual(LoyaltyRewardCatalog.displayTitle(for: edited.displayReward), "$5 Visit Credit", "A changed cost means the salon made it its own.")
     }
 
-    func testExplainerSaysHowACheckoutEarns() {
+    func testExplainerMatchesFixedVisitEarningsInBothLanguages() {
         defer { UserDefaults.standard.removeObject(forKey: AppSettingsKeys.appLanguageOverride) }
-        UserDefaults.standard.set(AppLanguageOverride.en.rawValue, forKey: AppSettingsKeys.appLanguageOverride)
-
-        let perDollar = LoyaltyExplainer.earning(config: .default, currencySymbol: "$")
-        XCTAssertTrue(perDollar.contains("1 point"), perDollar)
-        XCTAssertFalse(perDollar.contains("tip"), "Checkout takes no tips: \(perDollar)")
-        XCTAssertTrue(perDollar.contains("rounded down"), perDollar)
-
-        let twoPerEuro = LoyaltyConfigSnapshot(earnMode: .pointsPerDollar, pointsPerDollar: 2, pointsPerVisit: 20, redemptionThreshold: 100, isRewardsCatalogEnabled: true)
-        let euro = LoyaltyExplainer.earning(config: twoPerEuro, currencySymbol: "€")
-        XCTAssertTrue(euro.contains("2 points") && euro.contains("€"), euro)
-
-        let flat = LoyaltyConfigSnapshot(earnMode: .flatPerVisit, pointsPerDollar: 1, pointsPerVisit: 20, redemptionThreshold: 100, isRewardsCatalogEnabled: true)
-        let flatText = LoyaltyExplainer.earning(config: flat, currencySymbol: "$")
-        XCTAssertTrue(flatText.contains("20 points") && flatText.contains("whatever the total"), flatText)
-
-        let off = LoyaltyConfigSnapshot(earnMode: .pointsPerDollar, pointsPerDollar: 0, pointsPerVisit: 20, redemptionThreshold: 100, isRewardsCatalogEnabled: true)
-        XCTAssertTrue(LoyaltyExplainer.earning(config: off, currencySymbol: "$").contains("no points"))
-
-        // Tiers, rebook and redeeming state the engine's numbers and what
-        // the app does, nothing invented.
-        XCTAssertTrue(LoyaltyExplainer.tiers.contains("500") && LoyaltyExplainer.tiers.contains("1,500") && LoyaltyExplainer.tiers.contains("3,500"), LoyaltyExplainer.tiers)
-        XCTAssertTrue(LoyaltyExplainer.rebook.contains("20 points") && LoyaltyExplainer.rebook.contains("45"), LoyaltyExplainer.rebook)
-        XCTAssertTrue(LoyaltyExplainer.redeeming(config: .default).contains("Payment step"))
-        XCTAssertTrue(LoyaltyExplainer.redeeming(config: .default).contains("Credits lower the amount due automatically"))
-        XCTAssertFalse(LoyaltyExplainer.redeeming(config: .default).contains("%"))
-    }
-
-    func testExplainerIsTranslated() {
-        defer { UserDefaults.standard.removeObject(forKey: AppSettingsKeys.appLanguageOverride) }
-        UserDefaults.standard.set(AppLanguageOverride.es.rawValue, forKey: AppSettingsKeys.appLanguageOverride)
-
-        let perDollar = LoyaltyExplainer.earning(config: .default, currencySymbol: "$")
-        XCTAssertTrue(perDollar.hasPrefix("Cada cobro suma 1 punto"), perDollar)
-        XCTAssertFalse(perDollar.contains("propina"), perDollar)
-        XCTAssertTrue(LoyaltyExplainer.rebook.contains("20 puntos"), LoyaltyExplainer.rebook)
-        XCTAssertEqual(LoyaltyExplainer.tierChoice(.gold), "Oro 1.25×")
-        let lines = LoyaltyExplainer.breakdown(LoyaltyEngine.preview(ticket: 85, config: .default, tier: .silver, rebook: true), config: .default)
-        XCTAssertEqual(lines, ["Del total: 85 puntos", "Plata 1.1×: 93 puntos", "Bono por volver: +20 puntos"])
+        for language in [AppLanguageOverride.en, .es] {
+            UserDefaults.standard.set(language.rawValue, forKey: AppSettingsKeys.appLanguageOverride)
+            XCTAssertTrue(LoyaltyExplainer.earning(config: .default, currencySymbol: "$").contains("20"))
+            let preview = LoyaltyEngine.preview(ticket: 999, config: .default, tier: .platinum, rebook: true)
+            let lines = LoyaltyExplainer.breakdown(preview, config: .default)
+            XCTAssertEqual(lines.count, 1)
+            XCTAssertTrue(lines[0].contains("20"))
+        }
     }
 
     func testMoneyIsFormattedFromDecimalWithTheSalonsSymbol() {

@@ -22,6 +22,17 @@ struct CheckoutLoyaltyPaymentCard: View {
             .accessibilityElement(children: .combine)
             .accessibilityIdentifier("checkout.loyalty.balance")
 
+            ForEach(viewModel.loyaltyRewards.filter { $0.isRedeemable(with: viewModel.loyaltyPoints) }) { reward in
+                Label(LoyaltyRewardCatalog.displayTitle(for: reward) + " · " + AppLocalization.localized("checkout.loyalty.ready", value: "Ready to redeem"), systemImage: "gift.fill")
+                    .font(.body.weight(.semibold))
+                    .foregroundStyle(.primary)
+            }
+
+            if viewModel.isSpaRedeemed {
+                Label(AppLocalization.localized("checkout.loyalty.spa_free", value: "VIP Spa redeemed: the entered service amount is free, including selected add-ons. Editing the amount will not add a charge."), systemImage: "checkmark.seal.fill")
+                    .font(.body.weight(.semibold)).foregroundStyle(.primary)
+                    .padding().background(Color.green.opacity(0.12), in: RoundedRectangle(cornerRadius: 12))
+            }
             if let reward = viewModel.selectedLoyaltyReward {
                 VStack(alignment: .leading, spacing: 5) {
                     Label(LoyaltyRewardCatalog.displayTitle(for: reward), systemImage: "gift")
@@ -119,7 +130,11 @@ struct CheckoutRewardSelectionView: View {
                                 .pressScaleStyle()
                                 .accessibilityLabel(String(format: AppLocalization.localized("checkout.loyalty.select_fmt", value: "Select %@"), LoyaltyRewardCatalog.displayTitle(for: reward)))
                                 .accessibilityIdentifier("checkout.reward.\(reward.id)")
-                                .disabled(viewModel.isLoadingLoyalty || !reward.isRedeemable(with: viewModel.loyaltyPoints) || !reward.isApplicable(to: viewModel.servicesTotalDecimal))
+                                .disabled(viewModel.isLoadingLoyalty || !reward.isRedeemable(with: viewModel.loyaltyPoints) || !reward.isApplicable(to: viewModel.servicesTotalDecimal) || (reward.isSpaPackageReward && !viewModel.includesSpaPackage))
+                            }
+                            if reward.isSpaPackageReward && !viewModel.includesSpaPackage {
+                                Text(AppLocalization.localized("checkout.loyalty.spa_required", value: "Select Spa Package before redeeming the VIP Spa reward."))
+                                    .font(.body).foregroundStyle(.secondary)
                             }
                             if reward.isRedeemable(with: viewModel.loyaltyPoints), !reward.isApplicable(to: viewModel.servicesTotalDecimal) {
                                 Text(AppLocalization.localized("checkout.loyalty.credit_exceeds_total", value: "This visit total is below the reward's full credit. Choose another reward or keep the points."))
@@ -128,7 +143,7 @@ struct CheckoutRewardSelectionView: View {
                         }
                         .padding(20)
                         .background(DS.ColorToken.surface, in: RoundedRectangle(cornerRadius: 18))
-                        .hairlineBorder(DS.ColorToken.border, cornerRadius: 18)
+                        .hairlineBorder(reward.isRedeemable(with: viewModel.loyaltyPoints) ? Color.green : DS.ColorToken.border, cornerRadius: 18)
                     }
                     if viewModel.loyaltyRewards.isEmpty {
                         ContentUnavailableView(AppLocalization.localized("checkout.loyalty.no_rewards", value: "No rewards are configured yet. Add a reward in Loyalty settings."), systemImage: "gift")

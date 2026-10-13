@@ -64,6 +64,7 @@ struct SidebarView: View {
         // The Academy's first stop points at the whole menu.
         .walkthroughAnchor(.appNavigation)
         .glassmorphicSidebar()
+        .tint(.primary)
         .navigationTitle("Pawtrackr")
     }
 }
@@ -79,15 +80,20 @@ private struct SidebarRow: View {
             selection = item
             onSelect(item)
         } label: {
-            Label(item.label, systemImage: item.icon)
+            HStack(spacing: 10) {
+                Image(systemName: item.icon).foregroundStyle(Color.primary)
+                Text(item.label).foregroundStyle(Color.primary)
+            }
                 .font(.body.weight(selection == item ? .semibold : .regular))
-                .foregroundStyle(selection == item ? Color.accentColor : .primary)
+                .foregroundStyle(Color.primary)
                 .lineLimit(1)
                 .minimumScaleFactor(0.8)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .pressScaleStyle()
+        .accessibilityLabel(item.label)
         .walkthroughAnchor(item.walkthroughAnchorID)
         .listRowBackground(rowBackground)
         .accessibilityIdentifier("sidebar.row.\(item.rawValue)")
@@ -103,7 +109,7 @@ private struct SidebarRow: View {
 
     private var rowBackground: Color {
         if selection == item {
-            return Color.accentColor.opacity(0.14)
+            return Color.primary.opacity(0.10)
         }
 
         #if os(macOS)

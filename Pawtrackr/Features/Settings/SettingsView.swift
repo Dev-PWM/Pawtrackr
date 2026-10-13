@@ -169,7 +169,10 @@ struct SettingsView: View {
         // that same path to step into a section.
         List(SettingSection.allCases) { section in
             NavigationLink(value: section) {
-                Label(section.title, systemImage: section.icon)
+                HStack(spacing: 10) {
+                    Image(systemName: section.icon).foregroundStyle(Color.primary)
+                    Text(section.title).foregroundStyle(Color.primary)
+                }
             }
             .accessibilityIdentifier("settings.section.\(section.rawValue)")
         }
@@ -244,7 +247,10 @@ struct SettingsView: View {
         VStack(spacing: 0) {
             Picker(settingsLocalized("settings.title", value: "Settings"), selection: selectedSectionBinding) {
                 ForEach(SettingSection.allCases) { section in
-                    Label(section.title, systemImage: section.icon)
+                    HStack(spacing: 10) {
+                    Image(systemName: section.icon).foregroundStyle(Color.primary)
+                    Text(section.title).foregroundStyle(Color.primary)
+                }
                         .tag(section)
                 }
             }
@@ -263,7 +269,10 @@ struct SettingsView: View {
     private var settingsSectionList: some View {
         List(selection: $selection) {
             ForEach(SettingSection.allCases) { section in
-                Label(section.title, systemImage: section.icon)
+                HStack(spacing: 10) {
+                    Image(systemName: section.icon).foregroundStyle(Color.primary)
+                    Text(section.title).foregroundStyle(Color.primary)
+                }
                     .font(.system(.body, design: .rounded).weight(.medium))
                     .tag(section)
                     .accessibilityIdentifier("settings.section.\(section.rawValue)")
@@ -699,7 +708,7 @@ private struct HelpSectionView: View {
                 HelpTopicRow(icon: "play.fill", title: settingsLocalized("settings.help.checkin_title", value: "Check in"), detail: settingsLocalized("settings.help.checkin_detail", value: "Start a pet's visit from its client profile. Notes and care alerts stay with that pet."))
                 HelpTopicRow(icon: "stop.fill", title: settingsLocalized("settings.help.checkout_title", value: "Check out"), detail: settingsLocalized("settings.help.checkout_detail", value: "Choose services, add notes or photos, then enter the amount and payment method. Review the final total before confirming."))
                 HelpTopicRow(icon: "creditcard.fill", title: settingsLocalized("settings.help.payment_title", value: "Payment controls"), detail: settingsLocalized("settings.help.payment_detail", value: "Cash, debit, credit, and Zelle record how the visit was paid. Enter a reference when the selected method asks for one."))
-                HelpTopicRow(icon: "sparkles", title: settingsLocalized("settings.help.loyalty_title", value: "Points & rewards"), detail: settingsLocalized("settings.help.loyalty_detail", value: "Completed paid visits add points automatically. At payment, choose one available reward or keep points for later. Credits lower the bill; VIP is provided by the salon and recorded with the visit."))
+                HelpTopicRow(icon: "sparkles", title: settingsLocalized("settings.help.loyalty_title", value: "Points & rewards"), detail: settingsLocalized("settings.help.loyalty_fixed_detail", value: "Each completed, settled visit earns 20 points. Choose a reward in Payment or keep the points. Credits lower the amount due. Select Spa Package and redeem VIP Spa to make the entered service amount free."))
             }
             CardView {
                 Label(settingsLocalized("settings.help.data_title", value: "Your records"), systemImage: "internaldrive.fill")
