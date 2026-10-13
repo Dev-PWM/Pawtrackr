@@ -201,6 +201,21 @@ final class BehaviorSafetyAlgorithmTests: XCTestCase {
         XCTAssertEqual(third.prominentBehavior, .nervous)
     }
 
+    func testHistoricalAggressiveObservationSurvivesClearanceAndLaterMoodChanges() async throws {
+        try await completeCheckout(with: ["Aggressive"])
+        try await completeCheckout(with: ["Calm"])
+        try await completeCheckout(with: ["Nervous"])
+        try await completeCheckout(with: ["Cooperative"])
+        let cleared = try await petSnapshot()
+        XCTAssertFalse(cleared.isAggressive)
+        try await completeCheckout(with: ["Anxious"])
+        let latest = try await petSnapshot()
+        XCTAssertEqual(latest.behaviorTags, ["Anxious"])
+        let reader = BehaviorSafetyTestStore(modelContainer: container)
+        let observations = try await reader.historicalObservations(for: petUUID)
+        XCTAssertEqual(observations, [["Aggressive"], ["Calm"], ["Nervous"], ["Cooperative"], ["Anxious"]])
+    }
+
     func testSpanishAnxiousAndNervousQualifyForClearance() async throws {
         try await completeCheckout(with: ["Ansioso"])
         try await completeCheckout(with: ["Nervioso"])
@@ -318,6 +333,14 @@ private actor BehaviorSafetyTestStore {
         modelContext.insert(pet)
         try modelContext.save()
         return pet.uuid
+    }
+
+    func historicalObservations(for petUUID: UUID) throws -> [[String]] {
+        let descriptor = FetchDescriptor<Visit>(
+            predicate: #Predicate { $0.pet?.uuid == petUUID && $0.endedAt != nil },
+            sortBy: [SortDescriptor(\.endedAt)]
+        )
+        return try modelContext.fetch(descriptor).map(\.behaviorTags)
     }
 
     func snapshot(for petUUID: UUID) throws -> BehaviorSafetyPetSnapshot {

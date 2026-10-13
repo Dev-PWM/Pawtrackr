@@ -142,6 +142,21 @@ final class ClientDetailUITests: XCTestCase {
                 XCTAssertTrue(app.staticTexts["pet.behavior.nervous"].waitForExistence(timeout: 5))
             }
             captureBehaviorScreen("After \(behavior) checkout \(index + 1)")
+            // The original regression appeared only after leaving and reopening
+            // the client: cached pre-checkout visits and safety state returned.
+            let back = app.navigationBars.buttons.firstMatch
+            XCTAssertTrue(back.waitForHittable(timeout: 5))
+            back.tap()
+            openSeededClient()
+            XCTAssertTrue(care.waitForExistence(timeout: 8))
+            XCTAssertEqual(aggression.exists, index < 2)
+            if index < 2 {
+                XCTAssertTrue(aggression.label.contains("\(index + 1)/3"))
+            }
+            scrollToBehaviorElement(app.buttons["clientDetail.pet.UITest Pet.history"])
+            XCTAssertTrue(app.staticTexts["pet.behavior.\(behavior)"].exists)
+            XCTAssertFalse(app.staticTexts["Processing"].exists, "Completed visits must not reappear as active history.")
+            captureBehaviorScreen("Reopened client after \(behavior)")
         }
         startNextBehaviorVisit()
         completeBehaviorCheckout("aggressive")
@@ -149,6 +164,22 @@ final class ClientDetailUITests: XCTestCase {
         XCTAssertFalse(aggression.label.contains("/3"), "Relapse must reset progress.")
         XCTAssertTrue(care.exists)
         captureBehaviorScreen("Aggressive relapse resets progress; care remains")
+    }
+
+    func testAnxiousCueInLightAndDarkAppearance() throws {
+        let baselineArguments = app.launchArguments
+        for appearance in ["Light", "Dark"] {
+            app.terminate()
+            app.launchArguments = baselineArguments + ["-preferredColorScheme", appearance.lowercased()]
+            app.launchEnvironment["PAWTRACKR_UI_BEHAVIOR_SCENARIO"] = "anxious"
+            app.launch()
+            waitForDashboard()
+            openSeededClient()
+            scrollToBehaviorElement(app.buttons["clientDetail.pet.UITest Pet.history"])
+            XCTAssertTrue(app.staticTexts["pet.behavior.anxious"].waitForExistence(timeout: 5))
+            XCTAssertFalse(app.descendants(matching: .any)["clientDetail.safetyBanner"].firstMatch.exists)
+            captureBehaviorScreen("Anxious teal cue — \(appearance)")
+        }
     }
 
     func testBehaviorCardsShowDistinctCuesAndOnlyPriorityWarnings() throws {

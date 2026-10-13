@@ -60,6 +60,8 @@ final class ClientDetailViewModel {
     private var currentLimit: Int
     private var lastTotalForClient: Int = 0
     private var fetchTask: Task<Void, Never>?
+    /// Retains the committed history graph independently of unsaved profile edits.
+    @ObservationIgnored private var historyPresentationContext: ModelContext?
     private var visitCompleteObserver: CDVMObserverToken?
     private var checkingInPetIDs: Set<PersistentIdentifier> = []
 
@@ -96,8 +98,7 @@ final class ClientDetailViewModel {
             }
         }
         self.visitCompleteObserver = CDVMObserverToken(token)
-        refreshEmergencyContacts()
-        refreshActiveVisits()
+        refreshPets()
         refreshRecentVisits()
     }
 
@@ -345,9 +346,13 @@ final class ClientDetailViewModel {
 
             guard !Task.isCancelled else { return }
 
-            // Resolve IDs back to main-context objects.
+            // IDs identify records, but resolving them in an old context can
+            // resurrect cached pre-checkout values. Retain a new read graph.
+            let historyContext = ModelContext(container)
+            historyContext.autosaveEnabled = false
             let pagedIDs = Array(filteredIDs.prefix(fetchLimit))
-            let visits   = pagedIDs.compactMap { modelContext.model(for: $0) as? Visit }
+            let visits = pagedIDs.compactMap { historyContext.model(for: $0) as? Visit }
+            historyPresentationContext = historyContext
 
             self.lastTotalForClient = filteredIDs.count
             self.canLoadMore        = filteredIDs.count > fetchLimit

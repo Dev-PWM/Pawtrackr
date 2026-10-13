@@ -17,6 +17,7 @@ struct VisitTimelineRow: View {
                 topRow
                 timingRow
                 services
+                VisitBehaviorTags(tags: visit.behaviorTags)
                 footer
                 VisitLoyaltyReceipt(visit: visit)
             }

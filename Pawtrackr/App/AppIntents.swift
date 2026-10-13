@@ -27,7 +27,8 @@ struct PetEntityQuery: EntityStringQuery {
     @MainActor
     func entities(for identifiers: [UUID]) async throws -> [PetEntity] {
         let container = try IntentContainerProvider.sharedContainer()
-        let context = container.mainContext
+        // Intent invocations must read committed sessions rather than a cached UI graph.
+        let context = ModelContext(container)
         var entities: [PetEntity] = []
         entities.reserveCapacity(identifiers.count)
 
@@ -47,7 +48,8 @@ struct PetEntityQuery: EntityStringQuery {
     @MainActor
     func entities(matching string: String) async throws -> [PetEntity] {
         let container = try IntentContainerProvider.sharedContainer()
-        let context = container.mainContext
+        // Intent invocations must read committed sessions rather than a cached UI graph.
+        let context = ModelContext(container)
         let normalizedQuery = string.trimmingCharacters(in: .whitespacesAndNewlines).localizedLowercase
 
         // Push the predicate into the FetchDescriptor instead of fetching the
@@ -70,7 +72,8 @@ struct PetEntityQuery: EntityStringQuery {
     @MainActor
     func suggestedEntities() async throws -> [PetEntity] {
         let container = try IntentContainerProvider.sharedContainer()
-        let context = container.mainContext
+        // Intent invocations must read committed sessions rather than a cached UI graph.
+        let context = ModelContext(container)
         var descriptor = FetchDescriptor<Pet>(predicate: #Predicate { $0.archivedAt == nil }, sortBy: [SortDescriptor(\Pet.updatedAt, order: .reverse)])
         descriptor.fetchLimit = 10
         return try context.fetch(descriptor).map(PetEntity.init(pet:))
@@ -89,7 +92,8 @@ struct CheckInPetIntent: AppIntent {
     @MainActor
     func perform() async throws -> some IntentResult & ProvidesDialog {
         let container = try IntentContainerProvider.sharedContainer()
-        let context = container.mainContext
+        // Intent invocations must read committed sessions rather than a cached UI graph.
+        let context = ModelContext(container)
         let petID = pet.id
         let descriptor = FetchDescriptor<Pet>(
             predicate: #Predicate { model in model.uuid == petID && model.archivedAt == nil },

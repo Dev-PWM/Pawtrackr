@@ -166,6 +166,8 @@ struct ClientDetailView: View {
             if viewModel == nil {
                 let ctx = client.modelContext ?? modelContext
                 viewModel = ClientDetailViewModel(client: client, modelContext: ctx, eventBus: eventBus)
+            } else {
+                viewModel?.refreshPets()
                 viewModel?.refreshRecentVisits()
             }
         }

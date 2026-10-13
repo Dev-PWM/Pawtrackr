@@ -10,6 +10,8 @@ import Observation
 
 #if os(macOS)
 import AppKit // Import AppKit for NSColor on macOS
+#else
+import UIKit
 #endif
 
 /// Observable theme manager to support dynamic branding across the app.
@@ -47,6 +49,25 @@ enum DS {
         static var primary: Color { ThemeManager.shared.brandPrimary }
         
         static let success    = Color(red: 16/255,  green: 185/255, blue: 129/255) // #10B981
+        /// Teal distinguishes anxiety from amber operational warnings. Labels
+        /// always accompany this color; darker ink keeps light-mode contrast.
+        static let anxious: Color = {
+            #if os(macOS)
+            Color(nsColor: NSColor(name: nil) { appearance in
+                let dark = appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
+                return NSColor(srgbRed: dark ? 94/255 : 15/255,
+                               green: dark ? 234/255 : 118/255,
+                               blue: dark ? 212/255 : 110/255, alpha: 1)
+            })
+            #else
+            Color(uiColor: UIColor { traits in
+                let dark = traits.userInterfaceStyle == .dark
+                return UIColor(red: dark ? 94/255 : 15/255,
+                               green: dark ? 234/255 : 118/255,
+                               blue: dark ? 212/255 : 110/255, alpha: 1)
+            })
+            #endif
+        }()
         static let warning    = Color(red: 245/255, green: 158/255, blue: 11/255)  // #F59E0B
         static let danger     = Color(red: 239/255, green: 68/255,  blue: 68/255)  // #EF4444
         static let info       = Color(red: 59/255,  green: 130/255, blue: 246/255) // #3B82F6

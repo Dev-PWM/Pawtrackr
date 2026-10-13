@@ -797,11 +797,7 @@ struct VisitDetailView: View {
                     VStack(alignment: .leading, spacing: 10) {
                         Text(NSLocalizedString("visit.behavior_tags", comment: ""))
                             .font(.subheadline.weight(.semibold))
-                        FlowLayout(spacing: 8, rowSpacing: 8) {
-                            ForEach(visit.behaviorTags, id: \.self) { tag in
-                                Chip(tag, style: .tinted, size: .sm, tint: .blue)
-                            }
-                        }
+                        VisitBehaviorTags(tags: visit.behaviorTags)
                     }
                 }
             }

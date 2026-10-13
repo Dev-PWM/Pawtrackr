@@ -5,7 +5,7 @@ final class BehaviorTagIconsTests: XCTestCase {
     func testSharedColorMappingMatchesEachBehavior() {
         XCTAssertEqual(BehaviorTagIcons.tint(for: .calm), DS.ColorToken.success)
         XCTAssertEqual(BehaviorTagIcons.tint(for: .cooperative), DS.ColorToken.success)
-        XCTAssertEqual(BehaviorTagIcons.tint(for: .anxious), DS.ColorToken.warning)
+        XCTAssertEqual(BehaviorTagIcons.tint(for: .anxious), DS.ColorToken.anxious)
         XCTAssertEqual(BehaviorTagIcons.tint(for: .nervous), DS.ColorToken.info)
         XCTAssertEqual(BehaviorTagIcons.tint(for: .aggressive), DS.ColorToken.danger)
         XCTAssertEqual(BehaviorTagIcons.tint(for: .specialNeeds), DS.ColorToken.specialCare)

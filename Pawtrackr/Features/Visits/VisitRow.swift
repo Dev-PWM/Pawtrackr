@@ -26,6 +26,7 @@ struct VisitRow: View {
                 VStack(alignment: .leading, spacing: 6) {
                     header
                     services
+                VisitBehaviorTags(tags: visit.behaviorTags)
                     footer
                     VisitLoyaltyReceipt(visit: visit)
                 }

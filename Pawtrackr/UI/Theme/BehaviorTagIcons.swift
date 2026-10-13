@@ -14,7 +14,7 @@ enum BehaviorTagIcons {
         switch tag {
         case .aggressive: return DS.ColorToken.danger
         case .specialNeeds: return DS.ColorToken.specialCare
-        case .anxious: return DS.ColorToken.warning
+        case .anxious: return DS.ColorToken.anxious
         case .nervous: return DS.ColorToken.info
         case .calm, .cooperative: return DS.ColorToken.success
         case nil: return .secondary

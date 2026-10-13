@@ -37,6 +37,63 @@ final class ClientDetailViewModelTests: XCTestCase {
         XCTAssertEqual(vm.pets.first?.uuid, pet.uuid)
     }
 
+    func testOpeningClientPreservesExistingUnsavedEditorGraph() {
+        client.firstName = "Unsaved"
+        let vm = ClientDetailViewModel(client: client, modelContext: context)
+        XCTAssertTrue(vm.client === client)
+        XCTAssertEqual(vm.client.firstName, "Unsaved")
+        XCTAssertTrue(context.hasChanges)
+    }
+
+    func testReopeningClientReadsCommittedBehaviorAndCompletedHistory() async throws {
+        pet.behaviorTags = ["Aggressive"]
+        seedCompletedVisit(at: .now.addingTimeInterval(-120), total: 0).behaviorTags = ["Calm"]
+        seedCompletedVisit(at: .now.addingTimeInterval(-60), total: 0).behaviorTags = ["Cooperative"]
+        let visit = Visit(pet: pet)
+        context.insert(visit)
+        try context.save()
+        // Materialize the stale graph used by navigation before actor checkout.
+        _ = client.pets
+        _ = pet.visits
+        _ = visit.endedAt
+        let writer = ModelContext(container)
+        let committedPet = try XCTUnwrap(writer.model(for: pet.persistentModelID) as? Pet)
+        let committedVisit = try XCTUnwrap(writer.model(for: visit.persistentModelID) as? Visit)
+        committedVisit.behaviorTags = ["Nervous"]
+        committedVisit.markCheckedOut(total: 0, now: .now)
+        // The third qualifying observation clears the committed warning.
+        committedPet.reconcileBehaviorTagsFromCompletedVisits()
+        try writer.save()
+
+        let reopened = ClientDetailViewModel(client: client, modelContext: context)
+        await waitForFetch(reopened, expectVisits: 3)
+        XCTAssertEqual(reopened.pets.first?.behaviorTags, ["Nervous"])
+        XCTAssertFalse(reopened.pets.first?.isAggressive ?? true)
+        XCTAssertNotNil(reopened.recentVisits.first?.endedAt)
+        XCTAssertEqual(reopened.recentVisits.first?.behaviorTags, ["Nervous"])
+        XCTAssertNil(reopened.activeVisit(for: pet))
+        XCTAssertFalse(context.hasChanges)
+    }
+
+    func testHistoryRefreshUsesCommittedGraphWhileProfileHasUnsavedEdits() async throws {
+        let visit = seedCompletedVisit(at: .now, total: 10)
+        let vm = ClientDetailViewModel(client: client, modelContext: context)
+        await waitForFetch(vm, expectVisits: 1)
+        vm.client.firstName = "Unsaved"
+        let writer = ModelContext(container)
+        let committed = try XCTUnwrap(writer.model(for: visit.persistentModelID) as? Visit)
+        committed.behaviorTags = ["Aggressive"]
+        try writer.save()
+        vm.refreshRecentVisits()
+        for _ in 0..<100 {
+            if vm.recentVisits.first?.behaviorTags == ["Aggressive"] { break }
+            try await Task.sleep(for: .milliseconds(20))
+        }
+        XCTAssertEqual(vm.recentVisits.first?.behaviorTags, ["Aggressive"])
+        XCTAssertEqual(vm.client.firstName, "Unsaved")
+        XCTAssertTrue(vm.client.modelContext?.hasChanges ?? false)
+    }
+
     func testRefreshPetsReadsCommittedBehaviorAndNewPetWithoutDirtyingOldGraph() throws {
         let vm = ClientDetailViewModel(client: client, modelContext: context)
         _ = vm.pets.first?.behaviorTags
@@ -61,12 +118,12 @@ final class ClientDetailViewModelTests: XCTestCase {
     func testRefreshPetsPreservesUnsavedClientEdits() throws {
         let vm = ClientDetailViewModel(client: client, modelContext: context)
         let originalRevision = vm.petPresentationRevision
-        client.firstName = "Unsaved"
+        vm.client.firstName = "Unsaved"
         vm.refreshPets()
-        XCTAssertTrue(vm.client === client)
+        XCTAssertEqual(vm.client.firstName, "Unsaved")
         XCTAssertEqual(vm.petPresentationRevision, originalRevision, "Unsaved editor graphs must not be replaced or remounted.")
         XCTAssertEqual(vm.client.firstName, "Unsaved")
-        XCTAssertTrue(context.hasChanges)
+        XCTAssertTrue(vm.client.modelContext?.hasChanges ?? false)
     }
 
     func testContactEditorSurvivesPresentationRefreshAndPreservesUntouchedFields() throws {
@@ -312,8 +369,10 @@ final class ClientDetailViewModelTests: XCTestCase {
         let vm = ClientDetailViewModel(client: client, modelContext: context)
         vm.recordAttentionOutreach(method: "call")
 
-        XCTAssertNotNil(pet.lastAttentionOutreachAt)
-        XCTAssertFalse(pet.needsAttention)
+        let reader = ModelContext(container)
+        let savedPet = try XCTUnwrap(reader.model(for: pet.persistentModelID) as? Pet)
+        XCTAssertNotNil(savedPet.lastAttentionOutreachAt)
+        XCTAssertFalse(savedPet.needsAttention)
     }
 
     // MARK: - Helpers
