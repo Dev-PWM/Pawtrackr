@@ -64,7 +64,10 @@ final actor CheckoutTransactionActor {
     /// Owns one atomic checkout while the client balance is reserved.
     private func processReserved(_ request: CheckoutRequest) async throws -> CheckoutResult {
         let context = modelContext
-        
+        guard !request.amount.isNaN, request.amount >= .zero else {
+            throw AppError.validation(.custom(message: AppLocalization.localized("checkout.error.invalid_amount", value: "Enter a valid amount.")))
+        }
+
         // 1. Idempotency Check
         let idempotencyKey = "checkout:\(request.visitUUID.uuidString)"
         let transaction = try fetchOrCreateTransaction(idempotencyKey: idempotencyKey, request: request)
@@ -254,6 +257,8 @@ final actor CheckoutTransactionActor {
     
     private func syncVisitItems(visit: Visit, serviceIDs: [PersistentIdentifier]) throws {
         let context = modelContext
+        var selected: Set<PersistentIdentifier> = []
+        let serviceIDs = serviceIDs.filter { selected.insert($0).inserted }
         let currentItems = visit.items ?? []
         var nextItems: [VisitItem] = []
 

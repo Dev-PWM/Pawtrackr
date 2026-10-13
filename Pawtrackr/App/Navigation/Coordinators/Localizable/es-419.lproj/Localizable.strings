@@ -1947,3 +1947,5 @@
 /* Context-aware tactile feedback */
 "settings.preferences.smart_haptics" = "La respuesta se adapta a selecciones, recompensas y acciones guardadas. Las repeticiones rápidas se filtran. El hardware compatible ofrece respuesta táctil; otros dispositivos mantienen la respuesta visual.";
 "settings.preferences.try_haptics" = "Probar respuesta táctil";
+
+"checkout.error.invalid_amount" = "Ingresa un importe válido.";
