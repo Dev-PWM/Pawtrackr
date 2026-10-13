@@ -31,6 +31,10 @@ final class VisitItem {
 
     /// The quantity of this service provided. Must be at least 1.
     var quantity: Int = 1
+
+    /// Exact charged total when a cent allocation cannot be represented by a rounded unit price.
+    /// Optional for inferred upgrades of shipped stores; legacy rows retain unit-price math.
+    var reconciledLineTotal: Decimal?
     
     /// Optional notes specific to this line item.
     var note: String?
@@ -99,18 +103,28 @@ final class VisitItem {
 
     func setUnitPrice(_ newPrice: Decimal) {
         self.unitPrice = newPrice.roundedMoney()
+        reconciledLineTotal = nil
         didUpdate()
     }
 
     func setQuantity(_ newQuantity: Int) {
         self.quantity = max(1, newQuantity)
+        reconciledLineTotal = nil
+        didUpdate()
+    }
+
+    /// Preserves quantity while retaining any indivisible cent remainder on the line.
+    func setReconciledLineTotal(_ total: Decimal) {
+        let charged = max(.zero, total.roundedMoney())
+        unitPrice = (charged / Decimal(max(1, quantity))).roundedMoney()
+        reconciledLineTotal = unitPrice * Decimal(quantity) == charged ? nil : charged
         didUpdate()
     }
 
     // MARK: - Derived Properties & Formatting
     
     var lineTotal: Decimal {
-        (unitPrice * Decimal(quantity)).roundedMoney()
+        reconciledLineTotal ?? (unitPrice * Decimal(quantity)).roundedMoney()
     }
     
     @MainActor
