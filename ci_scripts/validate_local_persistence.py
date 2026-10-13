@@ -94,6 +94,17 @@ def validate(repo_root: Path) -> list[str]:
             source = path.read_text()
             code = swift_code(source)
             relative = path.relative_to(repo_root)
+            if root == "Pawtrackr":
+                for match in re.finditer(r"\bSchemaMigrationPlan\b|\bmigrationPlan\s*:", code):
+                    line = source.count("\n", 0, match.start()) + 1
+                    failures.append(f"{relative}:{line}: staged migration plans are forbidden (ADR-0004)")
+                for offset, arguments in constructor_arguments(code, "Attribute"):
+                    if any(re.search(r"\.\s*unique\b", argument) for argument in arguments):
+                        line = source.count("\n", 0, offset) + 1
+                        failures.append(f"{relative}:{line}: unique constraints are forbidden on store models")
+                for match in re.finditer(r"#\s*Unique\s*[<(]", code):
+                    line = source.count("\n", 0, match.start()) + 1
+                    failures.append(f"{relative}:{line}: unique constraints are forbidden on store models")
             for match in forbidden_runtime.finditer(code):
                 line = source.count("\n", 0, match.start()) + 1
                 failures.append(f"{relative}:{line}: remote persistence or push API is forbidden")
