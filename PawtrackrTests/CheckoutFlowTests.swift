@@ -45,6 +45,60 @@ final class CheckoutFlowTests: XCTestCase {
         client = nil; pet = nil; fullGroom = nil; nailTrim = nil
     }
 
+    func testOverrideNeverCreatesNegativeLinesFromRounding() async throws {
+        let visit = Visit(pet: pet)
+        context.insert(visit)
+        for index in 0..<5 {
+            visit.addItem(title: "Equal line \(index)", unitPrice: 1)
+        }
+        try context.save()
+        let result = try await actor.process(request(for: visit, amount: Decimal(string: "0.03")!))
+        let fresh = ModelContext(container)
+        let saved = try XCTUnwrap(fresh.model(for: result.visitID) as? Visit)
+        let lines = saved.items ?? []
+        XCTAssertTrue(lines.allSatisfy { $0.lineTotal >= .zero })
+        XCTAssertEqual(lines.reduce(Decimal.zero) { $0 + $1.lineTotal }, result.total)
+    }
+
+    func testOverridePreservesQuantityAndExactChargedCents() async throws {
+        let visit = Visit(pet: pet)
+        context.insert(visit)
+        let item = VisitItem(name: "Three nail trims", unitPrice: 10, quantity: 3, visit: visit)
+        context.insert(item)
+        visit.items = [item]
+        try context.save()
+        let result = try await actor.process(request(for: visit, amount: 10))
+        let fresh = ModelContext(container)
+        let saved = try XCTUnwrap(fresh.model(for: result.visitID) as? Visit)
+        XCTAssertEqual(saved.items?.first?.quantity, 3)
+        XCTAssertEqual(saved.items?.first?.lineTotal, 10)
+        XCTAssertEqual(saved.payment?.amount, saved.items?.first?.lineTotal)
+    }
+
+    func testDuplicateSelectedServiceIDsCreateOneLine() async throws {
+        let visit = Visit(pet: pet)
+        context.insert(visit)
+        try context.save()
+        let request = CheckoutRequest(visitUUID: visit.uuid, petUUID: pet.uuid, clientUUID: client.uuid,
+            amount: 65, paymentMethod: .cash, externalReference: nil, sessionNotes: nil,
+            behaviorTags: [], beforePhotoData: nil, afterPhotoData: nil,
+            selectedServiceIDs: [fullGroom.persistentModelID, fullGroom.persistentModelID],
+            selectedAddOnIDs: [fullGroom.persistentModelID])
+        let result = try await actor.process(request)
+        let fresh = ModelContext(container)
+        let saved = try XCTUnwrap(fresh.model(for: result.visitID) as? Visit)
+        XCTAssertEqual(saved.items?.count, 1)
+        XCTAssertEqual(saved.items?.first?.lineTotal, 65)
+    }
+
+    /// Builds a custom-line checkout without replacing its pre-existing items.
+    private func request(for visit: Visit, amount: Decimal) -> CheckoutRequest {
+        CheckoutRequest(visitUUID: visit.uuid, petUUID: pet.uuid, clientUUID: client.uuid,
+            amount: amount, paymentMethod: .cash, externalReference: nil, sessionNotes: nil,
+            behaviorTags: [], beforePhotoData: nil, afterPhotoData: nil,
+            selectedServiceIDs: [], selectedAddOnIDs: [])
+    }
+
     /// The audit's headline scenario: Full Groom + $15 Nail Trim, paid via Zelle with
     /// a transaction ID, must produce a PDF receipt whose total exactly equals $80.00.
     func testFullGroomPlusNailTrim_PaidByZelle_PDFTotalMatches() async throws {

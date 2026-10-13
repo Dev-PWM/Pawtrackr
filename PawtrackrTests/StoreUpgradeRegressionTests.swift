@@ -93,6 +93,26 @@ final class StoreUpgradeRegressionTests: XCTestCase {
 
     // MARK: - Helpers
 
+    func testLegacyStoreReopensWithExactQuantityLineTotalIntact() throws {
+        let storeURL = try copyFixture("Pawtrackr-1.0.1-build2")
+        var itemUUID: UUID!
+        do {
+            let context = ModelContext(try makeContainer(at: storeURL))
+            let items = try context.fetch(FetchDescriptor<VisitItem>())
+            XCTAssertTrue(items.allSatisfy { $0.reconciledLineTotal == nil })
+            let item = try XCTUnwrap(items.first)
+            itemUUID = item.uuid
+            item.setQuantity(3)
+            item.setReconciledLineTotal(10)
+            try context.save()
+        }
+        let reopened = ModelContext(try makeContainer(at: storeURL))
+        let item = try XCTUnwrap(reopened.fetch(FetchDescriptor<VisitItem>()).first { $0.uuid == itemUUID })
+        XCTAssertEqual(item.quantity, 3)
+        XCTAssertEqual(item.lineTotal, 10)
+        XCTAssertEqual(try reopened.fetchCount(FetchDescriptor<Client>()), 3)
+    }
+
     /// Uses the same local configuration as the app at an isolated fixture URL.
     private func makeContainer(at storeURL: URL) throws -> ModelContainer {
         let schema = Schema(PawtrackrSchema.models)

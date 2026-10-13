@@ -298,29 +298,15 @@ final actor CheckoutTransactionActor {
         visit.items = items
         guard !items.isEmpty else { return }
 
-        let subtotal = items.reduce(Decimal.zero) { $0 + $1.lineTotal }
+        let weights = items.map(\.lineTotal)
         let normalizedTotal = finalTotal.roundedMoney()
-        let normalizedSubtotal = subtotal.roundedMoney()
-        guard normalizedSubtotal != normalizedTotal else {
+        guard weights.reduce(Decimal.zero, +).roundedMoney() != normalizedTotal else {
             visit.recalcTotal()
             return
         }
-
-        var allocated = Decimal.zero
-        for (index, item) in items.enumerated() {
-            let lineTotal: Decimal
-            if index == items.count - 1 {
-                lineTotal = (normalizedTotal - allocated).roundedMoney()
-            } else if normalizedSubtotal > .zero {
-                lineTotal = ((item.lineTotal / normalizedSubtotal) * normalizedTotal).roundedMoney()
-                allocated += lineTotal
-            } else {
-                lineTotal = (normalizedTotal / Decimal(items.count)).roundedMoney()
-                allocated += lineTotal
-            }
-
-            let quantity = Decimal(max(1, item.quantity))
-            item.setUnitPrice((lineTotal / quantity).roundedMoney())
+        let allocated = CheckoutCalculatorActor.reconcileLineTotals(weights: weights, finalTotal: normalizedTotal)
+        for (item, total) in zip(items, allocated) {
+            item.setReconciledLineTotal(total)
         }
         visit.recalcTotal()
     }
