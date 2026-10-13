@@ -91,37 +91,11 @@ final class CheckoutViewModel {
         }
     }
 
-    // MARK: - Async Calculations (Off-Main-Thread)
-    @MainActor
-    private func triggerBackgroundCalculation(reason: String, immediate: Bool = false) {
-        Task {
-            guard let calculator = self.calculatorActor else { return }
-            
-            // Generate the draft fingerprint off the main actor. Money totals are
-            // authoritative in `servicesTotalDecimal`; do not let the background
-            // fingerprint path overwrite displayed totals with placeholder math.
-            let fingerprint = await calculator.generateFingerprint(
-                selectedServiceIDs: Array(selectedServiceIDs),
-                selectedAddOnIDs: Array(selectedAddOnIDs),
-                allServices: allServices,
-                addOnServices: addOnServices,
-                sessionNotes: sessionNotes,
-                amountString: amountString,
-                selectedPaymentMethodRawValue: selectedPaymentMethod.rawValue,
-                externalReference: externalReference,
-                tags: Array(tags),
-                hadBeforePhoto: beforePhotoData != nil,
-                hadAfterPhoto: afterPhotoData != nil,
-                visitUUID: visit.uuid.uuidString,
-                petUUID: pet.uuid.uuidString,
-                currentStepRawValue: currentStep.rawValue
-            )
-            
-            self.lastSavedDraftFingerprint = fingerprint
-            self.recalculateCachedStrings()
-            
-            scheduleDraftSave(reason: reason, immediate: immediate)
-        }
+    // MARK: - Editor Changes
+    /// Updates editor-derived state synchronously so critical saves cannot be overtaken.
+    private func checkoutStateDidChange(reason: String, immediate: Bool = false) {
+        recalculateCachedStrings()
+        scheduleDraftSave(reason: reason, immediate: immediate)
     }
 
     // Dependencies
@@ -130,7 +104,6 @@ final class CheckoutViewModel {
     private let draftStore: CheckoutDraftStore
     private let eventRecorder: CheckoutEventRecorder
     private var transactionActor: CheckoutTransactionActor?
-    private var calculatorActor: CheckoutCalculatorActor? = CheckoutCalculatorActor()
 
 
     // MARK: Models
@@ -141,13 +114,13 @@ final class CheckoutViewModel {
     // MARK: UI State
     var sessionNotes: String = ""
     var amountString: String = ""
-    var selectedServiceIDs: Set<PersistentIdentifier> = [] { didSet { triggerBackgroundCalculation(reason: "services_changed") } }
-    var selectedPaymentMethod: Payment.Method = .cash { didSet { triggerBackgroundCalculation(reason: "payment_method_changed") } }
-    var beforePhotoData: Data? { didSet { triggerBackgroundCalculation(reason: "before_photo_changed") } }
-    var afterPhotoData: Data? { didSet { triggerBackgroundCalculation(reason: "after_photo_changed") } }
-    var externalReference: String = "" { didSet { triggerBackgroundCalculation(reason: "reference_changed", immediate: true) } }
-    var tags: Set<String> = [] { didSet { triggerBackgroundCalculation(reason: "tags_changed") } }
-    var selectedAddOnIDs: Set<PersistentIdentifier> = [] { didSet { triggerBackgroundCalculation(reason: "addons_changed") } }
+    var selectedServiceIDs: Set<PersistentIdentifier> = [] { didSet { checkoutStateDidChange(reason: "services_changed") } }
+    var selectedPaymentMethod: Payment.Method = .cash { didSet { checkoutStateDidChange(reason: "payment_method_changed", immediate: true) } }
+    var beforePhotoData: Data? { didSet { checkoutStateDidChange(reason: "before_photo_changed") } }
+    var afterPhotoData: Data? { didSet { checkoutStateDidChange(reason: "after_photo_changed") } }
+    var externalReference: String = "" { didSet { checkoutStateDidChange(reason: "reference_changed", immediate: true) } }
+    var tags: Set<String> = [] { didSet { checkoutStateDidChange(reason: "tags_changed") } }
+    var selectedAddOnIDs: Set<PersistentIdentifier> = [] { didSet { checkoutStateDidChange(reason: "addons_changed") } }
 
     private(set) var completedLoyaltyPoints = 0
     private(set) var loyaltyPoints = 0
@@ -228,7 +201,6 @@ final class CheckoutViewModel {
     private var servicesLoadTask: Task<Void, Never>?
     private var suppressDraftAutosave = false
     private var isBootstrappingCheckout = false
-    private var lastSavedDraftFingerprint: String?
     private var lastAcceptedConfirmAt: Date?
     private let confirmDebounceWindow: TimeInterval = 1.0
     /// True while the guided tour drives this checkout. The tour only shows
@@ -612,7 +584,6 @@ final class CheckoutViewModel {
     func endWalkthroughPreview() {
         guard isWalkthroughPreview else { return }
         currentStep = .services
-        lastSavedDraftFingerprint = currentFingerprint()
         isWalkthroughPreview = false
         trace("walkthrough_preview_ended")
     }
@@ -630,7 +601,6 @@ final class CheckoutViewModel {
         draftRecoveryNotice = nil
         currentStep = .services
         hydrateStateFromVisit()
-        lastSavedDraftFingerprint = currentFingerprint()
 
         do {
             try await draftStore.deleteDraft(for: visit.uuid)
@@ -847,7 +817,6 @@ final class CheckoutViewModel {
             Logger.checkout.error("Draft restore: unknown step rawValue=\(draft.currentStepRawValue, privacy: .public). Keeping current step.")
         }
         recalculateCachedStrings()
-        lastSavedDraftFingerprint = currentFingerprint()
         draftRecoveryNotice = DraftRecoveryNotice(
             restoredAt: draft.updatedAt,
             missingBeforePhoto: draft.hadBeforePhoto && beforePhotoData == nil,
@@ -857,35 +826,7 @@ final class CheckoutViewModel {
         trace("draft_restored")
     }
 
-    // MARK: - Draft Fingerprint
-
-    private func currentFingerprint() -> String {
-        let serviceUUIDs = allServices
-            .filter { selectedServiceIDs.contains($0.persistentModelID) }
-            .map(\.uuid.uuidString).sorted().joined(separator: "|")
-        let addOnUUIDs = addOnServices
-            .filter { selectedAddOnIDs.contains($0.persistentModelID) }
-            .map(\.uuid.uuidString).sorted().joined(separator: "|")
-        let tagList = tags.sorted().joined(separator: "|")
-        let parts: [String] = [
-            visit.uuid.uuidString,
-            pet.uuid.uuidString,
-            String(currentStep.rawValue),
-            sessionNotes,
-            amountString,
-            serviceUUIDs,
-            addOnUUIDs,
-            selectedPaymentMethod.rawValue,
-            externalReference,
-            tagList,
-            String(beforePhotoData?.count ?? 0),
-            String(afterPhotoData?.count ?? 0),
-            selectedLoyaltyReward?.id ?? "keep",
-            String(selectedLoyaltyReward?.pointCost ?? 0),
-            loyaltyCredit.description
-        ]
-        return parts.joined(separator: "||")
-    }
+    // MARK: - Draft Persistence
 
     private func scheduleCriticalDraftSave(reason: String) {
         scheduleDraftSave(reason: reason, immediate: true)

@@ -525,7 +525,7 @@ struct CheckoutView: View {
                 .padding(.vertical)
             }
             .onChange(of: viewModel.selectedPaymentMethod) { _, method in
-                guard method.requiresExternalReference else { return }
+                guard viewModel.requiresExternalReference else { return }
 
                 withAnimation(.easeInOut(duration: 0.24)) {
                     proxy.scrollTo(paymentReferenceScrollTarget, anchor: .center)
@@ -535,6 +535,8 @@ struct CheckoutView: View {
                     #if os(iOS)
                     try? await Task.sleep(for: .milliseconds(180))
                     #endif
+                    guard viewModel.selectedPaymentMethod == method,
+                          viewModel.requiresExternalReference else { return }
                     focusedField = .externalReference
                 }
             }
