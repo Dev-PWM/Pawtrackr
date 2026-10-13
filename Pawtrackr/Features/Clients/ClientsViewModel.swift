@@ -65,7 +65,6 @@ final class ClientsViewModel {
     // MARK: - Published Properties
     var inProgressClients: [Client] = []
     var otherClients: [Client] = []
-    var needsAttentionClients: [Client] = []
     private(set) var filterCounts: [Filter: Int] = [:]
     
     var searchText = "" {
@@ -100,9 +99,6 @@ final class ClientsViewModel {
     private var cancellables: Set<AnyCancellable> = []
     private var pageSize: Int = 100
     private var fetchOffset: Int = 0
-    /// Clients the list loads per query. Filters and sorts run over this whole
-    /// set in memory, so it is not a page size (see `fetchClients`).
-    static let clientListFetchLimit = 1000
 
     // MARK: - Lifecycle
     init(modelContext: ModelContext, eventBus: GlobalEventBus? = nil, repository: ClientRepositoryProtocol? = nil) {
@@ -140,7 +136,7 @@ final class ClientsViewModel {
         searchTask?.cancel()
         if searchText.trimmed.isEmpty { fetchClients(); return }
         searchTask = Task { [weak self] in
-            try? await Task.sleep(for: .milliseconds(180)) // Debounce search
+            try? await Task.sleep(for: .milliseconds(300)) // Debounce search
             guard !Task.isCancelled else { return }
             self?.fetchClients()
         }
@@ -167,7 +163,6 @@ final class ClientsViewModel {
                     self.filterCounts = presentation.filterCounts
                     self.inProgressClients = presentation.groups.active.compactMap { reader.model(for: $0) as? Client }
                     self.otherClients = presentation.groups.inactive.compactMap { reader.model(for: $0) as? Client }
-                    self.needsAttentionClients = presentation.needsAttention.compactMap { reader.model(for: $0) as? Client }
                     self.fetchOffset = self.otherClients.count
                     self.canLoadMore = false
                     self.isLoadingMore = false
@@ -208,11 +203,6 @@ final class ClientsViewModel {
                 // Apply Sorting
                 let sortedInProgress = sortClients(inProgress)
                 let sortedOthers = sortClients(others)
-
-                // Identify "Needs Attention" (overdue and not yet cleared by outreach).
-                self.needsAttentionClients = sortedOthers.filter { client in
-                    (client.pets ?? []).contains { $0.archivedAt == nil && $0.needsAttention }
-                }
 
                 self.inProgressClients = sortedInProgress
                 self.otherClients = sortedOthers

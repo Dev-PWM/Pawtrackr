@@ -367,7 +367,7 @@ struct ClientsView: View {
             // stable across search/sort and do not fault 10,000 UUID properties.
             ForEach(clients, id: \.persistentModelID) { client in
                 Button(action: {
-                    router.navigateToClient(client)
+                    router.navigateToClientFromCard(client)
                     walkthrough?.observe(.clientOpened)
                 }) {
                     ClientCard(
@@ -458,7 +458,7 @@ struct ClientsView: View {
                 }
             }
         }
-        .id(viewModel?.sortOption)
+        .id("\(viewModel?.sortOption.rawValue ?? "")_\(clients.count)")
         .padding(.horizontal)
     }
 

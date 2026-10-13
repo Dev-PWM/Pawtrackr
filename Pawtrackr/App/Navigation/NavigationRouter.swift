@@ -59,6 +59,8 @@ final class NavigationRouter {
     /// The surface currently hosting user-driven navigation.
     var activeNavigationItem: NavigationItem = .dashboard
 
+    @ObservationIgnored private var lastCardTap: [NavigationItem: ContinuousClock.Instant] = [:]
+
     /// macOS only: a Settings section a deep link asked for. The Mac Settings
     /// screen picks sections with its own selection, not `settingsPath`, so
     /// it selects this section when it appears and then clears it.
@@ -80,6 +82,16 @@ final class NavigationRouter {
 
     func navigateToClient(_ client: Client) {
         append(AppDestination.clientDetail(client.persistentModelID))
+    }
+
+    /// Debounces card taps within each tab while programmatic routes remain immediate.
+    func navigateToClientFromCard(_ client: Client) {
+        let now = ContinuousClock.now
+        if let previous = lastCardTap[activeNavigationItem], previous.duration(to: now) < .milliseconds(350) {
+            return
+        }
+        lastCardTap[activeNavigationItem] = now
+        navigateToClient(client)
     }
 
     /// Opens visit rewards lazily, without creating a queried destination in the client profile.

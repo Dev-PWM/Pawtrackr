@@ -25,7 +25,6 @@ struct ClientCard: View {
         VisualState(client: client, isInProgressOverride: isInProgressOverride)
     }
     private var isInProgress: Bool { visualState.isInProgress }
-    private var isAggressive: Bool { visualState.showsAggressiveWarning }
     private var needsAttention: Bool { visualState.needsAttention }
     private var missingInfo: [ClientMissingInfo] { ClientMissingInfo.items(for: client) }
     private var hasMissingInfo: Bool { !missingInfo.isEmpty }
@@ -36,7 +35,6 @@ struct ClientCard: View {
         }
     }
     
-    @State private var pulse: Bool = false
 
     var body: some View {
         let state = visualState
@@ -76,10 +74,10 @@ struct ClientCard: View {
     private var header: some View {
         HStack(alignment: .center, spacing: 12) {
             if let namespace {
-                AvatarView(.client(name: displayName), size: .sm)
+                AvatarView(.client(name: "\(client.firstName) \(client.lastName)"), size: .sm)
                     .matchedGeometryEffect(id: "avatar-\(client.id)", in: namespace)
             } else {
-                AvatarView(.client(name: displayName), size: .sm)
+                AvatarView(.client(name: "\(client.firstName) \(client.lastName)"), size: .sm)
             }
             
             VStack(alignment: .leading, spacing: 0) {
