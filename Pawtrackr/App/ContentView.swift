@@ -448,6 +448,15 @@ struct ContentView: View {
             return
         }
 
+        #if os(iOS)
+        // Visit Details hides the iPhone tab bar. Reveal its real navigation
+        // controls before the Academy asks the user to open Insights.
+        if horizontalSizeClass == .compact, step.id == WalkthroughStepID.insightsTab {
+            router.popAllToRoot()
+            walkthroughRoutedClientID = nil
+        }
+        #endif
+
         if let surface = step.surface {
             selectSurface(surface)
             resetRootPathForWalkthroughStepIfNeeded(step)

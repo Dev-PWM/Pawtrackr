@@ -85,12 +85,15 @@ enum WalkthroughOverlayLayout {
     private struct Metrics {
         let containerSize: CGSize
         let safeAreaInsets: EdgeInsets
+        var compactPhone = false
+        var minimumPhoneCardHeight: CGFloat = 280
 
         var isCompactViewport: Bool {
-            containerSize.width < 430 || containerSize.height < 760
+            compactPhone || containerSize.width < 430 || containerSize.height < 760
         }
 
         var bubbleMaxWidth: CGFloat {
+            if compactPhone { return 360 }
             if containerSize.width >= 900 { return 520 }
             if containerSize.width >= 620 { return 480 }
             return 370
@@ -105,7 +108,7 @@ enum WalkthroughOverlayLayout {
         }
 
         var bubbleMinHeight: CGFloat {
-            isCompactViewport ? 150 : 164
+            compactPhone ? minimumPhoneCardHeight : (isCompactViewport ? 150 : 164)
         }
 
         /// The macOS root window draws content — and this overlay — under the
@@ -144,9 +147,11 @@ enum WalkthroughOverlayLayout {
         step: WalkthroughStep,
         targetRect: CGRect?,
         containerSize: CGSize,
-        safeAreaInsets: EdgeInsets
+        safeAreaInsets: EdgeInsets,
+        compactPhone: Bool = false,
+        minimumPhoneCardHeight: CGFloat = 280
     ) -> Result {
-        let metrics = Metrics(containerSize: containerSize, safeAreaInsets: safeAreaInsets)
+        let metrics = Metrics(containerSize: containerSize, safeAreaInsets: safeAreaInsets, compactPhone: compactPhone, minimumPhoneCardHeight: minimumPhoneCardHeight)
         let gap = metrics.isCompactViewport ? compactBubbleGap : bubbleGap
         let spotlight = spotlightRect(for: targetRect, metrics: metrics)
         guard let spotlight else {
@@ -185,6 +190,13 @@ enum WalkthroughOverlayLayout {
             }
         }
 
+        // A full-height section can leave less room than the card's controls.
+        // On phones, use a readable unanchored card and release the target
+        // mission rather than displaying an empty strip with a misleading arrow.
+        if compactPhone {
+            return layout(step: step, targetRect: nil, containerSize: containerSize,
+                          safeAreaInsets: safeAreaInsets, compactPhone: true, minimumPhoneCardHeight: minimumPhoneCardHeight)
+        }
         return preferred
     }
 
@@ -236,7 +248,7 @@ enum WalkthroughOverlayLayout {
             }
         }
 
-        if spotlight.midY > metrics.containerSize.height * 0.72 { return .above }
+        if spotlight.midY > metrics.containerSize.height * (metrics.compactPhone ? 0.45 : 0.72) { return .above }
 
         let below = availableBelow(spotlight: spotlight, metrics: metrics, gap: gap)
         let above = availableAbove(spotlight: spotlight, metrics: metrics, gap: gap)
@@ -592,6 +604,16 @@ private struct WalkthroughOverlayHost<Content: View>: View {
     let scope: WalkthroughOverlayScope
     let adoptsOrphanedSteps: Bool
 
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+
+    private var confinesOverlayToPresentation: Bool {
+        #if os(iOS)
+        horizontalSizeClass == .compact && presenting != nil
+        #else
+        false
+        #endif
+    }
+
     @State private var frames: [WalkthroughAnchorID: CGRect] = [:]
 
     var body: some View {
@@ -654,7 +676,7 @@ private struct WalkthroughOverlayHost<Content: View>: View {
                         }
                     }
                 }
-                .modifier(WalkthroughOverlaySafeAreaModifier(ignoresSafeArea: scope.ignoresOverlaySafeArea))
+                .modifier(WalkthroughOverlaySafeAreaModifier(ignoresSafeArea: scope.ignoresOverlaySafeArea && !confinesOverlayToPresentation))
             }
     }
 }
@@ -757,6 +779,17 @@ private struct WalkthroughOverlayView: View {
     /// The root overlay is drawing a step its own screen never drew.
     var isAdopted = false
 
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
+    private var isCompactPhone: Bool {
+        #if os(iOS)
+        horizontalSizeClass == .compact
+        #else
+        false
+        #endif
+    }
+
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     /// With VoiceOver on, every stop offers Next: tapping a highlighted
     /// region isn't something VoiceOver users can be asked to find.
@@ -779,7 +812,9 @@ private struct WalkthroughOverlayView: View {
             step: step,
             targetRect: targetRect,
             containerSize: containerSize,
-            safeAreaInsets: containerInsets
+            safeAreaInsets: containerInsets,
+            compactPhone: isCompactPhone,
+            minimumPhoneCardHeight: dynamicTypeSize.isAccessibilitySize ? 420 : 280
         )
     }
 
@@ -801,7 +836,7 @@ private struct WalkthroughOverlayView: View {
 
     /// Header, progress, "mastered" line and footer: what the body can't use.
     private var bubbleChromeHeightEstimate: CGFloat {
-        isCompactViewport ? 142 : 158
+        isCompactPhone ? 170 : (isCompactViewport ? 142 : 158)
     }
 
     private var placement: WalkthroughOverlayLayout.Placement {
@@ -824,8 +859,8 @@ private struct WalkthroughOverlayView: View {
             // Tell the controller this step is on screen, and whether it has a
             // target. Reported from a task (never from body) and only when the
             // step or the presence of a target changes.
-            .task(id: ShownReport(stepID: step.id, hasTarget: targetRect != nil, isAdopted: isAdopted)) {
-                controller.noteStepShown(step.id, hasTarget: targetRect != nil, adopted: isAdopted)
+            .task(id: ShownReport(stepID: step.id, hasTarget: spotlight != nil, isAdopted: isAdopted)) {
+                controller.noteStepShown(step.id, hasTarget: spotlight != nil, adopted: isAdopted)
             }
     }
 
@@ -1078,21 +1113,29 @@ private struct WalkthroughOverlayView: View {
                 .accessibilityIdentifier("walkthrough.mastered")
             }
 
-            ViewThatFits(in: .vertical) {
-                bubbleBody
-
+            if isCompactPhone {
                 ScrollView {
                     bubbleBody
+                        .frame(maxWidth: .infinity, alignment: .leading)
                 }
                 .scrollIndicators(.visible)
-                .frame(maxHeight: bodyMaxHeight)
+                .frame(maxHeight: .infinity)
+            } else {
+                ViewThatFits(in: .vertical) {
+                    bubbleBody
+                    ScrollView { bubbleBody }
+                        .scrollIndicators(.visible)
+                        .frame(maxHeight: bodyMaxHeight)
+                }
             }
 
             footerControls
+                .fixedSize(horizontal: false, vertical: isCompactPhone)
                 .padding(.top, 2)
         }
         .padding(bubbleCardPadding)
         .frame(width: bubbleWidth, alignment: .top)
+        .frame(height: isCompactPhone ? maxHeight : nil, alignment: .top)
         .background(DS.ColorToken.surface, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
         .overlay {
             RoundedRectangle(cornerRadius: 16, style: .continuous)
@@ -1186,6 +1229,7 @@ private struct WalkthroughOverlayView: View {
             }
             .foregroundStyle(DS.ColorToken.primary)
             .buttonStyle(.plain)
+            .frame(minHeight: isCompactPhone ? 44 : 0)
             .accessibilityIdentifier("walkthrough.back")
         }
     }
@@ -1197,6 +1241,7 @@ private struct WalkthroughOverlayView: View {
         .font(.subheadline)
         .foregroundStyle(.secondary)
         .buttonStyle(.plain)
+        .frame(minHeight: isCompactPhone ? 44 : 0)
         .accessibilityIdentifier("walkthrough.skip")
     }
 
@@ -1204,7 +1249,7 @@ private struct WalkthroughOverlayView: View {
     private var footerPrimaryControl: some View {
         // Next shows when the step doesn't wait for a tap, when the host
         // released it, or when the highlighted control isn't on screen.
-        if !controller.currentStepShowsNext, targetRect != nil, !showsNextAnyway {
+        if !controller.currentStepShowsNext, spotlight != nil, !showsNextAnyway {
             Label(
                 step.allowsTargetInteraction
                     ? AppLocalization.localized("tour.your_turn", value: "Your turn")
@@ -1234,6 +1279,7 @@ private struct WalkthroughOverlayView: View {
                 .minimumScaleFactor(0.82)
                 .padding(.horizontal, 16)
                 .padding(.vertical, 9)
+                .frame(minHeight: isCompactPhone ? 44 : 0)
                 .background(DS.ColorToken.primary)
                 .foregroundStyle(.white)
                 .clipShape(Capsule())

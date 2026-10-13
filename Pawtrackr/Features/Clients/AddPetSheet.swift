@@ -21,6 +21,7 @@ import UIKit
 struct AddPetSheet: View {
     // Parent context & dismissal
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Environment(\.modelContext) private var modelContext
 
     // Target owner
@@ -56,9 +57,22 @@ struct AddPetSheet: View {
             .scrollDismissesKeyboard(.interactively)
 #endif
             .navigationTitle(NSLocalizedString("add_pet.title", comment: ""))
+#if os(iOS)
+            .navigationBarTitleDisplayMode(horizontalSizeClass == .compact ? .inline : .automatic)
+#endif
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button(NSLocalizedString("common.cancel", comment: "")) { dismiss() }
+                    Button { dismiss() } label: {
+                        #if os(iOS)
+                        if horizontalSizeClass == .compact {
+                            Image(systemName: "xmark")
+                        } else {
+                            Text(NSLocalizedString("common.cancel", comment: ""))
+                        }
+                        #else
+                        Text(NSLocalizedString("common.cancel", comment: ""))
+                        #endif
+                    }
                         .accessibilityIdentifier("addPet.cancel")
                         .pressScaleStyle()
                         .accessibilityLabel(AppLocalization.localized("common.cancel", value: "Cancel"))

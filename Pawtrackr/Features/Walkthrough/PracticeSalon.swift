@@ -33,6 +33,9 @@ final class PracticeSalon {
         let id = UUID()
         let container: ModelContainer
         let dataStore: DataStoreService
+        /// Practice checkout state belongs to this session and never reaches disk.
+        let checkoutDraftStore = CheckoutDraftStore(inMemory: true)
+        let checkoutEventRecorder = CheckoutEventRecorder(persistsEvents: false)
     }
 
     /// The open practice salon, or nil while the app runs on the real one.

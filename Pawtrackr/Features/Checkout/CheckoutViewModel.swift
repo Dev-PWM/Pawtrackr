@@ -839,8 +839,9 @@ final class CheckoutViewModel {
     }
 
     private func restoreDraftIfAvailable() async {
-        guard !visit.isCompleted else { return }
+        guard !isWalkthroughPreview, !visit.isCompleted else { return }
         guard let draft = await draftStore.loadDraft(for: visit.uuid), draft.petID == pet.uuid else { return }
+        guard !isWalkthroughPreview else { return }
 
         suppressDraftAutosave = true
         sessionNotes = TextInputLimits.limited(draft.sessionNotes, to: TextInputLimits.notes)

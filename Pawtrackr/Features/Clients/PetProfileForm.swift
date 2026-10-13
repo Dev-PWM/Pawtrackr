@@ -95,7 +95,16 @@ private struct PetProfileTextField: View {
 
 /// Only the factual birthdate is editable. Age, stage, and the fallback anniversary are automatic.
 struct PetBirthdayFields: View {
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     let species: Species
+
+    private var isCompactPhone: Bool {
+        #if os(iOS)
+        horizontalSizeClass == .compact
+        #else
+        false
+        #endif
+    }
     @Binding var birthdate: Date?
     let registrationDate: Date
 
@@ -118,15 +127,24 @@ struct PetBirthdayFields: View {
         )
     }
 
+    private var birthdayModePicker: some View {
+        Picker(AppLocalization.localized("pet.birthday.title", value: "Birthday"), selection: selectedOption) {
+            Text(AppLocalization.localized("pet.birthday.known", value: "Known birthdate")).tag(BirthdayOption.known)
+            Text(AppLocalization.localized("pet.birthday.celebration", value: "Chosen celebration day")).tag(BirthdayOption.celebration)
+        }
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             Label(AppLocalization.localized("pet.birthday.title", value: "Birthday"), systemImage: "birthday.cake.fill")
                 .font(.subheadline.weight(.semibold))
-            Picker(AppLocalization.localized("pet.birthday.title", value: "Birthday"), selection: selectedOption) {
-                Text(AppLocalization.localized("pet.birthday.known", value: "Known birthdate")).tag(BirthdayOption.known)
-                Text(AppLocalization.localized("pet.birthday.celebration", value: "Chosen celebration day")).tag(BirthdayOption.celebration)
+            Group {
+                if isCompactPhone {
+                    birthdayModePicker.pickerStyle(.menu)
+                } else {
+                    birthdayModePicker.pickerStyle(.segmented)
+                }
             }
-            .pickerStyle(.segmented)
             .accessibilityLabel(AppLocalization.localized("pet.birthday.title", value: "Birthday"))
             .accessibilityIdentifier("petProfile.birthdayMode")
 

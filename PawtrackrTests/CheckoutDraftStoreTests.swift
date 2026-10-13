@@ -3,6 +3,47 @@ import XCTest
 
 final class CheckoutDraftStoreTests: XCTestCase {
 
+    func testPracticeDraftsNeverReadWriteOrDeleteDiskDrafts() async throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let disk = CheckoutDraftStore(directoryURL: root)
+        let practice = CheckoutDraftStore(directoryURL: root, inMemory: true)
+        let draft = CheckoutDraft(visitID: UUID(), petID: UUID(), currentStepRawValue: 2,
+            sessionNotes: "Real checkout", amountString: "$42.00", selectedServiceUUIDs: [],
+            selectedAddOnUUIDs: [], selectedPaymentMethodRawValue: Payment.Method.cash.rawValue,
+            beforePhotoData: nil, afterPhotoData: nil, externalReference: "", tags: [])
+        try await disk.saveDraft(draft)
+        let existingFile = root.appendingPathComponent("\(draft.visitID.uuidString).json")
+        let originalData = try Data(contentsOf: existingFile)
+        let initialPracticeDraft = await practice.loadDraft(for: draft.visitID)
+        XCTAssertNil(initialPracticeDraft)
+        var practiceDraft = draft
+        practiceDraft.sessionNotes = "Practice checkout"
+        try await practice.saveDraft(practiceDraft)
+        let loaded = await practice.loadDraft(for: draft.visitID)
+        XCTAssertEqual(loaded, practiceDraft)
+        XCTAssertEqual(try Data(contentsOf: existingFile), originalData)
+        let nextSession = CheckoutDraftStore(directoryURL: root, inMemory: true)
+        let nextDraft = await nextSession.loadDraft(for: draft.visitID)
+        XCTAssertNil(nextDraft)
+        try await practice.deleteDraft(for: draft.visitID)
+        XCTAssertEqual(try Data(contentsOf: existingFile), originalData)
+        var newDraft = practiceDraft
+        newDraft.visitID = UUID()
+        try await practice.saveDraft(newDraft)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: root.appendingPathComponent("\(newDraft.visitID.uuidString).json").path))
+    }
+
+    func testPracticeCheckoutEventsNeverCreateTraceFiles() async {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        let logURL = root.appendingPathComponent("checkout.log")
+        let recorder = CheckoutEventRecorder(logURL: logURL, persistsEvents: false)
+        for _ in 0..<12 {
+            await recorder.record("practice_checkout", visitID: UUID(), petName: "Practice pet")
+        }
+        XCTAssertFalse(FileManager.default.fileExists(atPath: root.path))
+    }
+
     func testDraftRoundTrip_SaveLoadDelete() async throws {
         let root = FileManager.default.temporaryDirectory
             .appendingPathComponent(UUID().uuidString, isDirectory: true)

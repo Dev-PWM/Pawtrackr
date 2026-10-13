@@ -580,6 +580,38 @@ final class OnboardingViewModelTests: XCTestCase {
     /// Settings > About on the Mac: the detail column reports the sidebar's
     /// width as a leading inset although it already starts beside the
     /// sidebar. The Academy card's spotlight used to lose its left part to it.
+    /// Oversized sections must leave enough room to read the guide on every phone.
+    func testCompactPhoneOversizedTargetUsesReadableFallback() {
+        let step = WalkthroughStep(id: "phone-layout", anchor: .setData, title: "Export your data",
+                                   directive: "Export clients and visits.", purpose: "Keep a copy.")
+        for size in [CGSize(width: 375, height: 667), CGSize(width: 390, height: 844),
+                     CGSize(width: 402, height: 874), CGSize(width: 440, height: 956)] {
+            let insets = EdgeInsets(top: 59, leading: 0, bottom: 34, trailing: 0)
+            let result = WalkthroughOverlayLayout.layout(step: step,
+                targetRect: CGRect(x: 16, y: 150, width: size.width - 32, height: size.height - 190),
+                containerSize: size, safeAreaInsets: insets, compactPhone: true)
+            XCTAssertEqual(result.placement, .center)
+            XCTAssertNil(result.spotlight)
+            XCTAssertGreaterThanOrEqual(result.cardMaxHeight, 280)
+            XCTAssertLessThanOrEqual(result.cardWidth, 360)
+            XCTAssertGreaterThanOrEqual(result.bubbleFrame.minY, insets.top + 8)
+            XCTAssertLessThanOrEqual(result.bubbleFrame.maxY, size.height - insets.bottom - 8)
+        }
+    }
+
+    func testCompactPhoneBottomTargetKeepsSpotlightAndControlsSeparate() throws {
+        let step = WalkthroughStep(id: "phone-tab", anchor: .insights, title: "Open Insights",
+                                   directive: "Tap Insights.", purpose: "Review your salon.")
+        let size = CGSize(width: 440, height: 956)
+        let result = WalkthroughOverlayLayout.layout(step: step,
+            targetRect: CGRect(x: 220, y: 850, width: 100, height: 48), containerSize: size,
+            safeAreaInsets: EdgeInsets(top: 59, leading: 0, bottom: 34, trailing: 0), compactPhone: true)
+        let spotlight = try XCTUnwrap(result.spotlight)
+        XCTAssertEqual(result.placement, .above)
+        XCTAssertFalse(result.bubbleFrame.intersects(spotlight))
+        XCTAssertEqual(result.cardWidth, 360)
+    }
+
     func testSplitViewSidebarInsetDoesNotClipTheSpotlight() throws {
         let step = WalkthroughStep(
             id: "layout",

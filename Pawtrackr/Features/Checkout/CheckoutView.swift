@@ -13,6 +13,7 @@ struct CheckoutView: View {
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Environment(EntitlementStore.self) private var entitlements
     @Environment(GlobalEventBus.self) private var eventBus
+    @Environment(PracticeSalon.self) private var practiceSalon: PracticeSalon?
     @Environment(WalkthroughController.self) private var walkthrough: WalkthroughController?
     @State private var viewModel: CheckoutViewModel
     @State private var receiptPDFData: Data?
@@ -105,7 +106,12 @@ struct CheckoutView: View {
         .onAppear {
             guard !didLoadViewModel else { return }
             didLoadViewModel = true
-            viewModel = CheckoutViewModel(pet: viewModel.pet, visit: viewModel.visit, eventBus: eventBus)
+            viewModel = CheckoutViewModel(
+                pet: viewModel.pet, visit: viewModel.visit,
+                draftStore: practiceSalon?.session?.checkoutDraftStore ?? .shared,
+                eventRecorder: practiceSalon?.session?.checkoutEventRecorder ?? .shared,
+                eventBus: eventBus
+            )
             viewModel.loadServices(modelContext: modelContext)
             Task { await viewModel.refreshLoyaltyOptions() }
             notesEditorText = viewModel.sessionNotes

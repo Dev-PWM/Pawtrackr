@@ -301,6 +301,15 @@ struct SettingsView: View {
 
 private struct SettingsDetailView: View {
     let section: SettingSection
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+
+    private var usesCompactDataTarget: Bool {
+        #if os(iOS)
+        horizontalSizeClass == .compact && section == .dataExport
+        #else
+        false
+        #endif
+    }
     @Environment(\.modelContext) private var modelContext
     @Environment(AppSettings.self) private var appSettings
     @Environment(WalkthroughController.self) private var walkthrough: WalkthroughController?
@@ -332,6 +341,7 @@ private struct SettingsDetailView: View {
                             .font(.system(.largeTitle, design: .rounded, weight: .bold))
                             .lineLimit(1)
                             .minimumScaleFactor(0.8)
+                            .optionalWalkthroughTarget(usesCompactDataTarget ? .setData : nil)
 
                         Text(section.subtitle)
                             .font(.subheadline)
@@ -340,7 +350,7 @@ private struct SettingsDetailView: View {
                             .padding(.top, -12)
 
                         content
-                            .optionalWalkthroughTarget(section == .about ? nil : section.walkthroughAnchorID)
+                            .optionalWalkthroughTarget(section == .about || usesCompactDataTarget ? nil : section.walkthroughAnchorID)
                     }
                     .frame(maxWidth: SettingsAdaptiveLayout.contentMaxWidth(for: proxy.size.width), alignment: .leading)
                     .padding(.horizontal, SettingsAdaptiveLayout.detailHorizontalPadding(for: proxy.size.width))

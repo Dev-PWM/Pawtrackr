@@ -41,6 +41,31 @@ final class WalkthroughCompactUITests: QualityControlUITestCase {
         )
     }
 
+    func testInsightsNavigationAndExportLessonRemainUsable() throws {
+        launch(startWalkthrough: true)
+        advanceWalkthroughUntilActiveAnchor("insights", maxTaps: 80)
+        assertActiveWalkthroughAnchor("insights")
+        XCTAssertTrue(app.tabBars.buttons["Insights"].isHittable,
+                      "The real Insights tab must be visible before the mission begins.")
+        app.tabBars.buttons["Insights"].tap()
+        assertActiveWalkthroughAnchor("insRevenue")
+
+        advanceWalkthroughUntilActiveAnchor("setData", maxTaps: 10)
+        assertActiveWalkthroughAnchor("setData")
+        let title = app.staticTexts["Export your data"]
+        XCTAssertTrue(title.exists)
+        XCTAssertTrue(title.isHittable, "The lesson title should be readable. layout=\(activeWalkthroughLayoutDebug())")
+        let bubble = app.otherElements["walkthrough.bubble"]
+        let primary = app.buttons["walkthrough.primary"]
+        XCTAssertTrue(primary.isHittable)
+        XCTAssertTrue(bubble.frame.contains(primary.frame))
+        XCTAssertTrue(bubble.frame.contains(title.frame))
+        let attachment = XCTAttachment(screenshot: app.screenshot())
+        attachment.name = "Readable export lesson"
+        attachment.lifetime = .keepAlways
+        add(attachment)
+    }
+
     private func advanceWalkthroughUntilActiveAnchor(_ anchor: String, maxTaps: Int) {
         let target = app.otherElements["walkthrough.activeAnchor.\(anchor)"]
         for _ in 0..<maxTaps {
@@ -67,7 +92,15 @@ final class WalkthroughCompactUITests: QualityControlUITestCase {
     }
 
     private func tapWalkthroughPrimary(timeout: TimeInterval = 4) -> Bool {
-        tapVisible(app.buttons["walkthrough.primary"].firstMatch, timeout: timeout)
+        let primary = app.buttons["walkthrough.primary"].firstMatch
+        guard waitUntilHittable(primary, timeout: timeout) else { return false }
+        // A sheet can disappear during XCTest's interruption handling. Tap
+        // the observed screen point without retaining its outgoing element.
+        let frame = primary.frame
+        let origin = app.frame.origin
+        app.coordinate(withNormalizedOffset: .zero)
+            .withOffset(CGVector(dx: frame.midX - origin.x, dy: frame.midY - origin.y)).tap()
+        return true
     }
 
     private func tapVisible(_ element: XCUIElement, timeout: TimeInterval) -> Bool {

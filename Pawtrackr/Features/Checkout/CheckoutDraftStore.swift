@@ -10,12 +10,17 @@ actor CheckoutDraftStore {
     static let shared = CheckoutDraftStore()
 
     private let directoryURL: URL
+    private let inMemory: Bool
+    private var memoryDrafts: [UUID: CheckoutDraft] = [:]
 
-    init(directoryURL: URL? = nil) {
+    /// Uses actor-owned memory for practice sessions; production keeps disk crash recovery.
+    init(directoryURL: URL? = nil, inMemory: Bool = false) {
+        self.inMemory = inMemory
         self.directoryURL = directoryURL ?? Self.defaultDirectoryURL()
     }
 
     func loadDraft(for visitID: UUID) async -> CheckoutDraft? {
+        if inMemory { return memoryDrafts[visitID] }
         let url = draftURL(for: visitID)
 
         do {
@@ -27,10 +32,18 @@ actor CheckoutDraftStore {
     }
 
     func saveDraft(_ draft: CheckoutDraft) async throws {
+        if inMemory {
+            memoryDrafts[draft.visitID] = draft
+            return
+        }
         try await CheckoutDraftFileIO.saveDraft(draft, at: draftURL(for: draft.visitID), directoryURL: directoryURL)
     }
 
     func deleteDraft(for visitID: UUID) async throws {
+        if inMemory {
+            memoryDrafts.removeValue(forKey: visitID)
+            return
+        }
         try await CheckoutDraftFileIO.deleteDraft(at: draftURL(for: visitID))
     }
 

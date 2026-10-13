@@ -11,6 +11,7 @@ actor CheckoutEventRecorder {
     static let shared = CheckoutEventRecorder()
 
     private let logURL: URL
+    private let persistsEvents: Bool
     private let maxLines: Int
     private let maxFileBytes: Int
     private let iso8601 = ISO8601DateFormatter()
@@ -19,7 +20,9 @@ actor CheckoutEventRecorder {
     private var pendingLines: [String] = []
     private var flushTask: Task<Void, Never>?
 
-    init(logURL: URL? = nil, maxLines: Int = 300, maxFileBytes: Int = 64 * 1024) {
+    /// Practice sessions retain OSLog diagnostics without writing a trace file.
+    init(logURL: URL? = nil, maxLines: Int = 300, maxFileBytes: Int = 64 * 1024, persistsEvents: Bool = true) {
+        self.persistsEvents = persistsEvents
         self.logURL = logURL ?? Self.defaultLogURL()
         self.maxLines = max(1, maxLines)
         self.maxFileBytes = max(1, maxFileBytes)
@@ -33,6 +36,7 @@ actor CheckoutEventRecorder {
         // and write only a deterministic token for the pet.
         Logger.checkoutTrace.info("checkout event=\(event, privacy: .public) visit=\(visitID.uuidString, privacy: .public) petNameToken=\(petNameToken, privacy: .public)")
 
+        guard persistsEvents else { return }
         pendingLines.append(line)
 
         // Flush immediately once the buffer is large enough; otherwise schedule a deferred flush.

@@ -16,6 +16,15 @@ typealias PlatformContentType = NSTextContentType
 
 struct OnboardingView: View {
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+
+    private var isCompactPhone: Bool {
+        #if os(iOS)
+        horizontalSizeClass == .compact
+        #else
+        false
+        #endif
+    }
     @Environment(AppSettings.self) private var appSettings
     @Namespace private var animation
     @State private var viewModel: OnboardingViewModel
@@ -644,8 +653,10 @@ struct OnboardingView: View {
                     .accessibilityIdentifier("onboarding.back")
                 }
                 
-                Spacer()
-                
+                if !isCompactPhone || viewModel.currentStep != .welcome {
+                    Spacer()
+                }
+
                 if viewModel.currentStep != .warmStart {
                     Button {
                         viewModel.nextStep()
@@ -656,6 +667,8 @@ struct OnboardingView: View {
                         }
                         .padding(.horizontal, DS.Spacing.lg)
                         .padding(.vertical, DS.Spacing.md)
+                        .frame(maxWidth: isCompactPhone && viewModel.currentStep == .welcome ? .infinity : nil)
+                        .frame(minHeight: isCompactPhone ? 44 : 0)
                         .background(viewModel.canGoNext ? DS.ColorToken.primary : DS.ColorToken.primary.opacity(0.5))
                         .foregroundStyle(.white)
                         .clipShape(RoundedRectangle(cornerRadius: DS.Radius.md))
