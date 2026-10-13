@@ -7,7 +7,7 @@ struct VisitBehaviorTags: View {
 
     var body: some View {
         FlowLayout(spacing: 6, rowSpacing: 6) {
-            ForEach(Pet.cleanedBehaviorTags(tags), id: \.self) { tag in
+            ForEach(BehaviorTagIcons.selectedTags(from: tags), id: \.self) { tag in
                 let kind = Pet.behaviorTagKind(for: tag)
                 let display = BehaviorTagIcons.display(for: tag)
                 let tint = BehaviorTagIcons.tint(for: kind)
@@ -30,6 +30,6 @@ struct VisitBehaviorTags: View {
                 .accessibilityIdentifier("visit.behavior.\(kind?.rawValue ?? tag)")
             }
         }
-        .accessibilityLabel(Pet.cleanedBehaviorTags(tags).map { BehaviorTagIcons.display(for: $0).label }.joined(separator: ", "))
+        .accessibilityLabel(BehaviorTagIcons.selectedTags(from: tags).map { BehaviorTagIcons.display(for: $0).label }.joined(separator: ", "))
     }
 }

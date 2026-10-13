@@ -6,7 +6,7 @@ struct PetGroomingSignals: View {
 
     var body: some View {
         FlowLayout(spacing: 6) {
-            ForEach(Pet.cleanedBehaviorTags(pet.behaviorTags).filter { !Pet.isAggressiveTag($0) && Pet.behaviorTagKind(for: $0) != .specialNeeds }, id: \.self) { tag in
+            ForEach(BehaviorTagIcons.selectedTags(from: pet.behaviorTags).filter { !Pet.isAggressiveTag($0) && Pet.behaviorTagKind(for: $0) != .specialNeeds }, id: \.self) { tag in
                 let display = BehaviorTagIcons.display(for: tag)
                 Text((display.emoji.map { "\($0) " } ?? "") + display.label)
                     .font(.caption.weight(.medium))

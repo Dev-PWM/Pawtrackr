@@ -313,11 +313,11 @@ final class CheckoutViewModel {
 
         if visit.behaviorTags.isEmpty {
             let standingTags = pet.behaviorTags.filter { tag in
-                !Pet.isAggressiveTag(tag) && !Pet.isNonAggressiveObservation(tag)
+                Pet.behaviorTagKind(for: tag) == .specialNeeds
             }
             self.tags = Set(standingTags)
         } else {
-            self.tags = Set(visit.behaviorTags)
+            self.tags = Set(BehaviorTagIcons.selectedTags(from: visit.behaviorTags))
         }
 
         // Bind to the real ModelContainer the pet/visit already lives in. Never construct
@@ -394,11 +394,11 @@ final class CheckoutViewModel {
             // Aggressive or Calm/Cooperative so groomers can explicitly rate this session
             // without being trapped by old states.
             let standingTags = pet.behaviorTags.filter { tag in
-                !Pet.isAggressiveTag(tag) && !Pet.isNonAggressiveObservation(tag)
+                Pet.behaviorTagKind(for: tag) == .specialNeeds
             }
             tags = Set(standingTags)
         } else {
-            tags = Set(visit.behaviorTags)
+            tags = Set(BehaviorTagIcons.selectedTags(from: visit.behaviorTags))
         }
 
         beforePhotoData = visit.beforePhotoData
@@ -848,7 +848,7 @@ final class CheckoutViewModel {
         // A tip saved by an earlier version is left out: checkout no longer
         // takes tips, and a hidden one would change the total.
         externalReference = TextInputLimits.limited(draft.externalReference, to: TextInputLimits.shortText)
-        tags = Set(draft.tags)
+        tags = Set(BehaviorTagIcons.selectedTags(from: draft.tags))
         selectedLoyaltyReward = draft.selectedLoyaltyReward
         
         if let method = Payment.Method(rawValue: draft.selectedPaymentMethodRawValue) {

@@ -285,7 +285,7 @@ final class BehaviorSafetyAlgorithmTests: XCTestCase {
 
     func testNewVisitDoesNotPreselectPreviousAnxietyAsClearanceEvidence() {
         let pet = Pet(name: "Fresh observation", species: .dog)
-        pet.setBehaviorTags(["Aggressive", "Anxious", "Nervous", "Special Needs"])
+        pet.setBehaviorTags(["Aggressive", "Anxious", "Nervous", "Special Needs", "Friendly", "Needs breaks"])
         let visit = Visit(pet: pet, user: nil)
         let vm = CheckoutViewModel(pet: pet, visit: visit)
         XCTAssertEqual(vm.tags, Set(["Special Needs"]))

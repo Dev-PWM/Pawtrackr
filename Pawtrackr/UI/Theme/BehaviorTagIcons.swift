@@ -9,6 +9,12 @@ import Foundation
 import SwiftUI
 
 enum BehaviorTagIcons {
+    /// Only explicit, supported behavior choices belong in behavior UI.
+    /// Legacy demo labels are preserved in storage but never shown as choices.
+    static func selectedTags(from tags: [String]) -> [String] {
+        Pet.cleanedBehaviorTags(tags).filter { Pet.behaviorTagKind(for: $0) != nil }
+    }
+
     /// Shared semantic color for chips, checkout choices, and card glows.
     static func tint(for tag: Pet.BehaviorTag?) -> Color {
         switch tag {
