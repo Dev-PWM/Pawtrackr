@@ -260,7 +260,18 @@ extension IconCircle {
     static func makeInitials(from name: String?) -> String? {
         guard let raw = name?.trimmingCharacters(in: .whitespacesAndNewlines), !raw.isEmpty else { return nil }
         let parts = raw.split(whereSeparator: { $0.isWhitespace }).prefix(2)
-        let initials = parts.compactMap { $0.first }.map { String($0).uppercased() }.joined()
+        let initials = parts.compactMap { part -> String? in
+            guard let first = part.first else { return nil }
+            // Emoji graphemes must retain their joiners, modifiers and selectors.
+            if first.unicodeScalars.contains(where: { $0.properties.isEmojiPresentation || $0.value == 0xFE0F || $0.value == 0x200D }) {
+                return String(first)
+            }
+            let composed = String(first).precomposedStringWithCanonicalMapping
+            let clean = composed.unicodeScalars.filter {
+                !CharacterSet.nonBaseCharacters.contains($0) && !CharacterSet.controlCharacters.contains($0)
+            }
+            return String(String.UnicodeScalarView(clean)).uppercased()
+        }.joined()
         return initials.isEmpty ? nil : initials
     }
 }

@@ -107,7 +107,7 @@ public struct AvatarView: View {
             case .client(let name, let data, let thumb, let url):
                 IconCircle(
                     systemImage: "person.crop.circle.fill",
-                    initials: initials(from: name),
+                    initials: name,
                     imageData: data,
                     thumbnailData: thumb,
                     imageURL: url,
@@ -122,7 +122,7 @@ public struct AvatarView: View {
             case .pet(let species, let gender, let name, let data, let thumb, let url):
                 IconCircle(
                     systemImage: systemImageForPet(species: species),
-                    initials: initials(from: name),
+                    initials: name,
                     imageData: data,
                     thumbnailData: thumb,
                     imageURL: url,
@@ -147,7 +147,7 @@ public struct AvatarView: View {
 
             case .initials(let text):
                 IconCircle(
-                    initials: initials(from: text),
+                    initials: text,
                     size: size.token,
                     style: .tinted(Color.primary.opacity(0.10)),
                     lineWidth: ringWidth,
@@ -199,16 +199,6 @@ public struct AvatarView: View {
         case .imageData, .imageURL:
             return accessibilityLabel ?? "Avatar"
         }
-    }
-
-    private func initials(from name: String?) -> String? {
-        guard let name = name else { return nil }
-        let parts = name.split(separator: " ").filter { !$0.isEmpty }
-        if parts.isEmpty { return nil }
-        let first = parts.first?.first
-        let last = parts.dropFirst().first?.first
-        let chars: [Character] = [first, last].compactMap { $0 }
-        return String(chars).uppercased()
     }
 
     private func systemImageForPet(species: Species?) -> String {
