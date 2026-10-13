@@ -230,6 +230,14 @@ final class ClientDetailUITests: XCTestCase {
         XCTAssertTrue(choice.waitForHittable(timeout: 8))
         choice.tap()
         app.buttons["checkout.primaryButton"].tap()
+        // Service selection does not price the visit; the groomer explicitly enters it.
+        let amount = app.textFields["checkout.amountField"]
+        scrollToBehaviorElement(amount)
+        XCTAssertTrue(amount.waitForHittable(timeout: 8))
+        amount.tap()
+        amount.typeText("40")
+        let done = app.buttons["Done"]
+        if done.waitForHittable(timeout: 2) { done.tap() }
         app.buttons["checkout.primaryButton"].tap()
         let confirm = app.buttons["Confirm & Pay"]
         XCTAssertTrue(confirm.waitForHittable(timeout: 8))

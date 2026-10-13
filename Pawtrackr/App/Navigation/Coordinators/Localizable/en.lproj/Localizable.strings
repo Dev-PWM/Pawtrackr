@@ -617,7 +617,7 @@
 "checkout.photo.after" = "After";
 "checkout.hero.payment_title" = "Confirm payment";
 "checkout.hero.payment_message" = "Set the total and payment method before the final review.";
-"checkout.auto_filled_from_services" = "Auto-filled from selected services.";
+"checkout.auto_filled_from_services" = "Enter the amount you choose for this visit.";
 "checkout.summary" = "Summary";
 "checkout.pet" = "Pet";
 "checkout.duration" = "Duration";

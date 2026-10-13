@@ -443,6 +443,7 @@ struct CheckoutView: View {
                                 #endif
                                 .focused($focusedField, equals: .amount)
                                 .accessibilityIdentifier("checkout.amountField")
+                                .accessibilityLabel(NSLocalizedString("checkout.total_amount", comment: ""))
                                 .font(Font.system(size: 40, weight: .bold, design: .rounded))
                                 .multilineTextAlignment(TextAlignment.center)
                                 .foregroundStyle(Color.blue)
@@ -454,7 +455,7 @@ struct CheckoutView: View {
                                     #endif
                                 }
 
-                            Text(localized("checkout.auto_filled_from_services", value: "Auto-filled from selected services."))
+                            Text(localized("checkout.auto_filled_from_services", value: "Enter the amount you choose for this visit."))
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                                 .frame(maxWidth: .infinity, alignment: .center)

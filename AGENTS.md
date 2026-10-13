@@ -4,6 +4,7 @@
 
 - `CheckoutViewModel` is the only owner of checkout UI state. `CheckoutView` can bind to editor buffers, but every persisted value must flow back through the view model before navigation or confirmation.
 - Checkout money is Decimal-only. Service subtotal, manual amount overrides, tips, payments, and line-item reconciliation must avoid `Double` currency math.
+- The groomer enters the final checkout amount. Service and add-on selections never assign, replace, or supply a fallback price. Retain legacy catalog-price fields for store compatibility and historical receipt allocation only.
 - The 4-step checkout draft is a crash-recovery boundary. Step transitions, payment method changes, external references, and tips are critical state and must be saved immediately through `CheckoutDraftStore`.
 - Draft disk I/O belongs off the main actor. `CheckoutDraftStore` remains an actor for serialization, while JSON/file reads and writes execute through detached utility tasks.
 - Confirm-and-pay is protected at two layers: a UI/view-model debounce blocks rapid duplicate taps, and `CheckoutTransactionActor` keeps persistence idempotent by visit UUID.

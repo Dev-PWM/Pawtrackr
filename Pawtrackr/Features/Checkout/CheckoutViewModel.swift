@@ -411,7 +411,7 @@ final class CheckoutViewModel {
         if visit.isCompleted && visit.total > 0 {
             amountString = visit.total.moneyString
         } else {
-            updateAmountString()
+            amountString = ""
         }
 
         recalculateCachedStrings()
@@ -445,25 +445,7 @@ final class CheckoutViewModel {
     }
 
     func updateVisitItems() {
-        updateAmountString()
         recalculateCachedStrings()
-    }
-
-    private func updateAmountString() {
-        let total = calculateTotalLocally()
-        amountString = total.moneyString
-        recalculateCachedStrings()
-    }
-
-    private func calculateTotalLocally() -> Decimal {
-        let allSelected = selectedServiceIDs.union(selectedAddOnIDs)
-        if allSelected.isEmpty { return .zero }
-
-        let total = (allServices + addOnServices)
-            .filter { allSelected.contains($0.persistentModelID) }
-            .reduce(Decimal.zero) { $0 + $1.effectiveBasePrice }
-
-        return total.roundedMoney()
     }
 
     func toggleService(_ service: Service) {
@@ -473,7 +455,6 @@ final class CheckoutViewModel {
         } else {
             selectedServiceIDs.insert(id)
         }
-        updateAmountString()
         recalculateCachedStrings()
         trace("service_toggled_\(service.name)")
     }
@@ -485,7 +466,6 @@ final class CheckoutViewModel {
         } else {
             selectedAddOnIDs.insert(id)
         }
-        updateAmountString()
         recalculateCachedStrings()
         trace("addon_toggled_\(service.name)")
     }
@@ -495,12 +475,10 @@ final class CheckoutViewModel {
             selectedServiceIDs.remove(serviceID)
             selectedAddOnIDs.remove(serviceID)
         }
-        updateAmountString()
         recalculateCachedStrings()
     }
 
-    /// What the client pays: the selected services, or the amount typed
-    /// over them. Checkout doesn't take tips.
+    /// The groomer chooses the visit amount. Service selection never assigns a price.
     var servicesTotalDecimal: Decimal {
         baseAmountDecimal.roundedMoney()
     }
@@ -509,7 +487,7 @@ final class CheckoutViewModel {
         if let manual = Formatters.parseCurrency(amountString) {
             return manual.roundedMoney()
         }
-        return calculateTotalLocally()
+        return .zero
     }
 
     func toggleTag(_ raw: String) {

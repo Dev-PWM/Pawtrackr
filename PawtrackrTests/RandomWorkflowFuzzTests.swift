@@ -100,6 +100,7 @@ final class RandomWorkflowFuzzTests: XCTestCase {
 
             checkout.toggleService(mainServices[index % mainServices.count])
             checkout.toggleAddOn(addOns[index % addOns.count])
+            checkout.setAmountDirectly(String(45 + index * 7))
             checkout.setSessionNotes("Randomized checkout note \(index)")
             checkout.toggleTag(Pet.BehaviorTag.allCases[index % Pet.BehaviorTag.allCases.count].displayName)
 

@@ -106,6 +106,7 @@ final class CheckoutViewModelTests: XCTestCase {
         vm.loadServices(modelContext: context)
         await waitForServicesToLoad(vm)
         vm.toggleService(bath)
+        vm.setAmountDirectly("30")
         vm.chooseLoyaltyReward(LoyaltyReward.builtInCatalog[0])
         XCTAssertEqual(vm.paymentTotalDecimal, 20)
         XCTAssertEqual(pet.owner?.loyaltyPoints, 100)
@@ -160,32 +161,38 @@ final class CheckoutViewModelTests: XCTestCase {
 
     // MARK: - Amount Calculation
 
-    func testAmount_SingleService() {
+    func testSelectingServiceDoesNotSetAPrice() {
         let vm = makeVM()
         vm.toggleService(bath)
-        XCTAssertEqual(vm.servicesTotalDecimal, Decimal(30))
+        XCTAssertEqual(vm.servicesTotalDecimal, .zero)
+        XCTAssertEqual(vm.amountString, "")
     }
 
-    func testAmount_MultipleServicesAndAddOn() {
+    func testSelectingMultipleServicesAndAddOnDoesNotSetAPrice() {
         let vm = makeVM()
         vm.toggleService(bath)
         vm.toggleService(haircut)
         vm.toggleAddOn(nailTrim)
-        XCTAssertEqual(vm.servicesTotalDecimal, Decimal(85))
+        XCTAssertEqual(vm.servicesTotalDecimal, .zero)
+        XCTAssertEqual(vm.amountString, "")
     }
 
     func testAmount_ManualOverrideTakesPrecedence() {
         let vm = makeVM()
-        vm.toggleService(bath)           // auto = $30
-        vm.setAmountDirectly("60.00")   // manual override
+        vm.setAmountDirectly("60.00")
+        vm.toggleService(bath)
+        vm.toggleAddOn(nailTrim)
+        vm.toggleService(haircut)
+        vm.toggleService(bath)
         XCTAssertEqual(vm.servicesTotalDecimal, Decimal(60))
+        XCTAssertEqual(vm.amountString, "60.00")
     }
 
-    /// Checkout takes no tips: what the client pays is the services, or
-    /// the amount typed over them.
-    func testAmount_TotalIsTheServicesWithNoTip() {
+    /// The total is exactly the amount entered by the groomer.
+    func testAmount_TotalIsTheEnteredAmountWithNoTip() {
         let vm = makeVM()
         vm.toggleService(bath)
+        vm.setAmountDirectly("30")
         XCTAssertEqual(vm.servicesTotalDecimal, Decimal(30))
         XCTAssertEqual(vm.finalTotalString, "$30.00")
     }
@@ -212,6 +219,7 @@ final class CheckoutViewModelTests: XCTestCase {
     func testAdvance_FullForwardProgression() throws {
         let vm = makeVM()
         vm.toggleService(bath)
+        vm.setAmountDirectly("30")
         try vm.advance()  // → details
         XCTAssertEqual(vm.currentStep, .details)
         try vm.advance()  // → payment
@@ -254,10 +262,11 @@ final class CheckoutViewModelTests: XCTestCase {
     func testIsAdvanceEnabled_PaymentStepRequiresPositiveTotal() throws {
         let vm = makeVM()
         vm.toggleService(bath)
+        vm.setAmountDirectly("30")
         try vm.advance() // → details
         try vm.advance() // → payment
         vm.choosePayment(.cash)
-        // Amount from service selection = $30 > 0 → enabled
+        // The groomer entered $30 → enabled
         XCTAssertTrue(vm.isAdvanceEnabled)
     }
 
@@ -273,6 +282,7 @@ final class CheckoutViewModelTests: XCTestCase {
     func testIsAdvanceEnabled_PaymentStepRequiresReferenceForCard() throws {
         let vm = makeVM()
         vm.toggleService(bath)
+        vm.setAmountDirectly("30")
         try vm.advance()
         try vm.advance()
         vm.choosePayment(.creditCard)
@@ -287,6 +297,7 @@ final class CheckoutViewModelTests: XCTestCase {
     func testIsAdvanceEnabled_CashRequiresNoReference() throws {
         let vm = makeVM()
         vm.toggleService(bath)
+        vm.setAmountDirectly("30")
         try vm.advance()
         try vm.advance()
         vm.choosePayment(.cash)
@@ -484,7 +495,7 @@ final class CheckoutViewModelTests: XCTestCase {
         XCTAssertNil(vm.draftRecoveryNotice)
         XCTAssertEqual(vm.currentStep, .services)
         XCTAssertEqual(vm.sessionNotes, "")
-        XCTAssertEqual(vm.amountString, "$0.00")
+        XCTAssertEqual(vm.amountString, "")
         XCTAssertFalse(vm.isServiceSelected(bath))
         XCTAssertFalse(vm.isServiceSelected(haircut))
         XCTAssertTrue(vm.tags.isEmpty)
@@ -504,10 +515,12 @@ final class CheckoutViewModelTests: XCTestCase {
         XCTAssertEqual(vm.selectedServicesSummary, "Bath, Haircut")
     }
 
-    func testFinalTotalString_UpdatesOnToggle() {
+    func testFinalTotalString_ChangesOnlyWhenTheAmountIsEntered() {
         let vm = makeVM()
         XCTAssertEqual(vm.finalTotalString, "$0.00")
         vm.toggleService(bath)
+        XCTAssertEqual(vm.finalTotalString, "$0.00")
+        vm.setAmountDirectly("30")
         XCTAssertEqual(vm.finalTotalString, "$30.00")
     }
 
@@ -522,6 +535,7 @@ final class CheckoutViewModelTests: XCTestCase {
         let vm = makeVM()
         // Select service, advance to review
         vm.toggleService(bath)
+        vm.setAmountDirectly("30")
         try vm.advance()  // → details
         try vm.advance()  // → payment
         vm.choosePayment(.cash)
@@ -562,6 +576,7 @@ final class CheckoutViewModelTests: XCTestCase {
 
         let vm = makeVM(visit: activeVisit)
         vm.toggleService(bath)
+        vm.setAmountDirectly("30")
         try vm.advance()
         try vm.advance()
         vm.choosePayment(.cash)
@@ -694,6 +709,7 @@ final class CheckoutViewModelTests: XCTestCase {
     func testProcessPayment_DoesNotRunWhenAlreadySaving() async {
         let vm = makeVM()
         vm.toggleService(bath)
+        vm.setAmountDirectly("30")
         try? vm.advance()
         try? vm.advance()
         vm.choosePayment(.cash)

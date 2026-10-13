@@ -173,6 +173,7 @@ final class WalkthroughReplaySafetyTests: XCTestCase {
         let checkout = makeCheckout(pet: pet, visit: visit, services: [bath])
         checkout.beginWalkthroughPreview()
         checkout.toggleService(bath)
+        checkout.setAmountDirectly("40")
         checkout.choosePayment(.cash)
         checkout.showStepForWalkthrough(.review)
         XCTAssertEqual(checkout.currentStep, .review)
