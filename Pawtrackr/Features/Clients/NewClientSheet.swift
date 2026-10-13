@@ -36,6 +36,17 @@ struct NewClientSheet: View {
     private let modelContext: ModelContext
     @State private var viewModel: NewClientViewModel?
     @State private var didFocusInitialField = false
+    @State private var createButtonFrame: CGRect?
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+
+    private var toolbarWalkthroughFrames: [WalkthroughAnchorID: CGRect] {
+        #if os(iOS)
+        if horizontalSizeClass == .compact, let createButtonFrame {
+            return [.ncSave: createButtonFrame]
+        }
+        #endif
+        return [:]
+    }
     @FocusState private var focusedField: FocusField?
 
     init(modelContext: ModelContext) {
@@ -59,7 +70,7 @@ struct NewClientSheet: View {
     private var sheetContent: some View {
         if let walkthrough {
             navigationContent
-                .walkthroughOverlay(walkthrough, presenting: .newClient)
+                .walkthroughOverlay(walkthrough, presenting: .newClient, externalFrames: toolbarWalkthroughFrames)
         } else {
             navigationContent
         }
@@ -76,6 +87,12 @@ struct NewClientSheet: View {
                 }
             }
         }
+        #if os(iOS)
+        .background {
+            NewClientToolbarFrameReader { createButtonFrame = $0 }
+                .accessibilityHidden(true)
+        }
+        #endif
     }
 
     @ViewBuilder
@@ -433,3 +450,69 @@ private extension View {
 private extension Logger {
     static let newClient = Logger(subsystem: Bundle.main.bundleIdentifier ?? "Pawtrackr", category: "NewClient")
 }
+
+#if os(iOS)
+/// A toolbar is a separate SwiftUI host, so use UIKit's window coordinates.
+private struct NewClientToolbarFrameReader: UIViewRepresentable {
+    var onFrameChange: (CGRect) -> Void
+
+    /// Creates a noninteractive marker in the presentation's native view hierarchy.
+    func makeUIView(context: Context) -> FrameView {
+        let view = FrameView()
+        view.isUserInteractionEnabled = false
+        view.onFrameChange = onFrameChange
+        return view
+    }
+
+    /// Refreshes the callback and resamples the current toolbar bounds.
+    func updateUIView(_ uiView: FrameView, context: Context) {
+        uiView.onFrameChange = onFrameChange
+        uiView.reportFrame()
+    }
+
+    final class FrameView: UIView {
+        var onFrameChange: ((CGRect) -> Void)?
+        private var lastFrame: CGRect?
+        private var retryCount = 0
+
+        override func didMoveToWindow() {
+            super.didMoveToWindow()
+            reportFrame()
+        }
+
+        override func layoutSubviews() {
+            super.layoutSubviews()
+            reportFrame()
+        }
+
+        /// Reports the native button's minimum touch bounds after the layout pass.
+        func reportFrame() {
+            guard let window else { return }
+            guard let button = targetView(in: window), button.bounds.width > 0, button.bounds.height > 0 else {
+                guard retryCount < 20 else { return }
+                retryCount += 1
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { [weak self] in self?.reportFrame() }
+                return
+            }
+            retryCount = 0
+            let measured = button.convert(button.bounds, to: window)
+            let frame = measured.insetBy(dx: -max(0, 44 - measured.width) / 2,
+                                         dy: -max(0, 44 - measured.height) / 2)
+            guard frame != lastFrame else { return }
+            lastFrame = frame
+            DispatchQueue.main.async { [weak self] in self?.onFrameChange?(frame) }
+        }
+
+        /// Finds only the app's identified Create control in this presentation's window.
+        private func targetView(in root: UIView) -> UIView? {
+            if root.accessibilityIdentifier == "newClient.create", !root.isHidden, root.alpha > 0 {
+                return root
+            }
+            for child in root.subviews {
+                if let target = targetView(in: child) { return target }
+            }
+            return nil
+        }
+    }
+}
+#endif

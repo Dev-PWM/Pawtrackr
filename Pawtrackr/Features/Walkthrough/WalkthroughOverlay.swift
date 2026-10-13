@@ -20,7 +20,7 @@ enum WalkthroughTargetFrame {
     /// iPad split view and Stage Manager can temporarily report anchors from a
     /// transitioning host; dropping them lets the tour fall back to a centered
     /// bubble instead of drawing a misleading spotlight.
-    static func validated(_ rect: CGRect?, in containerSize: CGSize, safeAreaInsets: EdgeInsets) -> CGRect? {
+    static func validated(_ rect: CGRect?, in containerSize: CGSize, safeAreaInsets: EdgeInsets, includesToolbar: Bool = false) -> CGRect? {
         guard var rect, rect.isFinite, rect.width >= 2, rect.height >= 2,
               containerSize.width >= 2, containerSize.height >= 2
         else { return nil }
@@ -35,7 +35,8 @@ enum WalkthroughTargetFrame {
         )
 
         rect = rect.standardized
-        let intersection = rect.intersection(visibleBounds)
+        let bounds = includesToolbar ? CGRect(origin: .zero, size: containerSize) : visibleBounds
+        let intersection = rect.intersection(bounds)
         guard !intersection.isNull, !intersection.isEmpty,
               intersection.width >= 2, intersection.height >= 2
         else { return nil }
@@ -87,6 +88,7 @@ enum WalkthroughOverlayLayout {
         let safeAreaInsets: EdgeInsets
         var compactPhone = false
         var minimumPhoneCardHeight: CGFloat = 280
+        var includesToolbar = false
 
         var isCompactViewport: Bool {
             compactPhone || containerSize.width < 430 || containerSize.height < 760
@@ -149,9 +151,10 @@ enum WalkthroughOverlayLayout {
         containerSize: CGSize,
         safeAreaInsets: EdgeInsets,
         compactPhone: Bool = false,
-        minimumPhoneCardHeight: CGFloat = 280
+        minimumPhoneCardHeight: CGFloat = 280,
+        includesToolbar: Bool = false
     ) -> Result {
-        let metrics = Metrics(containerSize: containerSize, safeAreaInsets: safeAreaInsets, compactPhone: compactPhone, minimumPhoneCardHeight: minimumPhoneCardHeight)
+        let metrics = Metrics(containerSize: containerSize, safeAreaInsets: safeAreaInsets, compactPhone: compactPhone, minimumPhoneCardHeight: minimumPhoneCardHeight, includesToolbar: includesToolbar)
         let gap = metrics.isCompactViewport ? compactBubbleGap : bubbleGap
         let spotlight = spotlightRect(for: targetRect, metrics: metrics)
         guard let spotlight else {
@@ -212,6 +215,7 @@ enum WalkthroughOverlayLayout {
     private static func spotlightRect(for targetRect: CGRect?, metrics: Metrics) -> CGRect? {
         guard let targetRect, targetRect.width > 0, targetRect.height > 0 else { return nil }
         let padded = targetRect.insetBy(dx: -spotlightPadding, dy: -spotlightPadding)
+        if metrics.includesToolbar { return padded }
         // The side insets don't clip the spotlight. In a split-view column
         // they are the sidebar's width, which the target's own layout already
         // keeps clear of, and macOS reports that width even when the column
@@ -585,14 +589,16 @@ extension View {
         _ controller: WalkthroughController,
         presenting: WalkthroughPresentation? = nil,
         scope: WalkthroughOverlayScope = .all,
-        adoptsOrphanedSteps: Bool = false
+        adoptsOrphanedSteps: Bool = false,
+        externalFrames: [WalkthroughAnchorID: CGRect] = [:]
     ) -> some View {
         WalkthroughOverlayHost(
             content: self,
             controller: controller,
             presenting: presenting,
             scope: scope,
-            adoptsOrphanedSteps: adoptsOrphanedSteps
+            adoptsOrphanedSteps: adoptsOrphanedSteps,
+            externalFrames: externalFrames
         )
     }
 }
@@ -603,6 +609,8 @@ private struct WalkthroughOverlayHost<Content: View>: View {
     let presenting: WalkthroughPresentation?
     let scope: WalkthroughOverlayScope
     let adoptsOrphanedSteps: Bool
+    /// Toolbar hosts can report window frames directly when preferences do not cross navigation chrome.
+    let externalFrames: [WalkthroughAnchorID: CGRect]
 
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
@@ -637,27 +645,34 @@ private struct WalkthroughOverlayHost<Content: View>: View {
                         // The anchor path remains a fallback for targets whose
                         // frame preference is unavailable.
                         let overlayFrameInGlobal = proxy.frame(in: .global)
-                        let rawFrameTarget = frames[step.anchor].map { frame in
+                        // Measured navigation chrome is inside this host's viewport.
+                        // Its inherited content inset must not clip the toolbar a second time.
+                        let targetInsets = externalFrames[step.anchor] == nil ? proxy.safeAreaInsets : EdgeInsets(
+                            top: 0, leading: proxy.safeAreaInsets.leading,
+                            bottom: proxy.safeAreaInsets.bottom, trailing: proxy.safeAreaInsets.trailing
+                        )
+                        let rawFrameTarget = (externalFrames[step.anchor] ?? frames[step.anchor]).map { frame in
                             frame.offsetBy(dx: -overlayFrameInGlobal.minX, dy: -overlayFrameInGlobal.minY)
                         }
                         let rawAnchorTarget = anchors[step.anchor].map { proxy[$0] }
                         let frameTarget = WalkthroughTargetFrame.validated(
                             rawFrameTarget,
                             in: proxy.size,
-                            safeAreaInsets: proxy.safeAreaInsets
+                            safeAreaInsets: targetInsets,
+                            includesToolbar: externalFrames[step.anchor] != nil
                         )
                         let anchorTarget = WalkthroughTargetFrame.validated(
                             rawAnchorTarget,
                             in: proxy.size,
-                            safeAreaInsets: proxy.safeAreaInsets
+                            safeAreaInsets: targetInsets
                         )
                         let fallbackTarget = WalkthroughTargetFrame.validated(
                             walkthroughFallbackRect(step.fallback, in: proxy),
                             in: proxy.size,
-                            safeAreaInsets: proxy.safeAreaInsets
+                            safeAreaInsets: targetInsets
                         )
                         let target = frameTarget ?? anchorTarget ?? fallbackTarget
-                        let rawLiveTarget = frameTarget != nil ? rawFrameTarget : rawAnchorTarget
+                        let rawLiveTarget = rawFrameTarget ?? rawAnchorTarget
                         let isAdopted = !(step.presents == presenting && scope.handles(step))
                         // A section that only exists with data (Needs
                         // Attention) isn't drawn centered while the tour waits
@@ -669,9 +684,11 @@ private struct WalkthroughOverlayHost<Content: View>: View {
                                 rawTargetRect: rawLiveTarget,
                                 targetRect: target,
                                 containerSize: proxy.size,
-                                containerInsets: proxy.safeAreaInsets,
+                                containerInsets: targetInsets,
                                 controller: controller,
-                                isAdopted: isAdopted
+                                isAdopted: isAdopted,
+                                containerOrigin: overlayFrameInGlobal.origin,
+                                includesToolbar: externalFrames[step.anchor] != nil
                             )
                         }
                     }
@@ -778,6 +795,8 @@ private struct WalkthroughOverlayView: View {
     let controller: WalkthroughController
     /// The root overlay is drawing a step its own screen never drew.
     var isAdopted = false
+    var containerOrigin: CGPoint = .zero
+    var includesToolbar = false
 
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
@@ -814,7 +833,8 @@ private struct WalkthroughOverlayView: View {
             containerSize: containerSize,
             safeAreaInsets: containerInsets,
             compactPhone: isCompactPhone,
-            minimumPhoneCardHeight: dynamicTypeSize.isAccessibilitySize ? 420 : 280
+            minimumPhoneCardHeight: dynamicTypeSize.isAccessibilitySize ? 420 : 280,
+            includesToolbar: includesToolbar
         )
     }
 
@@ -902,6 +922,7 @@ private struct WalkthroughOverlayView: View {
             "raw=\(debugDescription(for: rawTargetRect))",
             "target=\(debugDescription(for: targetRect))",
             "spotlight=\(debugDescription(for: spotlight))",
+            "spotlightGlobal=\(debugDescription(for: spotlight?.offsetBy(dx: containerOrigin.x, dy: containerOrigin.y)))",
             "bubble=\(debugDescription(for: layout.bubbleFrame))",
             "container=\(Int(containerSize.width.rounded()))x\(Int(containerSize.height.rounded()))"
         ].joined(separator: ";")
@@ -953,16 +974,18 @@ private struct WalkthroughOverlayView: View {
                     Circle()
                         .stroke(Color.white.opacity(0.95), lineWidth: 2.5)
                         .frame(width: d, height: d)
+                        .scaleEffect(isCompactPhone && ringPulse ? 1.035 : 1.0)
                         .position(x: s.midX, y: s.midY)
                 case .roundedRect(let cr):
                     RoundedRectangle(cornerRadius: cr, style: .continuous)
                         .stroke(Color.white.opacity(0.95), lineWidth: 2.5)
                         .frame(width: s.width, height: s.height)
+                        .scaleEffect(isCompactPhone && ringPulse ? 1.035 : 1.0)
                         .position(x: s.midX, y: s.midY)
                 }
             }
             .shadow(color: DS.ColorToken.primary.opacity(ringPulse ? 0.95 : 0.65), radius: ringPulse ? 16 : 8)
-            .scaleEffect(ringPulse ? 1.035 : 1.0)
+            .scaleEffect(!isCompactPhone && ringPulse ? 1.035 : 1.0)
             .allowsHitTesting(false)
             .onAppear {
                 guard MotionGovernor.shouldAnimate(reduceMotion: reduceMotion) else { return }

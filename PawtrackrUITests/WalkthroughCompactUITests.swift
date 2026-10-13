@@ -41,6 +41,28 @@ final class WalkthroughCompactUITests: QualityControlUITestCase {
         )
     }
 
+    func testNewClientSaveSpotlightTracksTheToolbarButton() throws {
+        launch(startWalkthrough: true)
+        advanceWalkthroughUntilActiveAnchor("ncSave", maxTaps: 30)
+        assertActiveWalkthroughAnchor("ncSave")
+        let create = app.buttons["newClient.create"]
+        XCTAssertTrue(create.isHittable)
+        let layout = activeWalkthroughLayoutDebug()
+        let expression = try NSRegularExpression(pattern: "spotlightGlobal=\\[(-?\\d+),(-?\\d+),(\\d+),(\\d+)\\]")
+        let match = try XCTUnwrap(expression.firstMatch(in: layout, range: NSRange(layout.startIndex..., in: layout)))
+        let values = try (1...4).map { index -> CGFloat in
+            let range = try XCTUnwrap(Range(match.range(at: index), in: layout))
+            return CGFloat(try XCTUnwrap(Double(layout[range])))
+        }
+        let spotlight = CGRect(x: values[0], y: values[1], width: values[2], height: values[3])
+        XCTAssertLessThan(abs(spotlight.midX - create.frame.midX), 4, layout)
+        XCTAssertLessThan(abs(spotlight.midY - create.frame.midY), 4, layout)
+        let attachment = XCTAttachment(screenshot: app.screenshot())
+        attachment.name = "Create button spotlight alignment"
+        attachment.lifetime = .keepAlways
+        add(attachment)
+    }
+
     func testInsightsNavigationAndExportLessonRemainUsable() throws {
         launch(startWalkthrough: true)
         advanceWalkthroughUntilActiveAnchor("insights", maxTaps: 80)
