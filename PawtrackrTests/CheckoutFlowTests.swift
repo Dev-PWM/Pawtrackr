@@ -6,9 +6,7 @@ import SwiftData
 /// add-on, charges via Zelle with a transaction reference, and the PDF receipt total must
 /// match the line-item sum. Locks in the specific user journey the protocol audit named.
 ///
-/// Note: the audit named `QualityControl/CheckoutFlowTests.swift`, but `QualityControl/`
-/// is not in any test target (no `PBXFileSystemSynchronizedRootGroup` covers it) so tests
-/// placed there would be dead code. This file lives in `PawtrackrTests/` to actually run.
+/// Runs in the app's unit-test target alongside the QualityControl suites.
 @MainActor
 final class CheckoutFlowTests: XCTestCase {
     var container: ModelContainer!

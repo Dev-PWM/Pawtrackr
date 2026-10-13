@@ -60,7 +60,7 @@ final class LocalStoreSafetyRegressionTests: XCTestCase {
 
     func testFullSummaryRebuildIgnoresStaleIncrementalWatermark() throws {
         let oldDate = try XCTUnwrap(Calendar.current.date(byAdding: .day, value: -45, to: .now))
-        let day = Calendar.current.startOfDay(for: oldDate)
+        let day = Calendar.current.startOfDay(for: oldDate.addingTimeInterval(1800))
         let pet = Pet(name: "Buddy", species: .dog)
         let visit = Visit(pet: pet, startedAt: oldDate)
         visit.markCheckedOut(total: Decimal(string: "72.50")!, now: oldDate.addingTimeInterval(1800))

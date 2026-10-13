@@ -241,7 +241,11 @@ final class ClientDetailUITests: XCTestCase {
     private func scrollToBehaviorElement(_ element: XCUIElement) {
         for _ in 0..<8 {
             if element.exists && element.isHittable { return }
-            app.scrollViews.firstMatch.swipeUp()
+            let scroll = app.scrollViews.firstMatch
+            let movesDown = element.exists && element.frame.midY < scroll.frame.midY
+            let start = scroll.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: movesDown ? 0.4 : 0.7))
+            let end = scroll.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: movesDown ? 0.7 : 0.4))
+            start.press(forDuration: 0.1, thenDragTo: end)
         }
     }
 
