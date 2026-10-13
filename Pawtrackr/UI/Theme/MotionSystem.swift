@@ -25,11 +25,15 @@ enum MotionSystem {
 }
 
 enum MotionGovernor {
-    static func shouldAnimate(reduceMotion: Bool) -> Bool {
-        guard !reduceMotion else { return false }
-        guard !ProcessInfo.processInfo.isLowPowerModeEnabled else { return false }
-
-        switch ProcessInfo.processInfo.thermalState {
+    /// Evaluates motion constraints without starting a timer or a rendering workload.
+    static func shouldAnimate(
+        reduceMotion: Bool,
+        lowPowerMode: Bool = ProcessInfo.processInfo.isLowPowerModeEnabled,
+        thermalState: ProcessInfo.ThermalState = ProcessInfo.processInfo.thermalState,
+        sceneIsActive: Bool = true
+    ) -> Bool {
+        guard !reduceMotion, !lowPowerMode, sceneIsActive else { return false }
+        switch thermalState {
         case .nominal, .fair:
             return true
         case .serious, .critical:
@@ -63,18 +67,30 @@ struct PressScaleButtonStyle: ButtonStyle {
 
 struct InsightsMeshBackground: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.scenePhase) private var scenePhase
     @State private var phase = false
+    @State private var resourceAllowsAnimation = MotionGovernor.shouldAnimate(reduceMotion: false)
+
+    private var shouldAnimate: Bool {
+        resourceAllowsAnimation && !reduceMotion && scenePhase == .active
+    }
 
     var body: some View {
         ZStack {
             DS.ColorToken.background
 
-            if MotionGovernor.shouldAnimate(reduceMotion: reduceMotion) {
+            if shouldAnimate {
                 animatedBackground
                     .transition(.opacity)
             } else {
                 fallbackGradient
             }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .NSProcessInfoPowerStateDidChange).receive(on: DispatchQueue.main)) { _ in
+            resourceAllowsAnimation = MotionGovernor.shouldAnimate(reduceMotion: false)
+        }
+        .onReceive(NotificationCenter.default.publisher(for: ProcessInfo.thermalStateDidChangeNotification).receive(on: DispatchQueue.main)) { _ in
+            resourceAllowsAnimation = MotionGovernor.shouldAnimate(reduceMotion: false)
         }
     }
 
@@ -91,6 +107,7 @@ struct InsightsMeshBackground: View {
             .blur(radius: 24)
             .animation(MotionSystem.breathe, value: phase)
             .onAppear { phase = true }
+            .onDisappear { phase = false }
         } else {
             fallbackGradient
         }

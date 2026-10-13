@@ -7,6 +7,12 @@ private struct PetBehaviorAura: ViewModifier {
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.colorScheme) private var colorScheme
 
+    @State private var resourceAllowsAnimation = MotionGovernor.shouldAnimate(reduceMotion: false)
+
+    private var shouldAnimate: Bool {
+        resourceAllowsAnimation && !reduceMotion && scenePhase == .active
+    }
+
     private var tint: Color? {
         pet.prominentBehavior.map { BehaviorTagIcons.tint(for: $0) }
     }
@@ -25,15 +31,28 @@ private struct PetBehaviorAura: ViewModifier {
             }
             .overlay {
                 if let tint {
-                    TimelineView(.animation(minimumInterval: 1.0 / 20, paused: !MotionGovernor.shouldAnimate(reduceMotion: reduceMotion) || scenePhase != .active)) { timeline in
-                        let phase = MotionGovernor.shouldAnimate(reduceMotion: reduceMotion) ? timeline.date.timeIntervalSinceReferenceDate.truncatingRemainder(dividingBy: 8) / 8 * 360 : 0
-                        RoundedRectangle(cornerRadius: 18, style: .continuous)
-                            .strokeBorder(AngularGradient(colors: [tint.opacity(0.95), tint.opacity(0.35), tint.opacity(0.95)], center: .center, angle: .degrees(phase)), lineWidth: 3)
-                            .shadow(color: tint.opacity(0.55), radius: colorScheme == .dark ? 10 : 5)
+                    Group {
+                        if shouldAnimate {
+                            TimelineView(.animation(minimumInterval: 1.0 / 20)) { timeline in
+                                let phase = timeline.date.timeIntervalSinceReferenceDate.truncatingRemainder(dividingBy: 8) / 8 * 360
+                                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                                    .strokeBorder(AngularGradient(colors: [tint.opacity(0.95), tint.opacity(0.35), tint.opacity(0.95)], center: .center, angle: .degrees(phase)), lineWidth: 3)
+                                    .shadow(color: tint.opacity(0.55), radius: colorScheme == .dark ? 10 : 5)
+                            }
+                        } else {
+                            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                                .strokeBorder(tint, lineWidth: 1.5)
+                        }
                     }
                     .allowsHitTesting(false)
                     .accessibilityHidden(true)
                 }
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .NSProcessInfoPowerStateDidChange).receive(on: DispatchQueue.main)) { _ in
+                resourceAllowsAnimation = MotionGovernor.shouldAnimate(reduceMotion: false)
+            }
+            .onReceive(NotificationCenter.default.publisher(for: ProcessInfo.thermalStateDidChangeNotification).receive(on: DispatchQueue.main)) { _ in
+                resourceAllowsAnimation = MotionGovernor.shouldAnimate(reduceMotion: false)
             }
     }
 }
