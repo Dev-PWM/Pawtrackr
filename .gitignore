@@ -43,6 +43,12 @@ appcenter-post-clone.sh
 # AI session / conversation history dumps (may contain credentials & local paths)
 Pawtrackr_Conversation_History_Report.md
 *_Conversation_History_Report.md
+Pawtrackr-Memory-Export.md
+Pawtrackr-Architecture-Comparison.md
+
+# Root build logs. Ignored patterns also keep these out of agent search
+# (ripgrep honors .gitignore even for files that are still tracked).
+/build_*.txt
 
 # Agent skills live only in .claude/skills (installed by script/update-skills.sh).
 # The `skills` CLI installs into every agent it detects on the machine, so keep
