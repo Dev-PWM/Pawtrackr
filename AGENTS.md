@@ -2,7 +2,7 @@
 
 Shared by Codex and Claude Code (`CLAUDE.md` imports this file). App-wide UI conventions are in `Pawtrackr/AGENTS.md`. Subsystem rules are in `.claude/rules/*.md`, each scoped by `paths:` so Claude Code loads it only when matching files are touched. Other agents: before editing storage, checkout, clients, loyalty, walkthrough, or pet-behavior code, read the matching `.claude/rules/<area>.md` (`storage`, `checkout`, `clients`, `loyalty`, `walkthrough`, `pet-behavior`).
 
-Don't add more docs under `Pawtrackr/`. It is an Xcode synchronized folder, so every file there is copied into the app bundle; the existing `Pawtrackr/AGENTS.md` currently ships inside the built app.
+Don't add more docs under `Pawtrackr/`. It is an Xcode synchronized folder, so every file there is copied into the app bundle unless the Pawtrackr target's `membershipExceptions` lists it. `AGENTS.md` and `GoldenRecord.json` are excluded there; uncheck Pawtrackr target membership in Xcode for any other non-app file you have to put there.
 
 ## Invariants
 
@@ -29,4 +29,4 @@ Don't add more docs under `Pawtrackr/`. It is an Xcode synchronized folder, so e
 
 - Don't assume a simulator destination exists. Resolve one with `xcrun simctl list devices available` and pass `-destination "id=<UUID>"`. As of 2026-07 the installed runtimes are iOS 18.x and 26.5 (no 17.x); named-device + `OS:latest` lookups have failed on this machine.
 - The only shared scheme is `Pawtrackr`. Its `TestPlan.xctestplan` holds `PawtrackrTests` and `PawtrackrUITests`; narrow a run with `-only-testing:`.
-- The paywall loads StoreKit products from `Pawtrackr.storekit`. As of 2026-10-16 the shared scheme's LaunchAction does not reference it, so if `Product.products` returns nothing in a dev build, set the scheme's StoreKit Configuration before suspecting code.
+- The paywall loads StoreKit products from `Pawtrackr.storekit`; the shared scheme's LaunchAction references it (`StoreKitConfigurationFileReference`, restored 2026-10-16 after it was dropped in September). If `Product.products` returns nothing in a dev build, check that reference before suspecting code.
