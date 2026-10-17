@@ -1281,13 +1281,6 @@ struct ClientDetailView: View {
     }
 
     // MARK: - Actions
-    private func openClientWindow(_ mode: DetachedClientWindowMode) {
-        guard entitlements.isPremium else {
-            sheetDestination = .subscriptionPaywall
-            return
-        }
-        openWindow(id: "client-window", value: DetachedClientWindowRoute(clientUUID: client.uuid, mode: mode))
-    }
 
     private func deleteClient(vm: ClientDetailViewModel) {
         Task { await performDeleteClient(vm: vm) }
@@ -1622,13 +1615,6 @@ private struct CheckoutPresentationModifier: ViewModifier {
 }
 
 // MARK: - Local UI building blocks
-private func clientInitials(_ client: Client) -> String {
-    let f = client.firstName.trimmingCharacters(in: .whitespacesAndNewlines)
-    let l = client.lastName.trimmingCharacters(in: .whitespacesAndNewlines)
-    let fi = f.first.map { String($0) } ?? ""
-    let li = l.first.map { String($0) } ?? ""
-    return (fi + li).uppercased()
-}
 
 private struct InitialsCircle: View {
     let initials: String
@@ -1706,14 +1692,6 @@ private extension Logger {
 }
 
 // Nonisolated small helper for duration string to use inside TimelineView
-private func humanDuration(_ seconds: Int) -> String {
-    let h = seconds / 3600
-    let m = (seconds % 3600) / 60
-    let s = seconds % 60
-    if h > 0 { return m > 0 ? "\(h)h \(m)m" : "\(h)h" }
-    if m > 0 { return s > 0 ? "\(m)m \(s)s" : "\(m)m" }
-    return "\(s)s"
-}
 
 // Format as H:MM:SS with monospaced digits for stable layout
 private func hms(_ seconds: Int) -> String {

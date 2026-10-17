@@ -13,7 +13,6 @@ struct RootView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.scenePhase) private var scenePhase
     @Environment(AuthenticationViewModel.self) private var authViewModel
-    @Environment(AppSettings.self) private var appSettings
     @Environment(EntitlementStore.self) private var entitlements
     @Environment(DataStoreService.self) private var dataStore: DataStoreService?
     @Query private var businessConfigs: [BusinessConfig]

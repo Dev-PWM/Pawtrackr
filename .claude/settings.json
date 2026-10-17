@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "defaultMode": "auto",
+    "allow": [
+      "Bash(git status *)",
+      "Bash(git diff *)",
+      "Bash(git log *)",
+      "Bash(git show *)",
+      "Bash(git grep *)",
+      "Bash(git branch --list *)",
+      "Bash(git branch --show-current)",
+      "Bash(git branch --all)",
+      "Bash(python3 ci_scripts/validate_local_persistence.py *)",
+      "Bash(python3 -m unittest ci_scripts/test_validate_local_persistence.py)",
+      "Bash(bash ci_scripts/ci_pre_xcodebuild.sh)",
+      "Bash(swiftlint *)",
+      "Bash(xcrun simctl list *)",
+      "Bash(xcodebuild -list *)",
+      "Bash(xcodebuild -showBuildSettings *)",
+      "Bash(xcodebuild test -project Pawtrackr.xcodeproj -scheme Pawtrackr *)"
+    ]
+  }
+}

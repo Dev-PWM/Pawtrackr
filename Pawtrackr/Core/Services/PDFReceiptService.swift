@@ -127,27 +127,39 @@ final class PDFReceiptService {
         }
     }
 
+    /// Fixed print colors deliberately do not follow the app's appearance.
+    private enum Palette {
+        static var ink: PlatformColor { PlatformColor(red: 20/255, green: 20/255, blue: 23/255, alpha: 1) }
+        static var paper: PlatformColor { .white }
+        static var muted: PlatformColor { PlatformColor(red: 92/255, green: 90/255, blue: 102/255, alpha: 1) }
+        static var hairline: PlatformColor { PlatformColor(red: 229/255, green: 226/255, blue: 220/255, alpha: 1) }
+        static var accent: PlatformColor { PlatformColor(red: 91/255, green: 79/255, blue: 233/255, alpha: 1) }
+    }
+
     private nonisolated static func drawContent(in context: CGContext, snapshot: ReceiptSnapshot, bounds: CGRect) {
+        context.setFillColor(Palette.paper.cgColor)
+        context.fill(bounds)
+
         let margin: CGFloat = 50
         var currentY: CGFloat = 60
 
         // --- HEADER ---
         let titleAttributes: [NSAttributedString.Key: Any] = [
             .font: PlatformFont.systemFont(ofSize: 28, weight: .black),
-            .foregroundColor: PlatformColor.systemBlue
+            .foregroundColor: Palette.accent
         ]
         snapshot.businessName.uppercased().draw(at: CGPoint(x: margin, y: currentY), withAttributes: titleAttributes)
 
         let receiptNumAttributes: [NSAttributedString.Key: Any] = [
             .font: PlatformFont.systemFont(ofSize: 12, weight: .medium),
-            .foregroundColor: PlatformColor.darkGray
+            .foregroundColor: Palette.ink
         ]
         let receiptNumSize = snapshot.receiptNumber.size(withAttributes: receiptNumAttributes)
         snapshot.receiptNumber.draw(at: CGPoint(x: 612 - margin - receiptNumSize.width, y: currentY + 10), withAttributes: receiptNumAttributes)
 
         currentY += 45
 
-        context.setStrokeColor(PlatformColor.systemBlue.cgColor)
+        context.setStrokeColor(Palette.accent.cgColor)
         context.setLineWidth(2)
         context.move(to: CGPoint(x: margin, y: currentY))
         context.addLine(to: CGPoint(x: 612 - margin, y: currentY))
@@ -157,10 +169,12 @@ final class PDFReceiptService {
 
         // --- BUSINESS INFO ---
         let businessNameAttributes: [NSAttributedString.Key: Any] = [
-            .font: PlatformFont.systemFont(ofSize: 14, weight: .bold)
+            .font: PlatformFont.systemFont(ofSize: 14, weight: .bold),
+            .foregroundColor: Palette.ink
         ]
         let bodyAttributes: [NSAttributedString.Key: Any] = [
-            .font: PlatformFont.systemFont(ofSize: 11)
+            .font: PlatformFont.systemFont(ofSize: 11),
+            .foregroundColor: Palette.ink
         ]
 
         snapshot.businessName.draw(at: CGPoint(x: margin, y: currentY), withAttributes: businessNameAttributes)
@@ -181,7 +195,7 @@ final class PDFReceiptService {
         // --- CLIENT & PET INFO ---
         let sectionHeaderAttributes: [NSAttributedString.Key: Any] = [
             .font: PlatformFont.systemFont(ofSize: 12, weight: .bold),
-            .foregroundColor: PlatformColor.gray
+            .foregroundColor: Palette.muted
         ]
 
         "BILL TO".draw(at: CGPoint(x: margin, y: currentY), withAttributes: sectionHeaderAttributes)
@@ -190,7 +204,8 @@ final class PDFReceiptService {
         currentY += 20
 
         let clientAttributes: [NSAttributedString.Key: Any] = [
-            .font: PlatformFont.systemFont(ofSize: 14, weight: .semibold)
+            .font: PlatformFont.systemFont(ofSize: 14, weight: .semibold),
+            .foregroundColor: Palette.ink
         ]
         snapshot.clientName.draw(at: CGPoint(x: margin, y: currentY), withAttributes: clientAttributes)
         snapshot.dateLine.draw(at: CGPoint(x: 350, y: currentY), withAttributes: bodyAttributes)
@@ -207,11 +222,11 @@ final class PDFReceiptService {
         // --- SERVICES TABLE ---
         let tableHeaderAttributes: [NSAttributedString.Key: Any] = [
             .font: PlatformFont.systemFont(ofSize: 12, weight: .bold),
-            .foregroundColor: PlatformColor.white
+            .foregroundColor: Palette.paper
         ]
 
         let tableHeaderRect = CGRect(x: margin, y: currentY, width: 512, height: 25)
-        context.setFillColor(PlatformColor.darkGray.cgColor)
+        context.setFillColor(Palette.ink.cgColor)
         context.fill(tableHeaderRect)
 
         "SERVICE DESCRIPTION".draw(at: CGPoint(x: margin + 10, y: currentY + 6), withAttributes: tableHeaderAttributes)
@@ -228,7 +243,7 @@ final class PDFReceiptService {
 
             currentY += 20
 
-            context.setStrokeColor(PlatformColor.lightGray.withAlphaComponent(0.3).cgColor)
+            context.setStrokeColor(Palette.hairline.cgColor)
             context.setLineWidth(0.5)
             context.move(to: CGPoint(x: margin, y: currentY))
             context.addLine(to: CGPoint(x: 612 - margin, y: currentY))
@@ -241,11 +256,12 @@ final class PDFReceiptService {
 
         // --- TOTAL ---
         let totalLabelAttributes: [NSAttributedString.Key: Any] = [
-            .font: PlatformFont.systemFont(ofSize: 16, weight: .bold)
+            .font: PlatformFont.systemFont(ofSize: 16, weight: .bold),
+            .foregroundColor: Palette.ink
         ]
         let totalValueAttributes: [NSAttributedString.Key: Any] = [
             .font: PlatformFont.systemFont(ofSize: 20, weight: .black),
-            .foregroundColor: PlatformColor.systemBlue
+            .foregroundColor: Palette.accent
         ]
 
         "GRAND TOTAL".draw(at: CGPoint(x: 350, y: currentY + 5), withAttributes: totalLabelAttributes)
@@ -258,7 +274,8 @@ final class PDFReceiptService {
         // --- PAYMENT INFO ---
         if let payment = snapshot.payment {
             let payTitleAttributes: [NSAttributedString.Key: Any] = [
-                .font: PlatformFont.systemFont(ofSize: 12, weight: .bold)
+                .font: PlatformFont.systemFont(ofSize: 12, weight: .bold),
+                .foregroundColor: Palette.ink
             ]
             "PAYMENT INFORMATION".draw(at: CGPoint(x: margin, y: currentY), withAttributes: payTitleAttributes)
             currentY += 20
@@ -280,7 +297,7 @@ final class PDFReceiptService {
 
         let footerAttributes: [NSAttributedString.Key: Any] = [
             .font: italicFont,
-            .foregroundColor: PlatformColor.gray
+            .foregroundColor: Palette.muted
         ]
         let footer = "Thank you for choosing Pawtrackr! We look forward to seeing your pet again soon."
         let footerSize = footer.size(withAttributes: footerAttributes)

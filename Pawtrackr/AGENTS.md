@@ -7,8 +7,6 @@ The root `AGENTS.md` covers persistence, `Decimal`, threading and logging. These
 - Multi-model operations such as checkout are atomic; no intermediate states are saved.
 - Saving edits from another local context preserves unrelated fields.
 - Log local persistence failures with `.error` and surface the failed operation in the UI.
-- If local storage fails to open, show recovery with the preserved backups. Never delete the store or promise remote recovery.
-- `DataPruningService` clears temporary assets older than 30 days; historical visit photos are kept unless `DataPruner` is called with `pruneStoredPhotos: true`.
 
 ## UI
 

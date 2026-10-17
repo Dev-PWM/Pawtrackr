@@ -213,10 +213,6 @@ struct CheckoutView: View {
 
     // MARK: - Steps
 
-    private var stepTransition: AnyTransition {
-        .opacity
-    }
-
     @ViewBuilder
     private var stepContent: some View {
         ZStack {
@@ -1078,17 +1074,6 @@ struct CheckoutView: View {
         .buttonStyle(.plain)
         .accessibilityIdentifier("checkout.behavior.\(Pet.behaviorTagKind(for: raw)?.rawValue ?? raw)")
         .accessibilityAddTraits(isSelected ? .isSelected : [])
-    }
-
-    private var safetyBehaviorTags: [Pet.BehaviorTag] {
-        Pet.BehaviorTag.allCases.filter { tag in
-            switch tag {
-            case .aggressive, .specialNeeds:
-                return viewModel.tags.contains { Pet.behaviorTagKind(for: $0) == tag }
-            default:
-                return false
-            }
-        }
     }
 
     private var hasSafetyBehaviorWarning: Bool {

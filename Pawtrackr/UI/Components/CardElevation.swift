@@ -33,17 +33,15 @@ private struct CardElevationModifier: ViewModifier {
             content
         case .regular:
             content
-                .shadow(color: shadowColor(opacity: scheme == .dark ? 0.35 : 0.12), radius: 6, x: 0, y: 2)
-                .shadow(color: shadowColor(opacity: scheme == .dark ? 0.25 : 0.06), radius: 12, x: 0, y: 6)
+                .shadow(color: shadowColor(opacity: scheme == .dark ? 0 : 0.05), radius: 8, x: 0, y: 3)
         case .raised:
             content
-                .shadow(color: shadowColor(opacity: scheme == .dark ? 0.45 : 0.18), radius: 10, x: 0, y: 4)
-                .shadow(color: shadowColor(opacity: scheme == .dark ? 0.35 : 0.10), radius: 20, x: 0, y: 12)
+                .shadow(color: shadowColor(opacity: scheme == .dark ? 0 : 0.06), radius: 14, x: 0, y: 6)
         }
         #elseif os(macOS)
         // On macOS, windows already cast shadows; keep component shadows restrained
         // and respect inactive window states.
-        let baseOpacity: CGFloat = (scheme == .dark ? 0.30 : 0.14)
+        let baseOpacity: CGFloat = (scheme == .dark ? 0 : 0.05)
         let inactiveScale: CGFloat = (controlActiveState == .inactive ? 0.6 : 1.0)
         switch level {
         case .flat:
@@ -60,7 +58,7 @@ private struct CardElevationModifier: ViewModifier {
 
     private func shadowColor(opacity: CGFloat) -> Color {
         // Neutral depth keeps colored behavior and reward glows distinct.
-        Color.black.opacity(opacity)
+        DS.ColorToken.adaptive(light: 0x141417, dark: 0x110E14).opacity(opacity)
     }
 }
 

@@ -418,28 +418,6 @@ enum StoreFileMigration {
         return nil
     }
 
-    /// Opens `filename` and proves it can be read: `sqlite3_open_v2` succeeds
-    /// lazily, and it's the first real read that fails.
-    private static func openReadable(_ filename: String, flags: Int32) -> OpaquePointer? {
-        var database: OpaquePointer?
-        guard sqlite3_open_v2(filename, &database, flags, nil) == SQLITE_OK, let database else {
-            sqlite3_close(database)
-            return nil
-        }
-
-        sqlite3_busy_timeout(database, 2_500)
-
-        var statement: OpaquePointer?
-        let readable = sqlite3_prepare_v2(database, "SELECT COUNT(*) FROM sqlite_master", -1, &statement, nil) == SQLITE_OK
-            && sqlite3_step(statement) == SQLITE_ROW
-        sqlite3_finalize(statement)
-        guard readable else {
-            sqlite3_close(database)
-            return nil
-        }
-        return database
-    }
-
     private static func tableExists(_ table: String, in database: OpaquePointer) -> Bool {
         var statement: OpaquePointer?
         defer { sqlite3_finalize(statement) }

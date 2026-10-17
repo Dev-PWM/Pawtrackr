@@ -1,0 +1,3 @@
+# Unattended local execution, matching the user-level defaults.
+approval_policy = "never"
+sandbox_mode = "danger-full-access"

@@ -10,8 +10,6 @@ import Foundation
 import SwiftData
 import OSLog
 
-private let insightsLog = Logger(subsystem: Bundle.main.bundleIdentifier ?? "Pawtrackr", category: "InsightsActor")
-
 @ModelActor
 public final actor InsightsActor {
     

@@ -135,7 +135,6 @@ struct SettingsView: View {
     
     // State needed for sub-views
     @State private var showChangePIN = false
-    @State private var pinChangeError: String? = nil
     @State private var showWipeConfirm = false
 
     var body: some View {

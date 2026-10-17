@@ -943,6 +943,36 @@ private struct WalkthroughOverlayView: View {
     // MARK: Dim + cutout
 
     private var dimLayer: some View {
+        dimContent
+            .contentShape(Rectangle())
+            .onTapGesture { /* swallow taps/clicks on the dimmed area */ }
+            .allowsHitTesting(!step.allowsTargetInteraction)
+    }
+
+    @ViewBuilder
+    private var dimContent: some View {
+        if isCompactPhone {
+            ZStack {
+                Color.black.opacity(dimOpacity)
+                Path { path in
+                    if let spotlight {
+                        switch step.shape {
+                        case .circle:
+                            let diameter = max(spotlight.width, spotlight.height)
+                            path.addEllipse(in: CGRect(x: spotlight.midX - diameter / 2,
+                                                       y: spotlight.midY - diameter / 2,
+                                                       width: diameter, height: diameter))
+                        case .roundedRect(let radius):
+                            path.addRoundedRect(in: spotlight,
+                                                cornerSize: CGSize(width: radius, height: radius), style: .continuous)
+                        }
+                    }
+                }
+                .fill(.black)
+                .blendMode(.destinationOut)
+            }
+            .compositingGroup()
+        } else {
         Canvas { ctx, size in
             var region = Path(CGRect(origin: .zero, size: size))
             if let s = spotlight {
@@ -957,9 +987,7 @@ private struct WalkthroughOverlayView: View {
             // Even-odd fill leaves the cutout transparent — robust, no blend modes.
             ctx.fill(region, with: .color(.black.opacity(dimOpacity)), style: FillStyle(eoFill: true))
         }
-        .contentShape(Rectangle())
-        .onTapGesture { /* swallow taps/clicks on the dimmed area */ }
-        .allowsHitTesting(!step.allowsTargetInteraction)
+        }
     }
 
     // MARK: Glowing ring

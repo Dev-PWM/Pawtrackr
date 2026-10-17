@@ -1009,26 +1009,6 @@ struct DashboardView: View {
             .frame(maxWidth: .infinity)
     }
 
-    private func recentHistoryLink<Label: View>(
-        scope: RecentHistoryViewModel.Scope?,
-        accessibilityIdentifier: String? = nil,
-        accessibilityLabel: String? = nil,
-        @ViewBuilder label: @escaping () -> Label
-    ) -> some View {
-        NavigationLink {
-            RecentHistoryView(initialScope: scope)
-        } label: {
-            label()
-                .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .contentShape(Rectangle())
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(Text(accessibilityLabel ?? NSLocalizedString("history.title", value: "Recent History", comment: "")))
-        .applyAccessibilityIdentifier(accessibilityIdentifier)
-        .accessibilityAddTraits(.isButton)
-    }
-
     private func actionCardLabel(title: String, symbol: String) -> some View {
         Card {
             VStack(spacing: 8) {
@@ -1057,11 +1037,6 @@ struct DashboardView: View {
         ])
     }
     
-    private func openPet(_ pet: Pet) {
-        NotificationCenter.default.post(name: .navigateToPet, object: nil, userInfo: [
-            "uuid": pet.uuid
-        ])
-    }
 }
 
 // MARK: - Skeleton Components

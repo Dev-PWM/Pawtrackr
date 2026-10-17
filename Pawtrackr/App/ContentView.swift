@@ -30,7 +30,6 @@ struct ContentView: View {
 
     @Environment(\.modelContext) private var modelContext
     @Environment(AppSettings.self) private var appSettings
-    @Environment(AuthenticationViewModel.self) private var authViewModel
     @Environment(DataStoreService.self) private var dataStore
     /// The Academy's sandbox (RootView owns it). Open while the tour runs.
     @Environment(PracticeSalon.self) private var practiceSalon: PracticeSalon?

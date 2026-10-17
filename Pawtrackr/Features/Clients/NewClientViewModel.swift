@@ -63,8 +63,6 @@ final class NewClientViewModel {
         self.repository = repository ?? ClientRepository(modelContainer: modelContext.container)
     }
 
-    private func loadAvatarImage() async { }
-
     func addPet() {
         pets.append(TempPet(index: pets.count + 1))
     }

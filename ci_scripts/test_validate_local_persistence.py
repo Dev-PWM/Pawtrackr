@@ -2,7 +2,10 @@
 from pathlib import Path
 import tempfile
 import unittest
-from validate_local_persistence import validate
+if __package__:
+    from .validate_local_persistence import validate
+else:
+    from validate_local_persistence import validate
 
 
 class SchemaGateTests(unittest.TestCase):

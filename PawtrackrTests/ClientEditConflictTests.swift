@@ -1,4 +1,5 @@
 import XCTest
+import os
 import SwiftData
 import Observation
 @testable import Pawtrackr
@@ -228,14 +229,17 @@ final class ClientEditConflictTests: XCTestCase {
             remote.loyaltyPoints = 12
         }
 
-        var observedChange = false
-        withObservationTracking({ _ = client.firstName }, onChange: { observedChange = true })
+        let observedChange = OSAllocatedUnfairLock(initialState: false)
+        withObservationTracking({ _ = client.firstName }, onChange: {
+            observedChange.withLock { $0 = true }
+        })
         XCTAssertEqual(
             ClientEditSaver.save(edited, baseline: baseline, container: container, refreshing: context, overwrite: false, currentDeviceID: thisDevice),
             .saved
         )
 
-        XCTAssertTrue(observedChange, "List cards and headers observing the client must see the new name.")
+        XCTAssertTrue(observedChange.withLock { $0 },
+                      "List cards and headers observing the client must see the new name.")
         XCTAssertEqual(client.firstName, "Avery")
         XCTAssertEqual(try stored(client.uuid).loyaltyPoints, 12, "Writing through the re-read object keeps the other device's points.")
     }

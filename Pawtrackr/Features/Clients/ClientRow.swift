@@ -68,19 +68,6 @@ struct ClientRow: View {
         .accessibilityAddTraits(.isButton)
     }
 
-    private var accessibilityLabel: String {
-        if let phone = formattedPhone {
-            return "\(client.fullName), phone \(phone)" + (inProgress ? ", in session" : "")
-        } else {
-            return client.fullName + (inProgress ? ", in session" : "")
-        }
-    }
-
-    private var formattedPhone: String? {
-        guard let phoneRaw = client.phone, !phoneRaw.isEmpty else { return nil }
-        return PhoneUtils.display(phoneRaw)
-    }
-
     // Naive inference: any pet with a Visit that has no endedAt means "in progress"
     private static func hasActiveVisit(client: Client) -> Bool {
         for pet in client.pets ?? [] {

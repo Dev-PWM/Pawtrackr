@@ -10,8 +10,6 @@ import Foundation
 import SwiftData
 import OSLog
 
-private let clientRepoLog = Logger(subsystem: Bundle.main.bundleIdentifier ?? "Pawtrackr", category: "ClientRepository")
-
 struct NewPetData: Sendable {
     let name: String
     let species: Species

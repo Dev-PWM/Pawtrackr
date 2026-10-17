@@ -2,6 +2,7 @@
 paths:
   - "Pawtrackr/Features/Loyalty/**"
   - "Pawtrackr/Core/Storage/Models/LoyaltyLedgerEntry.swift"
+  - "PawtrackrTests/Loyalty*.swift"
 ---
 
 # Loyalty Rules

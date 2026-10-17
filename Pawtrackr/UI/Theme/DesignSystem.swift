@@ -18,13 +18,17 @@ import UIKit
 @Observable
 final class ThemeManager {
     static let shared = ThemeManager()
-    
-    var brandPrimary: Color = Color(red: 99/255,  green: 102/255, blue: 241/255)
-    
+
+    var brandPrimary: Color = DS.ColorToken.defaultPrimary
+
     private init() {}
-    
+
     func updateBrandColor(hex: String) {
-        if let color = Color(hex: hex) {
+        // Both shipped defaults adapt; custom branding stays intact.
+        let normalized = hex.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
+        if ["#6366F1", "6366F1", "#5B4FE9", "5B4FE9"].contains(normalized) {
+            brandPrimary = DS.ColorToken.defaultPrimary
+        } else if let color = Color(hex: hex) {
             brandPrimary = color
         }
     }
@@ -34,45 +38,45 @@ final class ThemeManager {
 enum DS {
     // MARK: - Colors
     enum ColorToken {
-        #if os(macOS)
-        static let background = Color(nsColor: .windowBackgroundColor)
-        static let surface    = Color(nsColor: .underPageBackgroundColor)
-        #else
-        static let background = Color(.systemGroupedBackground)
-        static let surface    = Color(.secondarySystemBackground)
-        #endif
-        static let border     = Color.gray.opacity(0.15)
-        static let shadow     = Color.black.opacity(0.08)
+        /// Resolves sRGB palette values in the native view's current appearance.
+        static func adaptive(light: UInt32, dark: UInt32, alpha: Double = 1) -> Color {
+            #if os(macOS)
+            Color(nsColor: NSColor(name: nil) { appearance in
+                let hex = appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua ? dark : light
+                return NSColor(srgbRed: CGFloat((hex >> 16) & 0xFF) / 255,
+                               green: CGFloat((hex >> 8) & 0xFF) / 255,
+                               blue: CGFloat(hex & 0xFF) / 255, alpha: alpha)
+            })
+            #else
+            Color(uiColor: UIColor { traits in
+                let hex = traits.userInterfaceStyle == .dark ? dark : light
+                return UIColor(red: CGFloat((hex >> 16) & 0xFF) / 255,
+                               green: CGFloat((hex >> 8) & 0xFF) / 255,
+                               blue: CGFloat(hex & 0xFF) / 255, alpha: alpha)
+            })
+            #endif
+        }
+
+        static let background = adaptive(light: 0xF7F6F2, dark: 0x110E14)
+        static let surface = adaptive(light: 0xFFFFFF, dark: 0x1B1720)
+        static let surfaceElevated = adaptive(light: 0xFCFCFA, dark: 0x241F2B)
+        static let border = adaptive(light: 0xE5E2DC, dark: 0x2E2836)
+        static let textPrimary = adaptive(light: 0x141417, dark: 0xF4F2F7)
+        static let textSecondary = adaptive(light: 0x5C5A66, dark: 0xA39CAD)
+        static let shadow = adaptive(light: 0x141417, dark: 0x110E14, alpha: 0.05)
+        static let defaultPrimary = adaptive(light: 0x5B4FE9, dark: 0x7C72FF)
 
         // Accents
         // Dynamic primary based on ThemeManager
         static var primary: Color { ThemeManager.shared.brandPrimary }
-        
-        static let success    = Color(red: 16/255,  green: 185/255, blue: 129/255) // #10B981
-        /// Teal distinguishes anxiety from amber operational warnings. Labels
-        /// always accompany this color; darker ink keeps light-mode contrast.
-        static let anxious: Color = {
-            #if os(macOS)
-            Color(nsColor: NSColor(name: nil) { appearance in
-                let dark = appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
-                return NSColor(srgbRed: dark ? 94/255 : 15/255,
-                               green: dark ? 234/255 : 118/255,
-                               blue: dark ? 212/255 : 110/255, alpha: 1)
-            })
-            #else
-            Color(uiColor: UIColor { traits in
-                let dark = traits.userInterfaceStyle == .dark
-                return UIColor(red: dark ? 94/255 : 15/255,
-                               green: dark ? 234/255 : 118/255,
-                               blue: dark ? 212/255 : 110/255, alpha: 1)
-            })
-            #endif
-        }()
-        static let warning    = Color(red: 245/255, green: 158/255, blue: 11/255)  // #F59E0B
-        static let danger     = Color(red: 239/255, green: 68/255,  blue: 68/255)  // #EF4444
-        static let info       = Color(red: 59/255,  green: 130/255, blue: 246/255) // #3B82F6
-        // Care is semantic, not the customizable brand accent.
-        static let specialCare = Color(red: 124/255, green: 58/255, blue: 237/255) // #7C3AED
+
+        static let success = adaptive(light: 0x059669, dark: 0x10B981)
+        static let calmBlue = adaptive(light: 0x0284C7, dark: 0x0091FF)
+        static let anxious = calmBlue
+        static let warning = adaptive(light: 0xD97706, dark: 0xF59E0B)
+        static let danger = adaptive(light: 0xDC2626, dark: 0xEF4444)
+        static let info = calmBlue
+        static let specialCare = warning
 
         static let genderMale = info
         static let genderFemale = Color(red: 236/255, green: 72/255, blue: 153/255) // #EC4899
