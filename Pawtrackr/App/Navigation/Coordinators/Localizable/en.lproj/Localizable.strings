@@ -1936,3 +1936,13 @@
 "settings.preferences.try_haptics" = "Try Feedback";
 
 "checkout.error.invalid_amount" = "Enter a valid amount.";
+
+// Feedback status and hardware-aware preview
+"settings.haptics.off" = "Feedback is off";
+"settings.haptics.ready" = "Feedback is on · Preview ready";
+"settings.haptics.previewed" = "Feedback previewed";
+"settings.haptics.off_detail" = "Turn on feedback for taps, selections, and confirmations.";
+"settings.haptics.simulator" = "Simulator shows the visual preview. Feel tactile feedback on a supported iPhone.";
+"settings.haptics.unavailable" = "This device has no supported haptic hardware. The visual preview is still available.";
+"settings.haptics.trackpad" = "Tactile feedback uses a compatible Force Touch trackpad. The visual preview is always available.";
+"settings.haptics.device" = "Feel light taps for selections and distinct cues for confirmations. System settings can affect tactile feedback.";

@@ -175,10 +175,19 @@ struct NewClientSheet: View {
                             Spacer()
                             Button {
                                 viewModel.addContact()
+                                HapticManager.selectionChanged()
                             } label: {
-                                Label(NSLocalizedString("new_client.add", comment: ""), systemImage: "plus.circle.fill")
+                                Label(NSLocalizedString("new_client.add", comment: ""), systemImage: "plus.circle")
                             }
                             .buttonStyle(.bordered)
+                            .tint(DS.ColorToken.primary)
+                            .accessibilityLabel(
+                                AppLocalization.localized(
+                                    "client_detail.add_emergency_contact",
+                                    value: "Add emergency contact"
+                                )
+                            )
+                            .accessibilityIdentifier("newClient.addContact")
                         }
                         if viewModel.contacts.isEmpty {
                             Text(NSLocalizedString("new_client.add_contact_hint", comment: ""))
@@ -236,10 +245,14 @@ struct NewClientSheet: View {
                             Spacer()
                             Button {
                                 viewModel.addPet()
+                                HapticManager.selectionChanged()
                             } label: {
                                 Label(NSLocalizedString("new_client.add_pet", comment: ""), systemImage: "plus.circle")
                             }
                             .buttonStyle(.bordered)
+                            .tint(DS.ColorToken.primary)
+                            .accessibilityLabel(AppLocalization.localized("client_detail.add_pet", value: "Add Pet"))
+                            .accessibilityIdentifier("newClient.addPet")
                         }
                         if viewModel.pets.isEmpty {
                             Text(NSLocalizedString("new_client.add_pet_hint", comment: ""))

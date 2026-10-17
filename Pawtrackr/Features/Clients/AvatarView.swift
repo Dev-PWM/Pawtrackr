@@ -47,18 +47,23 @@ public struct AvatarView: View {
 
     // MARK: Init
 
+    /// Explicit initials for list presentations whose name order can change.
+    public var initialsOverride: String?
+
     public init(_ kind: Kind,
                 size: Size = .md,
                 ringWidth: CGFloat = 0,
                 badgeSystemImage: String? = nil,
                 badgeColor: Color? = nil,
-                accessibilityLabel: String? = nil) {
+                accessibilityLabel: String? = nil,
+                initialsOverride: String? = nil) {
         self.kind = kind
         self.size = size
         self.ringWidth = ringWidth
         self.badgeSystemImage = badgeSystemImage
         self.badgeColor = badgeColor
         self.accessibilityLabel = accessibilityLabel
+        self.initialsOverride = initialsOverride
     }
 
     /// Convenience for clients (owners).
@@ -108,6 +113,7 @@ public struct AvatarView: View {
                 IconCircle(
                     systemImage: "person.crop.circle.fill",
                     initials: name,
+                    initialsOverride: initialsOverride,
                     imageData: data,
                     thumbnailData: thumb,
                     imageURL: url,

@@ -1,10 +1,21 @@
 import Foundation
 import SwiftData
 
+private enum ClientSearchText {
+    /// Treats punctuation as word boundaries and apostrophes as part of a name.
+    static func words(_ folded: String) -> [String] {
+        folded.replacingOccurrences(of: "'", with: "")
+            .replacingOccurrences(of: "’", with: "")
+            .replacingOccurrences(of: "ʼ", with: "")
+            .split { !$0.isLetter && !$0.isNumber }
+            .map(String.init)
+    }
+}
+
 /// Parses a query once, then applies strict AND matching within each owner's record.
 struct ClientSearchQuery: Sendable {
     private enum Term: Sendable {
-        case text(String)
+        case text(raw: String, words: [String])
         case phone(digits: String, textFallback: [String])
     }
     private let scope: String?
@@ -22,27 +33,53 @@ struct ClientSearchQuery: Sendable {
             text = String(text[text.index(after: colon)...]).trimmed
             valid = valid && !text.isEmpty
         }
-        self.scope = scope
-        self.isValid = valid
-        let tokens = text.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: .current)
+        let hadInput = !text.isEmpty
+        text = text.folding(options: [.caseInsensitive, .diacriticInsensitive, .widthInsensitive], locale: .current)
+        // Extensions aren't stored in the lookup key; ignore them only after a complete number.
+        if scope == nil || scope == "p",
+           let suffix = text.range(of: #"(?<=\d)\s*(?:ext(?:ension)?\.?|x|#)\s*\d+\s*$"#,
+                                   options: .regularExpression),
+           text[..<suffix.lowerBound].filter(\.isNumber).count >= 10 {
+            text.removeSubrange(suffix)
+        }
+        let tokens = text.replacingOccurrences(of: ",", with: " ")
+            .replacingOccurrences(of: "\"", with: " ")
+            .replacingOccurrences(of: "“", with: " ")
+            .replacingOccurrences(of: "”", with: " ")
+            .replacingOccurrences(of: "–", with: "-")
+            .replacingOccurrences(of: "‑", with: "-")
             .split(whereSeparator: \.isWhitespace).map(String.init)
         var parsed: [Term] = []
         var numberFragments: [String] = []
         for token in tokens {
-            if token.allSatisfy({ $0.isNumber || "()+-./".contains($0) }) {
+            if scope != "email", token.allSatisfy({ $0.isNumber || "()+-./".contains($0) }) {
                 numberFragments.append(token)
             } else {
                 if !numberFragments.isEmpty {
-                    parsed.append(.phone(digits: PhoneUtils.searchKey(numberFragments.joined()), textFallback: numberFragments))
+                    parsed.append(.phone(digits: Self.phoneDigits(numberFragments),
+                                         textFallback: numberFragments.flatMap(ClientSearchText.words)))
                     numberFragments = []
                 }
-                parsed.append(.text(token))
+                parsed.append(.text(raw: token, words: ClientSearchText.words(token)))
             }
         }
         if !numberFragments.isEmpty {
-            parsed.append(.phone(digits: PhoneUtils.searchKey(numberFragments.joined()), textFallback: numberFragments))
+            parsed.append(.phone(digits: Self.phoneDigits(numberFragments),
+                                 textFallback: numberFragments.flatMap(ClientSearchText.words)))
         }
         self.terms = parsed
+        self.scope = scope
+        self.isValid = valid && (!hadInput || !parsed.isEmpty)
+    }
+
+    /// Keeps a typed +1 prefix from hiding matches while the main number is incomplete.
+    private static func phoneDigits(_ fragments: [String]) -> String {
+        let input = fragments.joined()
+        let digits = PhoneUtils.searchKey(input)
+        if input.hasPrefix("+1"), input.filter(\.isNumber).count <= 10 {
+            return String(digits.dropFirst())
+        }
+        return digits
     }
 
     /// Matches only names, email, phone, and current pets; IDs never enter the search fields.
@@ -56,26 +93,42 @@ struct ClientSearchQuery: Sendable {
     func matches(_ record: ClientSearchRecord) -> Bool {
         guard isValid else { return false }
         guard !terms.isEmpty else { return true }
-        let fields: [String]
-        switch scope {
-        case "f": fields = [record.firstName]
-        case "l": fields = [record.lastName]
-        case "n": fields = [record.firstName, record.lastName]
-        case "p": fields = []
-        case "pet": fields = record.petNames
-        case "breed": fields = record.petBreeds
-        case "email": fields = [record.email]
-        default: fields = record.allFields
-        }
+        let words = searchableWords(in: record)
         let phone = record.phone
         return terms.allSatisfy { term in
             switch term {
-            case .text(let token):
-                return fields.contains { $0.contains(token) }
+            case .text(let raw, let tokens):
+                return matchesText(raw, tokens: tokens, words: words, email: record.email)
             case .phone(let digits, let tokens):
-                if (scope == nil || scope == "p"), !digits.isEmpty, phone.contains(digits) { return true }
-                return tokens.allSatisfy { token in fields.contains { $0.contains(token) } }
+                if scope == nil || scope == "p", !digits.isEmpty {
+                    if digits.count >= 10 ? phone == digits : phone.contains(digits) { return true }
+                    if digits.count >= 10 { return false }
+                }
+                return !tokens.isEmpty && tokens.allSatisfy { token in words.contains { $0.hasPrefix(token) } }
             }
+        }
+    }
+
+    /// Preserves email substrings while allowing periods to separate ordinary name words.
+    private func matchesText(_ raw: String, tokens: [String], words: [String], email: String) -> Bool {
+        guard !tokens.isEmpty else { return false }
+        if scope == "email" || (scope == nil && raw.contains("@")) {
+            return email.contains(raw)
+        }
+        if scope == nil && raw.contains(".") && email.contains(raw) { return true }
+        return tokens.allSatisfy { token in words.contains { $0.hasPrefix(token) } }
+    }
+
+    /// Restricts tokens to the requested field while retaining cross-field AND matching.
+    private func searchableWords(in record: ClientSearchRecord) -> [String] {
+        switch scope {
+        case "f": record.firstNameWords
+        case "l": record.lastNameWords
+        case "n": record.firstNameWords + record.lastNameWords
+        case "p", "email": []
+        case "pet": record.petNameWords
+        case "breed": record.petBreedWords
+        default: record.allWords
         }
     }
 }
@@ -89,7 +142,11 @@ struct ClientSearchRecord: Sendable {
     let phone: String
     let petNames: [String]
     let petBreeds: [String]
-    let allFields: [String]
+    let firstNameWords: [String]
+    let lastNameWords: [String]
+    let petNameWords: [String]
+    let petBreedWords: [String]
+    let allWords: [String]
     let ordering: ClientListOrdering.Key
     let incomplete: Bool
     let attentionDueAt: Date?
@@ -97,7 +154,9 @@ struct ClientSearchRecord: Sendable {
     /// Normalizes searchable text exactly once when the store snapshot changes.
     init(_ client: Client) {
         id = client.persistentModelID
-        let normalize: (String) -> String = { $0.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: .current) }
+        let normalize: (String) -> String = {
+            $0.folding(options: [.caseInsensitive, .diacriticInsensitive, .widthInsensitive], locale: .current)
+        }
         firstName = normalize(client.firstName)
         lastName = normalize(client.lastName)
         email = normalize(client.email ?? "")
@@ -105,7 +164,11 @@ struct ClientSearchRecord: Sendable {
         let pets = (client.pets ?? []).filter { $0.archivedAt == nil }
         petNames = pets.map { normalize($0.name) }
         petBreeds = pets.compactMap(\.breed).map(normalize)
-        allFields = [firstName, lastName, email] + petNames + petBreeds
+        firstNameWords = ClientSearchText.words(firstName)
+        lastNameWords = ClientSearchText.words(lastName)
+        petNameWords = petNames.flatMap(ClientSearchText.words)
+        petBreedWords = petBreeds.flatMap(ClientSearchText.words)
+        allWords = firstNameWords + lastNameWords + ClientSearchText.words(email) + petNameWords + petBreedWords
         ordering = ClientListOrdering.Key(client)
         incomplete = ClientMissingInfo.isIncomplete(client)
         // Keep dates, not a cached Boolean: a due date can pass without a save.

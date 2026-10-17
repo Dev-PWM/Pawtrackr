@@ -868,6 +868,8 @@ private struct BusinessSectionView: View {
 
 private struct PreferencesSectionView: View {
     @Bindable var appSettings: AppSettings
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var feedbackPreviewCount = 0
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -939,21 +941,91 @@ private struct PreferencesSectionView: View {
                     Label(settingsLocalized("settings.preferences.haptics", value: "Haptic Feedback"), systemImage: "hand.tap.fill")
                 }
                 .onChange(of: appSettings.hapticsEnabled) { _, _ in
+                    feedbackPreviewCount = 0
                     HapticManager.preferenceDidChange()
                 }
+                .accessibilityIdentifier("settings.haptics.toggle")
                 Text(settingsLocalized("settings.preferences.smart_haptics", value: "Feedback adapts to selections, rewards and saved actions. Rapid repeats are filtered. Supported hardware provides tactile feedback; other devices keep visual feedback."))
                     .font(.callout).foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
                 Button {
                     HapticManager.notify(.success)
+                    feedbackPreviewCount += 1
                 } label: {
                     Label(settingsLocalized("settings.preferences.try_haptics", value: "Try Feedback"), systemImage: "hand.tap")
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 8)
+                        .foregroundStyle(DS.ColorToken.primary)
+                        .background(DS.ColorToken.primary.opacity(0.12), in: Capsule())
                 }
-                .pressScaleStyle()
+                .pressScaleStyle(hapticsEnabled: false)
                 .accessibilityLabel(settingsLocalized("settings.preferences.try_haptics", value: "Try Feedback"))
                 .accessibilityIdentifier("settings.haptics.preview")
                 .disabled(!appSettings.hapticsEnabled)
+
+                Label {
+                    Text(feedbackPreviewTitle)
+                        .font(.subheadline.weight(.semibold))
+                } icon: {
+                    Image(systemName: feedbackPreviewCount > 0 ? "checkmark.circle.fill" : "hand.tap.fill")
+                        .foregroundStyle(
+                            appSettings.hapticsEnabled ? DS.ColorToken.success : DS.ColorToken.textSecondary
+                        )
+                        .id(feedbackPreviewCount)
+                        .transition(.opacity)
+                }
+                .animation(MotionSystem.resolved(.easeOut(duration: 0.2), reduceMotion: reduceMotion),
+                           value: feedbackPreviewCount)
+                .accessibilityIdentifier("settings.haptics.previewStatus")
+
+                Text(feedbackAvailabilityDescription)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .accessibilityIdentifier("settings.haptics.availability")
             }
+        }
+    }
+
+    private var feedbackPreviewTitle: String {
+        guard appSettings.hapticsEnabled else {
+            return settingsLocalized("settings.haptics.off", value: "Feedback is off")
+        }
+        return feedbackPreviewCount > 0
+            ? settingsLocalized("settings.haptics.previewed", value: "Feedback previewed")
+            : settingsLocalized("settings.haptics.ready", value: "Feedback is on · Preview ready")
+    }
+
+    private var feedbackAvailabilityDescription: String {
+        guard appSettings.hapticsEnabled else {
+            return settingsLocalized(
+                "settings.haptics.off_detail",
+                value: "Turn on feedback for taps, selections, and confirmations."
+            )
+        }
+        switch HapticManager.support {
+        case .simulator:
+            return settingsLocalized(
+                "settings.haptics.simulator",
+                value: "Simulator shows the visual preview. Feel tactile feedback on a supported iPhone."
+            )
+        case .unavailable:
+            return settingsLocalized(
+                "settings.haptics.unavailable",
+                value: "This device has no supported haptic hardware. The visual preview is still available."
+            )
+        case .trackpad:
+            return settingsLocalized(
+                "settings.haptics.trackpad",
+                value: "Tactile feedback uses a compatible Force Touch trackpad. "
+                    + "The visual preview is always available."
+            )
+        case .device:
+            return settingsLocalized(
+                "settings.haptics.device",
+                value: "Feel light taps for selections and distinct cues for confirmations. "
+                    + "System settings can affect tactile feedback."
+            )
         }
     }
 

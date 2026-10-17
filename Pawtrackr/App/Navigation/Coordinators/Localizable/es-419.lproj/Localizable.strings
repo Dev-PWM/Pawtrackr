@@ -1949,3 +1949,13 @@
 "settings.preferences.try_haptics" = "Probar respuesta táctil";
 
 "checkout.error.invalid_amount" = "Ingresa un importe válido.";
+
+// Feedback status and hardware-aware preview
+"settings.haptics.off" = "La respuesta háptica está desactivada";
+"settings.haptics.ready" = "Respuesta activada · Lista para probar";
+"settings.haptics.previewed" = "Vista previa reproducida";
+"settings.haptics.off_detail" = "Activa la respuesta para toques, selecciones y confirmaciones.";
+"settings.haptics.simulator" = "El simulador muestra la vista previa visual. Siente la respuesta táctil en un iPhone compatible.";
+"settings.haptics.unavailable" = "Este dispositivo no tiene hardware háptico compatible. La vista previa visual sigue disponible.";
+"settings.haptics.trackpad" = "La respuesta táctil utiliza un trackpad Force Touch compatible. La vista previa visual siempre está disponible.";
+"settings.haptics.device" = "Siente toques suaves al seleccionar y respuestas distintas al confirmar. Los ajustes del sistema pueden afectar la respuesta táctil.";

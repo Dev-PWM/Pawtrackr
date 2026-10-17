@@ -46,7 +46,7 @@ enum MotionGovernor {
 
 struct PressScaleButtonStyle: ButtonStyle {
     var scale: CGFloat = MotionSystem.pressScale
-    var hapticsEnabled = false
+    var hapticsEnabled = true
     var hapticStyle: HapticManager.Impact = .soft
     var hapticEvent: HapticEvent = .press
 
@@ -158,7 +158,7 @@ struct InsightsMeshBackground: View {
 
 extension View {
     /// Uses the shared motion policy and an optional semantic tactile cue.
-    func pressScaleStyle(hapticsEnabled: Bool = false, hapticEvent: HapticEvent = .press) -> some View {
+    func pressScaleStyle(hapticsEnabled: Bool = true, hapticEvent: HapticEvent = .press) -> some View {
         buttonStyle(PressScaleButtonStyle(hapticsEnabled: hapticsEnabled, hapticEvent: hapticEvent))
     }
 
