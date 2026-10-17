@@ -1,37 +1,32 @@
-# Pawtrackr Architecture Memory
+# Pawtrackr Agent Guide
 
-## Checkout Pilot Decisions
+Shared by Codex and Claude Code (`CLAUDE.md` imports this file). App-wide UI conventions are in `Pawtrackr/AGENTS.md`. Subsystem rules are in `.claude/rules/*.md`, each scoped by `paths:` so Claude Code loads it only when matching files are touched. Other agents: before editing storage, checkout, clients, loyalty, walkthrough, or pet-behavior code, read the matching `.claude/rules/<area>.md` (`storage`, `checkout`, `clients`, `loyalty`, `walkthrough`, `pet-behavior`).
 
-- `CheckoutViewModel` is the only owner of checkout UI state. `CheckoutView` can bind to editor buffers, but every persisted value must flow back through the view model before navigation or confirmation.
-- Checkout money is Decimal-only. Service subtotal, manual amount overrides, tips, payments, and line-item reconciliation must avoid `Double` currency math.
-- The groomer enters the final checkout amount. Service and add-on selections never assign, replace, or supply a fallback price. Retain legacy catalog-price fields for store compatibility and historical receipt allocation only.
-- The 4-step checkout draft is a crash-recovery boundary. Step transitions, payment method changes, external references, and tips are critical state and must be saved immediately through `CheckoutDraftStore`.
-- Draft disk I/O belongs off the main actor. `CheckoutDraftStore` remains an actor for serialization, while JSON/file reads and writes execute through detached utility tasks.
-- Confirm-and-pay is protected at two layers: a UI/view-model debounce blocks rapid duplicate taps, and `CheckoutTransactionActor` keeps persistence idempotent by visit UUID.
-- Checkout success must not hide cleanup or refresh failures. Draft deletion and main-context refresh errors are logged instead of swallowed with `try?`.
+Don't add more docs under `Pawtrackr/`. It is an Xcode synchronized folder, so every file there is copied into the app bundle unless the Pawtrackr target's `membershipExceptions` lists it. `AGENTS.md` and `GoldenRecord.json` are excluded there; uncheck Pawtrackr target membership in Xcode for any other non-app file you have to put there.
 
-## Data Store Pilot Decisions
+## Invariants
 
-- Pawtrackr stores data locally. `LocalStoreConfiguration` explicitly disables cloud persistence (`cloudKitDatabase: .none`) while preserving the shipped named store URL and model schema. Legacy device/presence models remain solely for store compatibility; do not restore cloud UI, permissions, sync engines, or ubiquitous settings.
+1. **Local-only persistence (ADR-0005).** Every `ModelConfiguration` sets `cloudKitDatabase: .none`, and every `ModelContainer` passes `configurations:`. No `import CloudKit`, `NSUbiquitous*`, CK containers or sync engines, or remote-push registration and entitlements; `ci_scripts/validate_local_persistence.py` fails CI on any of them. Legacy device/presence models stay only for store compatibility; don't restore cloud UI, permissions, sync engines, or ubiquitous settings.
+2. **No migration plan; schema changes are additive (ADR-0003, ADR-0004).** `SchemaMigrationPlan`, `migrationPlan:`, and unique constraints (`@Attribute(.unique)`, `#Unique`) on store models fail `ci_scripts/ci_pre_xcodebuild.sh`. 1.0.2 shipped a staged plan built from live model classes; every 1.0.1 store failed with `NSCocoaErrorDomain 134504` and users reset their clients away. Add models, optional or defaulted properties, and `@Attribute(originalName:)` renames only. Each release adds its store to `PawtrackrTests/Fixtures` (see `StoreFixtures.md`), and `StoreUpgradeRegressionTests` must open all of them.
+3. **The main thread is for UI.** Database writes run in `@ModelActor`s (`ClientRepository`, `CheckoutTransactionActor`, `InsightsActor`) or short-lived background `ModelContext`s. Commits reach `@MainActor` through `LocalStoreCommitBridge` (`ModelContext.didSave`) and `GlobalEventBus`, with no restart. Fetching IDs into an already-materialized context is not proof of freshness: after a commit, use a retained fresh presentation context, keep unsaved edits intact, and never mirror a background save onto stale models just to trigger observation. Dashboard and Insights keep a pending refresh when a change arrives mid-refresh.
+4. **`Decimal` only** for money and pet weight, never `Double` or `Float`.
+5. **No Codable enums stored on `@Model`s.** A composite attribute crashes `@Query` on an unknown raw value. Store a raw `String` (`speciesRaw`, `genderRaw`, `behaviorTagsRaw`) and expose a `@Transient` computed enum with a safe fallback.
+6. **Platform isolation.** iPhone-specific layouts and Academy walkthrough adjustments are gated by `#if os(iOS)` and `horizontalSizeClass == .compact`. Don't alter or regress macOS layouts: `DetachedClientWindow`, `DetachedInsightsWindow`, `MenuBarExtra`, the 3-column desktop grids, or window frame budgets.
+7. **Logging and retain cycles.** No `print()`; use the `Logger` categories in `Pawtrackr/Core/Services/Logging.swift` (`.ui`, `.database`, `.performance`, `.network`, `.security`, `.dataIntegrity`, …) or a feature logger such as `.checkout`. Capture `[weak self]` in tasks that loop over `eventBus.stream` or `observeChanges` (`MemorySafetyTests`).
 
-- `DataStoreService` is the central SwiftData access facade. The production initializer accepts an existing `ModelContainer`; test and QualityControl code can use the `inMemory` initializer.
-- Background fetches must create a detached `ModelContext` from the shared `ModelContainer`; UI-bound fetches remain on the main actor.
-- The store opens WITHOUT a SwiftData `SchemaMigrationPlan` (ADR-0004). 1.0.2 shipped a staged plan built from live model classes, every 1.0.1 store failed with 134504, and users reset their clients away. Keep model changes additive (new models, optional/defaulted properties, `@Attribute(originalName:)` renames); CI fails if `migrationPlan:` reappears.
-- Every release adds its store to `PawtrackrTests/Fixtures` (see `StoreFixtures.md`); `StoreUpgradeRegressionTests` must open all of them. Before shipping, install the previous App Store build, add data, then install the new build over it without deleting.
-- Store-file work (scheduled restore, per-build backup, legacy move) runs only in `PawtrackrApp.init`, before any container opens. Nothing deletes a store: resets and restores move files into `RecoveryBackup-*` / `PreRestoreBackup-*`, which `StoreBackupRestore` can bring back.
+## Store Safety
+
+- Nothing deletes a store. Store-file work (scheduled restore, per-build backup, legacy move) runs only in `PawtrackrApp.init`, before any container opens. Resets and restores move `.store`, `-wal` and `-shm` files into `RecoveryBackup-*`, `PreRestoreBackup-*` or `PreMigrationBackup-*`, which `StoreBackupRestore` can bring back.
 - `DataStoreRecoveryView` must never make a destructive action the primary one or promise that iCloud will restore data.
+- Before shipping, install the previous App Store build, add data, then install the new build over it without deleting.
+
+## Product Constraints
+
+- Digital-only: no Bluetooth printer discovery, thermal receipts, cash drawers, or peripheral permissions. Keep PDF receipts, sharing, and exports.
+- The subscription system is paused; don't introduce subscriptions.
 
 ## Verification Notes
 
-- Don't assume a simulator destination exists — resolve one first with `xcrun simctl list devices available` and pass it as `-destination "id=<UUID>"`. As of 2026-07, the installed runtimes are iOS 18.x and 26.5 (no 17.x); named-device + `OS:latest` lookups have failed on this machine before.
-- The paywall loads live StoreKit products from `Pawtrackr.storekit` — the only shared scheme, `Pawtrackr`, references it in its LaunchAction (`StoreKitConfigurationFileReference`; restored 2026-10-16 after it was dropped in September). If `Product.products` returns nothing in a dev build, check that scheme reference before suspecting code.
-- `Pawtrackr/` is an Xcode synchronized folder: every file in it is copied into the app unless the Pawtrackr target's `membershipExceptions` lists it. `AGENTS.md` and `GoldenRecord.json` are excluded there; add any new non-app file under `Pawtrackr/` to that list (uncheck its Pawtrackr target membership in Xcode).
-
-## Live Presentation and Digital Workflows
-
-- Actor commits must refresh the visible model graph, including pet behavior, current sessions, relationships, and loyalty. Fetching IDs into an already-materialized context is not proof of freshness. Use a retained fresh presentation context after committed changes; keep unsaved edits intact and never mirror a background save onto stale models merely to trigger observation.
-- Mutations broadcast the existing local events. Dashboard and Insights retain a pending refresh when a change arrives during an in-flight refresh.
-- Keep the client-level aggressive banner and the pet safety badge. Do not duplicate the aggressive warning as an emoji pill. Behavior auras supplement readable labels, never replace safety warnings, and stop under Reduce Motion, backgrounding, low power, or thermal pressure.
-- Aggression clears only after three completed, explicitly observed non-aggressive visits: calm, cooperative, anxious, or nervous, in any combination. An aggressive visit resets the counter immediately. Untagged and special-needs-only visits do not advance or break the counter. Never preselect a previous temperament on a new checkout.
-- Special needs is a standing priority-care flag, separate from temperament. Checkout must preserve it until explicitly edited on the profile. Display both warnings when aggression and special needs coexist. Card glow precedence is aggression/red, special needs/purple, anxious/teal, nervous/blue, calm-or-cooperative/green. Chips and checkout choices use the same semantic colors; after clearance, display the latest observation rather than accumulating old moods.
-- Pawtrackr is digital-only: no Bluetooth printer discovery, thermal receipt transmission, cash-drawer integration, or peripheral permissions. Keep digital PDF receipts, sharing, and exports. The subscription system remains paused; do not introduce subscriptions.
+- Don't assume a simulator destination exists. Resolve one with `xcrun simctl list devices available` and pass `-destination "id=<UUID>"`. As of 2026-07 the installed runtimes are iOS 18.x and 26.5 (no 17.x); named-device + `OS:latest` lookups have failed on this machine.
+- The only shared scheme is `Pawtrackr`. Its `TestPlan.xctestplan` holds `PawtrackrTests` and `PawtrackrUITests`; narrow a run with `-only-testing:`.
+- The paywall loads StoreKit products from `Pawtrackr.storekit`; the shared scheme's LaunchAction references it (`StoreKitConfigurationFileReference`, restored 2026-10-16 after it was dropped in September). If `Product.products` returns nothing in a dev build, check that reference before suspecting code.
