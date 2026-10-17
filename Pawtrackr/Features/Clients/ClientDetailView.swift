@@ -193,7 +193,14 @@ struct ClientDetailView: View {
                 macAddPetToolbarItem
             }
             #if os(iOS)
-            .fabOverlay { addPetFab }
+            .safeAreaInset(edge: .bottom, alignment: .trailing, spacing: 0) {
+                if usesFloatingAddPetAction {
+                    addPetFab
+                        .padding(.trailing, 24)
+                        .padding(.top, 8)
+                        .padding(.bottom, 16)
+                }
+            }
             #endif
             .sheet(item: $sheetDestination) { destination in
                 destinationSheet(destination, vm: vm)
@@ -286,22 +293,25 @@ struct ClientDetailView: View {
         horizontalSizeClass == .compact
     }
 
-    /// The FAB lives in a `.fabOverlay` that ignores the bottom safe area, so it
-    /// renders ABOVE the guided-tour spotlight dim and pokes through as a bright
-    /// distraction on every step. Hide it during the tour EXCEPT on its own
-    /// `cdAddPet` step, where it is the spotlight target. Opacity (not removal)
-    /// keeps its anchor registered so the spotlight still resolves.
+    /// Keep the add-pet action inside the content safe area, above the tab bar.
+    /// During the tour only its own step displays it; opacity preserves the anchor.
     private var isAddPetFabHiddenForWalkthrough: Bool {
         !usesFloatingAddPetAction || (walkthrough?.isActive == true && walkthrough?.currentStep?.anchor != .cdAddPet)
     }
 
     @ViewBuilder
     private var addPetFab: some View {
-        let fab = FAB(systemImage: "pawprint.fill", accessibilityLabel: NSLocalizedString("a11y.add_new_pet", comment: "")) {
+        let fab = FAB(
+            systemImage: "pawprint.fill",
+            accessibilityLabel: NSLocalizedString("a11y.add_new_pet", comment: ""),
+            tint: DS.ColorToken.primary
+        ) {
             sheetDestination = .addPet
         }
         .opacity(isAddPetFabHiddenForWalkthrough ? 0 : 1)
         .allowsHitTesting(!isAddPetFabHiddenForWalkthrough)
+        .accessibilityHidden(isAddPetFabHiddenForWalkthrough)
+        .accessibilityIdentifier("clientDetail.addPet.floating")
         .animation(.easeInOut(duration: 0.2), value: isAddPetFabHiddenForWalkthrough)
 
         // Only the *visible* add-pet control may own the `.cdAddPet` spotlight
@@ -701,8 +711,11 @@ struct ClientDetailView: View {
                                 sheetDestination = .communication(firstPet)
                             } label: { Image(systemName: "message.circle.fill") }
                                 .font(.title3)
-                                .foregroundStyle(.blue)
+                                .foregroundStyle(DS.ColorToken.calmBlue)
                                 .disabled((client.pets ?? []).isEmpty)
+                                .accessibilityLabel(
+                                    NSLocalizedString("client_detail.message", value: "Message", comment: "")
+                                )
                                 .accessibilityIdentifier("clientDetail.message")
                             Button { beginInlineEdit(client) } label: { Image(systemName: "ellipsis.circle") }
                                 .font(.title3)
@@ -734,7 +747,11 @@ struct ClientDetailView: View {
                     }
                 } else {
                     VStack(spacing: 10) {
-                        contactRow(icon: "phone.fill", text: PhoneUtils.display(client.phone ?? "") ?? "—") {
+                        contactRow(
+                            icon: "phone.fill",
+                            tint: DS.ColorToken.success,
+                            text: PhoneUtils.display(client.phone ?? "") ?? "—"
+                        ) {
                             if let tel = PhoneUtils.telURLString(client.phone ?? ""), let url = URL(string: tel) {
                                 viewModel?.recordAttentionOutreach(method: "call")
                                 URLOpener.open(url)
@@ -746,6 +763,7 @@ struct ClientDetailView: View {
                                         guard let firstPet = (client.pets ?? []).first else { return }
                                         sheetDestination = .communication(firstPet)
                                     } label: { Image(systemName: "message.fill") }
+                                    .foregroundStyle(DS.ColorToken.success)
                                     .accessibilityLabel(NSLocalizedString("client_detail.message", value: "Message", comment: ""))
                                 }
                                 if let tel = PhoneUtils.telURLString(client.phone ?? ""), let telURL = URL(string: tel) {
@@ -753,19 +771,35 @@ struct ClientDetailView: View {
                                         viewModel?.recordAttentionOutreach(method: "call")
                                         URLOpener.open(telURL)
                                     } label: { Image(systemName: "phone.fill") }
+                                    .foregroundStyle(DS.ColorToken.success)
+                                    .accessibilityLabel(
+                                        NSLocalizedString("client_detail.call", value: "Call", comment: "")
+                                    )
                                 }
                             }
                         }
-                        contactRow(icon: "envelope.fill", text: (client.email ?? "—")) {
+                        contactRow(icon: "envelope.fill", tint: DS.ColorToken.calmBlue, text: (client.email ?? "—")) {
                             if let email = client.email, let url = URL(string: "mailto:\(email)") { URLOpener.open(url) }
                         } trailing: {
                             if let email = client.email, let url = URL(string: "mailto:\(email)") {
                                 Button { URLOpener.open(url) } label: { Image(systemName: "envelope.fill") }
+                                    .foregroundStyle(DS.ColorToken.calmBlue)
+                                    .accessibilityLabel(
+                                        NSLocalizedString("client_detail.email", value: "Email", comment: "")
+                                    )
                             }
                         }
-                        contactRow(icon: "mappin.and.ellipse", text: (client.address ?? "—")) {} trailing: {
+                        contactRow(
+                            icon: "mappin.and.ellipse",
+                            tint: DS.ColorToken.warning,
+                            text: client.address ?? "—"
+                        ) {} trailing: {
                             if let addr = client.address?.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed), let url = URL(string: "http://maps.apple.com/?q=\(addr)") {
                                 Button { URLOpener.open(url) } label: { Image(systemName: "map.fill") }
+                                    .foregroundStyle(DS.ColorToken.warning)
+                                    .accessibilityLabel(
+                                        NSLocalizedString("client_detail.directions", value: "Directions", comment: "")
+                                    )
                             }
                         }
                         if let primaryEmergencyContact {
@@ -788,7 +822,7 @@ struct ClientDetailView: View {
             summary
         )
         let telURL = PhoneUtils.telURLString(contact.phone).flatMap { URL(string: $0) }
-        return contactRow(icon: "cross.case.fill", text: text) {
+        return contactRow(icon: "cross.fill", tint: DS.ColorToken.danger, filledIcon: true, text: text) {
             if let telURL { URLOpener.open(telURL) }
         } trailing: {
             #if os(macOS)
@@ -800,6 +834,7 @@ struct ClientDetailView: View {
             #endif
             if let telURL {
                 Button { URLOpener.open(telURL) } label: { Image(systemName: "phone.fill") }
+                    .foregroundStyle(DS.ColorToken.success)
                     .accessibilityLabel(String(
                         format: AppLocalization.localized("client_detail.call_contact_fmt", value: "Call %@"),
                         contact.name
@@ -1627,9 +1662,21 @@ private struct InitialsCircle: View {
     }
 }
 
-@ViewBuilder private func contactRow(icon: String, text: String, onTap: @escaping () -> Void, @ViewBuilder trailing: () -> some View) -> some View {
+@ViewBuilder private func contactRow(
+    icon: String,
+    tint: Color,
+    filledIcon: Bool = false,
+    text: String,
+    onTap: @escaping () -> Void,
+    @ViewBuilder trailing: () -> some View
+) -> some View {
     HStack(spacing: 10) {
-        Circle().fill(Color.gray.opacity(0.12)).frame(width: 28, height: 28).overlay(Image(systemName: icon).foregroundStyle(.secondary).font(.subheadline))
+        Image(systemName: icon)
+            .font(.subheadline.weight(.semibold))
+            .foregroundStyle(filledIcon ? .white : tint)
+            .frame(width: 28, height: 28)
+            .background(filledIcon ? tint : tint.opacity(0.12), in: Circle())
+            .accessibilityHidden(true)
         Text(text).font(.subheadline.weight(.medium))
         Spacer()
         HStack(spacing: 8) { trailing() }

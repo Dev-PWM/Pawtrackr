@@ -114,6 +114,7 @@ struct IconCircle: View {
                 .frame(width: dim, height: dim)
 
             glyphView(content: glyphContent, tints: tints)
+                .frame(width: dim, height: dim)
             
             badgeView(tints: tints)
         }

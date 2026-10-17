@@ -69,6 +69,15 @@ enum SettingSection: String, CaseIterable, Identifiable {
         }
     }
 
+    var iconTint: Color {
+        switch self {
+        case .business, .dataExport, .about: return DS.ColorToken.calmBlue
+        case .preferences, .help: return DS.ColorToken.primary
+        case .loyalty: return DS.ColorToken.warning
+        case .security: return DS.ColorToken.success
+        }
+    }
+
     var walkthroughAnchorID: WalkthroughAnchorID? {
         switch self {
         case .business:
@@ -169,7 +178,12 @@ struct SettingsView: View {
         List(SettingSection.allCases) { section in
             NavigationLink(value: section) {
                 HStack(spacing: 10) {
-                    Image(systemName: section.icon).foregroundStyle(Color.primary)
+                    Image(systemName: section.icon)
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundStyle(.white)
+                        .frame(width: 28, height: 28)
+                        .background(section.iconTint, in: RoundedRectangle(cornerRadius: 7, style: .continuous))
+                        .accessibilityHidden(true)
                     Text(section.title).foregroundStyle(Color.primary)
                 }
             }
@@ -1306,8 +1320,13 @@ private struct AboutSectionView: View {
     private var academyActions: some View {
         VStack(alignment: .leading, spacing: 16) {
             HStack(alignment: .firstTextBaseline, spacing: 8) {
-                Label(settingsLocalized("settings.tour.title", value: "Pawtrackr Academy"), systemImage: "graduationcap.fill")
-                    .font(.headline)
+                Label {
+                    Text(settingsLocalized("settings.tour.title", value: "Pawtrackr Academy"))
+                } icon: {
+                    Image(systemName: "graduationcap.fill")
+                        .foregroundStyle(DS.ColorToken.primary)
+                }
+                .font(.headline)
                 Spacer(minLength: 8)
                 if hasCompletedAcademy {
                     Label(settingsLocalized("settings.tour.graduate", value: "Graduate"), systemImage: "medal.fill")
@@ -1333,8 +1352,13 @@ private struct AboutSectionView: View {
             } label: {
                 Label(continueTourTitle, systemImage: "play.fill")
                     .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 10)
+                    .foregroundStyle(.white)
+                    .background(DS.ColorToken.primary, in: Capsule())
             }
-            .buttonStyle(.borderedProminent)
+            .pressScaleStyle()
+            .accessibilityLabel(continueTourTitle)
             .accessibilityIdentifier("settings.continueTour")
 
             if showsRerun {
@@ -1343,8 +1367,13 @@ private struct AboutSectionView: View {
                 } label: {
                     Label(settingsLocalized("settings.tour.rerun_academy", value: "Re-run Academy"), systemImage: "arrow.counterclockwise")
                         .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 10)
+                        .foregroundStyle(DS.ColorToken.primary)
+                        .background(DS.ColorToken.primary.opacity(0.12), in: Capsule())
                 }
-                .buttonStyle(.bordered)
+                .pressScaleStyle()
+                .accessibilityLabel(settingsLocalized("settings.tour.rerun_academy", value: "Re-run Academy"))
                 .accessibilityIdentifier("settings.rerunAcademy")
             }
         }
@@ -1383,9 +1412,14 @@ private struct AboutSectionView: View {
                     .foregroundStyle(DS.ColorToken.primary)
                     .frame(width: 22, height: 22)
                     .background(DS.ColorToken.primary.opacity(0.12), in: Circle())
-                Label(lesson.title, systemImage: lesson.icon)
-                    .font(.subheadline)
-                    .foregroundStyle(.primary)
+                Label {
+                    Text(lesson.title)
+                        .foregroundStyle(DS.ColorToken.textPrimary)
+                } icon: {
+                    Image(systemName: lesson.icon)
+                        .foregroundStyle(academyLessonTint(lesson))
+                }
+                .font(.subheadline)
                 Spacer(minLength: 8)
                 if isDone {
                     Image(systemName: "checkmark.circle.fill")
@@ -1403,6 +1437,17 @@ private struct AboutSectionView: View {
         .accessibilityElement(children: .combine)
         .accessibilityHint(settingsLocalized("settings.tour.lesson_hint", value: "Replays this chapter."))
         .accessibilityIdentifier("settings.tourLesson.\(lesson.rawValue)")
+    }
+
+    /// Reuses the app's semantic accents to distinguish Academy chapter subjects.
+    private func academyLessonTint(_ lesson: WalkthroughLesson) -> Color {
+        switch lesson {
+        case .dailyWorkflow: return DS.ColorToken.primary
+        case .clientRecords: return DS.ColorToken.calmBlue
+        case .clientProfiles: return DS.ColorToken.success
+        case .checkoutAndMoney: return DS.ColorToken.warning
+        case .businessInsights: return DS.ColorToken.calmBlue
+        }
     }
 
     /// Only while sample clients are in the salon: removes them. Trying the

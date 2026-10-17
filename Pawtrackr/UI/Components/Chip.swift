@@ -98,7 +98,7 @@ public struct Chip: View {
         let colors = self.colors(for: finalStyle, isSelected: isSelected, tint: finalTint)
 
         Button(action: handleTap) {
-            label(metrics: metrics, colors: colors)
+            label(metrics: metrics, colors: colors, iconTint: semantic == nil ? colors.fg : finalTint)
         }
         .buttonStyle(ChipButtonStyle(isHovering: $isHovering))
         .background(colors.bg, in: Capsule())
@@ -121,11 +121,12 @@ public struct Chip: View {
     }
     
     @ViewBuilder
-    private func label(metrics: ChipMetrics, colors: ChipColors) -> some View {
+    private func label(metrics: ChipMetrics, colors: ChipColors, iconTint: Color) -> some View {
         HStack(spacing: 6) {
             if let systemImage {
                 Image(systemName: systemImage)
                     .imageScale(.medium)
+                    .foregroundStyle(iconTint)
             }
             Text(text)
                 .lineLimit(1)

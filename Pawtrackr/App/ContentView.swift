@@ -808,7 +808,7 @@ struct ContentView: View {
             .tabItem { Label(NSLocalizedString("settings.tab", value: "Settings", comment: ""), systemImage: "gear") }
             .tag(NavigationItem.settings)
         }
-        .tint(.primary)
+        .tint(DS.ColorToken.primary)
         .accessibilityIdentifier("content.tabView")
         // Invisible anchor cells aligned to the real tab bar so the walkthrough
         // can spotlight tab items precisely (SwiftUI doesn't expose `.tabItem`

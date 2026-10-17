@@ -112,7 +112,7 @@ public struct AvatarView: View {
                     thumbnailData: thumb,
                     imageURL: url,
                     size: size.token,
-                    style: .tinted(Color.primary.opacity(0.10)),
+                    style: .solid(bg: DS.ColorToken.primary.opacity(0.12), fg: DS.ColorToken.primary),
                     lineWidth: ringWidth,
                     badgeSystemImage: badgeSystemImage,
                     badgeColor: badgeColor,

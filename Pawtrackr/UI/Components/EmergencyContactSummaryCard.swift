@@ -26,10 +26,16 @@ struct EmergencyContactSummaryCard: View {
         Card {
             VStack(alignment: .leading, spacing: 12) {
                 HStack(alignment: .firstTextBaseline) {
-                    Label(
-                        AppLocalization.localized("client_detail.emergency_contacts", value: "Emergency Contacts"),
-                        systemImage: "cross.case.fill"
-                    )
+                    Label {
+                        Text(AppLocalization.localized("client_detail.emergency_contacts", value: "Emergency Contacts"))
+                    } icon: {
+                        Image(systemName: "cross.fill")
+                            .font(.system(size: 15, weight: .bold))
+                            .foregroundStyle(.white)
+                            .frame(width: 28, height: 28)
+                            .background(DS.ColorToken.danger, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                            .accessibilityHidden(true)
+                    }
                     .font(.headline)
                     Spacer()
                     Button(action: onAdd) {
@@ -40,6 +46,7 @@ struct EmergencyContactSummaryCard: View {
                     }
                     .labelStyle(.iconOnly)
                     .buttonStyle(.plain)
+                    .foregroundStyle(DS.ColorToken.danger)
                     .accessibilityLabel(AppLocalization.localized("client_detail.add_emergency_contact", value: "Add emergency contact"))
                     // The guided tour's "Add a Backup Contact" stop.
                     .walkthroughTarget(.emergencyContactBadges)
@@ -113,6 +120,7 @@ struct EmergencyContactSummaryCard: View {
                     } label: {
                         Image(systemName: "phone.fill")
                     }
+                    .foregroundStyle(DS.ColorToken.success)
                     .accessibilityLabel(localized("client_detail.call_contact_fmt", value: "Call %@", contact.name))
                 }
 
