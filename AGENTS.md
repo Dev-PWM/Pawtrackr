@@ -24,7 +24,8 @@
 ## Verification Notes
 
 - Don't assume a simulator destination exists — resolve one first with `xcrun simctl list devices available` and pass it as `-destination "id=<UUID>"`. As of 2026-07, the installed runtimes are iOS 18.x and 26.5 (no 17.x); named-device + `OS:latest` lookups have failed on this machine before.
-- The paywall loads live StoreKit products from `Pawtrackr.storekit` — both shared schemes reference it in their LaunchAction. If `Product.products` returns nothing in a dev build, check that scheme reference before suspecting code.
+- The paywall loads live StoreKit products from `Pawtrackr.storekit` — the only shared scheme, `Pawtrackr`, references it in its LaunchAction (`StoreKitConfigurationFileReference`; restored 2026-10-16 after it was dropped in September). If `Product.products` returns nothing in a dev build, check that scheme reference before suspecting code.
+- `Pawtrackr/` is an Xcode synchronized folder: every file in it is copied into the app unless the Pawtrackr target's `membershipExceptions` lists it. `AGENTS.md` and `GoldenRecord.json` are excluded there; add any new non-app file under `Pawtrackr/` to that list (uncheck its Pawtrackr target membership in Xcode).
 
 ## Live Presentation and Digital Workflows
 
