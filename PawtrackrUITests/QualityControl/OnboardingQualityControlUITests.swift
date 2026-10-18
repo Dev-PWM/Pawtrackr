@@ -10,8 +10,7 @@ final class OnboardingQualityControlUITests: QualityControlUITestCase {
     func testBackNavigationFromRegionalReturnsToBusiness() throws {
         XCTAssertTrue(app.staticTexts["Welcome to Pawtrackr"].waitForExistence(timeout: 12))
         _ = tapIfHittable(app.buttons["onboarding.continue"], timeout: 5)
-        XCTAssertTrue(waitForRoleStep(), "Welcome should advance to the Role step.")
-        _ = tapIfHittable(app.buttons["onboarding.continue"], timeout: 5)
+        XCTAssertTrue(waitForBusinessProfileStep(), "Welcome should advance to Business Profile.")
 
         let nameField = app.textFields["onboarding.businessName"]
         XCTAssertTrue(waitUntilHittable(nameField, timeout: 5))
@@ -67,18 +66,14 @@ final class OnboardingQualityControlUITests: QualityControlUITestCase {
         assertLandedInAppShell("Starting with a real business should land in the main app shell.")
     }
 
-    func testLoyaltyStepPreviewsPointsWithTheSliderAndTier() throws {
+    /// The loyalty step explains automatic points without tiers or a points
+    /// simulator, then continues to the finish step.
+    func testLoyaltyStepExplainsAutomaticPointsWithoutTiers() throws {
         advanceToLoyaltyStep()
 
-        let slider = app.sliders["onboarding.loyaltySimulator.slider"]
-        XCTAssertTrue(slider.waitForExistence(timeout: 5))
-        XCTAssertTrue(app.descendants(matching: .any)["loyaltySimulator.tier"].exists)
-        XCTAssertTrue(app.descendants(matching: .any)["loyaltySimulator.rebook"].exists)
-
-        // Default rules, a $80 checkout, Bronze, no rebook: 80 points.
-        let result = app.descendants(matching: .any)["loyaltySimulator.result"]
-        XCTAssertTrue(result.waitForExistence(timeout: 4))
-        XCTAssertTrue(result.label.contains("80 points"), "Got \(result.label)")
+        XCTAssertTrue(app.staticTexts["Check in"].waitForExistence(timeout: 4))
+        XCTAssertFalse(app.sliders["onboarding.loyaltySimulator.slider"].exists)
+        XCTAssertFalse(app.descendants(matching: .any)["loyaltySimulator.tier"].exists)
 
         tapOnboardingContinue()
         XCTAssertTrue(waitForAny([
@@ -98,12 +93,13 @@ final class OnboardingQualityControlUITests: QualityControlUITestCase {
         XCTAssertFalse(app.staticTexts["Welcome to Pawtrackr"].exists)
     }
 
-    private func waitForRoleStep(timeout: TimeInterval = 5) -> Bool {
+    /// Setup has no role step: Welcome goes straight to Business Profile.
+    private func waitForBusinessProfileStep(timeout: TimeInterval = 5) -> Bool {
         waitForAny([
-            { self.app.buttons["onboarding.role.ownerManager"].exists },
+            { self.app.textFields["onboarding.businessName"].exists },
             {
                 let title = self.app.staticTexts["onboarding.stepTitle"]
-                return title.exists && title.label == "Your Role"
+                return title.exists && title.label == "Business Profile"
             }
         ], timeout: timeout)
     }
@@ -111,8 +107,7 @@ final class OnboardingQualityControlUITests: QualityControlUITestCase {
     private func advanceToSecurityStep() {
         XCTAssertTrue(app.staticTexts["Welcome to Pawtrackr"].waitForExistence(timeout: 12))
         tapOnboardingContinue()
-        XCTAssertTrue(waitForRoleStep(), "Welcome should advance to the Role step.")
-        tapOnboardingContinue()
+        XCTAssertTrue(waitForBusinessProfileStep(), "Welcome should advance to Business Profile.")
 
         let nameField = app.textFields["onboarding.businessName"]
         XCTAssertTrue(waitUntilHittable(nameField, timeout: 5))
@@ -168,10 +163,10 @@ final class OnboardingQualityControlUITests: QualityControlUITestCase {
         tapOnboardingContinue()
         XCTAssertTrue(app.staticTexts["Choose Your Defaults"].waitForExistence(timeout: 5))
         tapOnboardingContinue()
-        XCTAssertTrue(waitForAny([
-            { self.app.descendants(matching: .any)["loyaltySimulator.card"].exists },
-            { self.app.sliders["onboarding.loyaltySimulator.slider"].exists }
-        ], timeout: 8), "Permissions should advance to the Loyalty step.")
+        XCTAssertTrue(
+            app.staticTexts["Rewards without extra math"].waitForExistence(timeout: 8),
+            "Permissions should advance to the Loyalty step."
+        )
     }
 
     private func advanceToWarmStartStep() {

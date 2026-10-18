@@ -152,6 +152,7 @@ struct NewClientSheet: View {
                             nextFocus: .address,
                             maxLength: TextInputLimits.email
                         )
+                        .emailFieldInput()
                         .onChange(of: viewModel.email) { _, _ in viewModel.clearValidationError(for: .email) }
 
                         inputField(

@@ -746,6 +746,7 @@ struct ClientDetailView: View {
                             TextField(NSLocalizedString("new_client.email", comment: ""), text: $editEmail)
                                 .textFieldStyle(.roundedBorder)
                                 .textLengthLimit($editEmail, to: TextInputLimits.email)
+                                .emailFieldInput()
                         }
                     }
                 } else {

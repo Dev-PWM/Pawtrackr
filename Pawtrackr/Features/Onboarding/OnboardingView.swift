@@ -29,12 +29,11 @@ struct OnboardingView: View {
     @Namespace private var animation
     @State private var viewModel: OnboardingViewModel
     @State private var showConfetti = false
-    // Welcome-screen entrance/loop animation state. Looping effects are scoped to
-    // the welcome step only (see footer/welcomeStep) and use SwiftUI repeatForever
-    // — never Timer/Combine, which freezes @Observable-driven views.
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    /// Drives the Welcome entrance. The only looping motion (the hero float)
+    /// runs through `MotionAwareView`, so it pauses off-screen, under Reduce
+    /// Motion, Low Power Mode and thermal pressure.
     @State private var welcomeAppeared = false
-    @State private var welcomeBreathing = false
-    @State private var ctaPulse = false
     /// Clients left on this device by an earlier store (e.g. the 1.0.2
     /// recovery-screen reset). Offered here because the onboarding cover hides
     /// the banner and Settings, and finishing setup would seed sample data first.
@@ -69,7 +68,13 @@ struct OnboardingView: View {
         @Bindable var viewModel = viewModel
         ZStack {
             DS.ColorToken.background.ignoresSafeArea()
-            
+
+            if viewModel.currentStep == .welcome {
+                WelcomeBackdrop()
+                    .ignoresSafeArea()
+                    .transition(.opacity)
+            }
+
             if showConfetti {
                 confettiView
                     .zIndex(10)
@@ -150,31 +155,6 @@ struct OnboardingView: View {
         .allowsHitTesting(false)
     }
 
-    private func featureRow(index: Int = 0, icon: String, title: String, subtitle: String) -> some View {
-        HStack(spacing: DS.Spacing.md) {
-            Image(systemName: icon)
-                .font(.title2)
-                .foregroundStyle(DS.ColorToken.primary)
-                .frame(width: 40)
-
-            VStack(alignment: .leading, spacing: 2) {
-                Text(title)
-                    .font(.headline)
-                    .fixedSize(horizontal: false, vertical: true)
-                Text(subtitle)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-        }
-        // Staggered slide-up reveal; each bullet trails the previous by 120ms.
-        .opacity(welcomeAppeared ? 1 : 0)
-        .offset(y: welcomeAppeared ? 0 : 16)
-        .animation(.spring(response: 0.4, dampingFraction: 0.78).delay(0.18 + Double(index) * 0.12), value: welcomeAppeared)
-        .padding(.horizontal, DS.Spacing.xxl)
-    }
-
     private var onboardingHeader: some View {
         VStack(spacing: DS.Spacing.md) {
             VStack(spacing: DS.Spacing.xs) {
@@ -220,7 +200,6 @@ struct OnboardingView: View {
             .padding(.horizontal, DS.Spacing.xxl)
         }
         .padding(.vertical, DS.Spacing.xl)
-        .background(DS.ColorToken.background)
     }
 
     private func subtitle(for step: OnboardingViewModel.Step) -> String {
@@ -400,37 +379,30 @@ struct OnboardingView: View {
     private var welcomeStep: some View {
         ScrollView {
             VStack(spacing: DS.Spacing.xl) {
-                ZStack {
-                    // Decorative breathing halo (not matched-geometry, so it can loop
-                    // freely without disturbing the shared-logo transition).
-                    Circle()
-                        .fill(DS.ColorToken.primary.opacity(0.1))
-                        .frame(width: 120, height: 120)
-                        .scaleEffect(welcomeBreathing ? 1.06 : 0.94)
-
-                    Image(systemName: "pawprint.fill")
-                        .font(.system(size: 60))
-                        .foregroundStyle(DS.ColorToken.primary)
-                        .symbolEffect(.pulse, options: .repeating)
-                        .matchedGeometryEffect(id: "businessLogo", in: animation)
-                }
-                .padding(.top, DS.Spacing.xl)
+                welcomeHero
+                    .padding(.top, DS.Spacing.md)
 
                 VStack(spacing: DS.Spacing.sm) {
+                    if !appVersion.isEmpty {
+                        Text(String(format: NSLocalizedString("onboarding.welcome.version_fmt", value: "Version %@", comment: ""), appVersion))
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(DS.ColorToken.primary)
+                            .padding(.horizontal, DS.Spacing.md)
+                            .padding(.vertical, DS.Spacing.xxs)
+                            .glassSurface(cornerRadius: DS.Radius.pill, tint: DS.ColorToken.primary.opacity(0.12))
+                    }
                     Text(NSLocalizedString("onboarding.welcome.title", value: "Welcome to Pawtrackr", comment: ""))
-                        .font(.title.bold())
+                        .font(.largeTitle.bold())
                         .multilineTextAlignment(.center)
                         .lineLimit(2)
                         .fixedSize(horizontal: false, vertical: true)
-                    Text(NSLocalizedString("onboarding.welcome.message", value: "The modern workspace for pet groomers.\nLet's get your business set up in minutes.", comment: ""))
+                    Text(NSLocalizedString("onboarding.welcome.message", value: "Clients, pets, visits and checkout in one calm workspace.\nSet up your salon in a few minutes.", comment: ""))
                         .multilineTextAlignment(.center)
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 .padding(.horizontal, DS.Spacing.xxl)
-                .opacity(welcomeAppeared ? 1 : 0)
-                .offset(y: welcomeAppeared ? 0 : 12)
-                .animation(.spring(response: 0.45, dampingFraction: 0.8).delay(0.05), value: welcomeAppeared)
+                .welcomeEntrance(welcomeAppeared, delay: 0.05, reduceMotion: reduceMotion)
 
                 // Above the feature list so it's visible without scrolling: for
                 // someone whose clients vanished, this is the whole point.
@@ -438,11 +410,21 @@ struct OnboardingView: View {
                     restoreFoundCard(restoreOffer)
                 }
 
-                VStack(alignment: .leading, spacing: DS.Spacing.lg) {
-                    featureRow(index: 0, icon: "lock.fill", title: NSLocalizedString("onboarding.feature.privacy.title", value: "Privacy First", comment: ""), subtitle: NSLocalizedString("onboarding.feature.privacy.subtitle_device", value: "Your clients are saved on your device. You can lock the app with a PIN and Face ID or Touch ID.", comment: ""))
-                    featureRow(index: 1, icon: "chart.bar.fill", title: NSLocalizedString("onboarding.feature.insights.title", value: "Business Insights", comment: ""), subtitle: NSLocalizedString("onboarding.feature.insights.subtitle", value: "Track revenue, service trends, and client loyalty effortlessly.", comment: ""))
+                LazyVGrid(columns: [GridItem(.adaptive(minimum: 240), spacing: DS.Spacing.md)], spacing: DS.Spacing.md) {
+                    ForEach(Array(WelcomeFeature.all.enumerated()), id: \.element.id) { index, feature in
+                        welcomeFeatureCard(feature)
+                            .welcomeEntrance(welcomeAppeared, delay: 0.16 + Double(index) * 0.06, reduceMotion: reduceMotion)
+                    }
                 }
-                .padding(.top, DS.Spacing.md)
+                .padding(.horizontal, DS.Spacing.xxl)
+
+                Label(
+                    NSLocalizedString("onboarding.welcome.trust", value: "No account needed · Works offline", comment: ""),
+                    systemImage: "checkmark.seal.fill"
+                )
+                .font(.footnote.weight(.medium))
+                .foregroundStyle(.secondary)
+                .welcomeEntrance(welcomeAppeared, delay: 0.5, reduceMotion: reduceMotion)
             }
             .frame(maxWidth: .infinity)
             .padding(.bottom, DS.Spacing.xl)
@@ -463,17 +445,87 @@ struct OnboardingView: View {
         }
         .onAppear {
             welcomeAppeared = true
-            if !welcomeBreathing {
-                withAnimation(.easeInOut(duration: 2).repeatForever(autoreverses: true)) {
-                    welcomeBreathing = true
+        }
+    }
+
+    /// The app mark with four service badges. It floats gently only while
+    /// on screen and when `MotionGovernor` allows decorative motion.
+    private var welcomeHero: some View {
+        MotionAwareView { animates in
+            ZStack {
+                ForEach(Array(WelcomeHeroBadge.all.enumerated()), id: \.element.symbol) { index, badge in
+                    Image(systemName: badge.symbol)
+                        .font(.system(size: 17, weight: .semibold))
+                        .foregroundStyle(badge.tint)
+                        .frame(width: 44, height: 44)
+                        .glassSurface(cornerRadius: 22, tint: badge.tint.opacity(0.10))
+                        .offset(badge.offset)
+                        .scaleEffect(welcomeAppeared || reduceMotion ? 1 : 0.4)
+                        .opacity(welcomeAppeared ? 1 : 0)
+                        .animation(
+                            reduceMotion ? .easeOut(duration: 0.2) : .spring(response: 0.5, dampingFraction: 0.7).delay(0.25 + Double(index) * 0.08),
+                            value: welcomeAppeared
+                        )
                 }
+
+                RoundedRectangle(cornerRadius: 32, style: .continuous)
+                    .fill(LinearGradient(
+                        colors: [DS.ColorToken.primary, DS.ColorToken.primary.opacity(0.72)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 32, style: .continuous)
+                            .strokeBorder(.white.opacity(0.35), lineWidth: 1)
+                    )
+                    .frame(width: 112, height: 112)
+                    .shadow(color: DS.ColorToken.primary.opacity(0.35), radius: 18, y: 10)
+
+                Image(systemName: "pawprint.fill")
+                    .font(.system(size: 50, weight: .semibold))
+                    .foregroundStyle(.white)
+                    .symbolEffect(.bounce, value: welcomeAppeared)
+                    .matchedGeometryEffect(id: "businessLogo", in: animation)
             }
-            if !ctaPulse {
-                withAnimation(.easeInOut(duration: 1.2).repeatForever(autoreverses: true)) {
-                    ctaPulse = true
-                }
+            .frame(width: 260, height: 190)
+            .keyframeAnimator(initialValue: 0.0, repeating: animates) { content, lift in
+                content.offset(y: lift)
+            } keyframes: { _ in
+                CubicKeyframe(-6, duration: 2.2)
+                CubicKeyframe(0, duration: 2.2)
             }
         }
+        .accessibilityHidden(true)
+    }
+
+    private func welcomeFeatureCard(_ feature: WelcomeFeature) -> some View {
+        HStack(alignment: .top, spacing: DS.Spacing.md) {
+            Image(systemName: feature.icon)
+                .font(.title3.weight(.semibold))
+                .foregroundStyle(feature.tint)
+                .frame(width: 44, height: 44)
+                .background(feature.tint.opacity(0.14), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                .accessibilityHidden(true)
+
+            VStack(alignment: .leading, spacing: 3) {
+                Text(feature.title)
+                    .font(.headline)
+                    .fixedSize(horizontal: false, vertical: true)
+                Text(feature.detail)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .padding(DS.Spacing.lg)
+        .frame(maxHeight: .infinity, alignment: .top)
+        .glassSurface()
+        .accessibilityElement(children: .combine)
+    }
+
+    private var appVersion: String {
+        Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? ""
     }
     
     private func restoreFoundCard(_ offer: StoreBackupRestore.Offer) -> some View {
@@ -612,13 +664,20 @@ struct OnboardingView: View {
                     .textContentType(contentType)
                     .textLengthLimit(text, to: maxLength)
             } else {
-                TextField(title, text: text)
-                    .textFieldStyle(.roundedBorder)
-                    .textContentType(contentType)
-                    .textLengthLimit(text, to: maxLength)
-                    #if os(iOS)
-                    .keyboardType(keyboardType(for: contentType))
-                    #endif
+                if contentType == .emailAddress {
+                    TextField(title, text: text)
+                        .textFieldStyle(.roundedBorder)
+                        .textLengthLimit(text, to: maxLength)
+                        .emailFieldInput()
+                } else {
+                    TextField(title, text: text)
+                        .textFieldStyle(.roundedBorder)
+                        .textContentType(contentType)
+                        .textLengthLimit(text, to: maxLength)
+                        #if os(iOS)
+                        .keyboardType(keyboardType(for: contentType))
+                        #endif
+                }
             }
         }
     }
@@ -626,7 +685,6 @@ struct OnboardingView: View {
     #if os(iOS)
     private func keyboardType(for contentType: PlatformContentType?) -> UIKeyboardType {
         switch contentType {
-        case .emailAddress: return .emailAddress
         case .telephoneNumber: return .phonePad
         default: return .default
         }
@@ -675,9 +733,7 @@ struct OnboardingView: View {
                         .shadow(color: viewModel.canGoNext ? DS.ColorToken.primary.opacity(0.3) : .clear, radius: 8, x: 0, y: 4)
                     }
                     .disabled(!viewModel.canGoNext || viewModel.isSaving)
-                    .buttonStyle(.plain)
-                    // Gentle attention pulse on the very first screen's CTA only.
-                    .scaleEffect(viewModel.currentStep == .welcome && ctaPulse ? 1.035 : 1.0)
+                    .pressScaleStyle()
                     .scaleEffect(viewModel.canGoNext ? 1.0 : 0.98)
                     .animation(.spring(), value: viewModel.canGoNext)
                     .accessibilityIdentifier("onboarding.continue")
@@ -685,7 +741,6 @@ struct OnboardingView: View {
             }
         }
         .padding(DS.Spacing.xxl)
-        .background(DS.ColorToken.background)
     }
     
     private var securityStep: some View {
@@ -999,5 +1054,104 @@ private struct ConfettiPiece: View {
                     opacity = 0
                 }
             }
+    }
+}
+
+// MARK: - Welcome building blocks
+
+/// One thing Pawtrackr does today, shown on the Welcome screen.
+private struct WelcomeFeature: Identifiable {
+    let id: String
+    let icon: String
+    let tint: Color
+    let title: String
+    let detail: String
+
+    /// Only features that ship in the current version belong here.
+    static var all: [WelcomeFeature] {
+        [
+            WelcomeFeature(
+                id: "pets", icon: "pawprint.fill", tint: DS.ColorToken.primary,
+                title: NSLocalizedString("onboarding.feature.pets.title", value: "Every Pet, One Profile", comment: ""),
+                detail: NSLocalizedString("onboarding.feature.pets.subtitle", value: "Photos, behavior notes, safety alerts and visit history for each pet.", comment: "")
+            ),
+            WelcomeFeature(
+                id: "checkout", icon: "creditcard.fill", tint: DS.ColorToken.success,
+                title: NSLocalizedString("onboarding.feature.checkout.title", value: "Checkout in Seconds", comment: ""),
+                detail: NSLocalizedString("onboarding.feature.checkout.subtitle", value: "Enter what you charge and share a PDF receipt by AirDrop, Messages or Mail.", comment: "")
+            ),
+            WelcomeFeature(
+                id: "loyalty", icon: "gift.fill", tint: DS.ColorToken.warning,
+                title: NSLocalizedString("onboarding.feature.loyalty.title", value: "Loyalty That Runs Itself", comment: ""),
+                detail: NSLocalizedString("onboarding.feature.loyalty.subtitle", value: "Points are added after every paid visit. Clients choose rewards at checkout.", comment: "")
+            ),
+            WelcomeFeature(
+                id: "celebrations", icon: "birthday.cake.fill", tint: DS.ColorToken.genderFemale,
+                title: NSLocalizedString("onboarding.feature.celebrations.title", value: "Birthdays & Anniversaries", comment: ""),
+                detail: NSLocalizedString("onboarding.feature.celebrations.subtitle", value: "Pet birthdays and salon anniversaries are flagged so you can celebrate them.", comment: "")
+            ),
+            WelcomeFeature(
+                id: "insights", icon: "chart.bar.fill", tint: DS.ColorToken.info,
+                title: NSLocalizedString("onboarding.feature.insights.title", value: "Business Insights", comment: ""),
+                detail: NSLocalizedString("onboarding.feature.insights.subtitle", value: "Revenue, trends and reports you can open in Excel and Numbers.", comment: "")
+            ),
+            WelcomeFeature(
+                id: "privacy", icon: "lock.shield.fill", tint: DS.ColorToken.primary,
+                title: NSLocalizedString("onboarding.feature.privacy.title", value: "Privacy First", comment: ""),
+                detail: NSLocalizedString("onboarding.feature.privacy.subtitle_device", value: "Your clients are saved on your device. You can lock the app with a PIN and Face ID or Touch ID.", comment: "")
+            )
+        ]
+    }
+}
+
+/// A small service badge orbiting the Welcome app mark.
+private struct WelcomeHeroBadge {
+    let symbol: String
+    let tint: Color
+    let offset: CGSize
+
+    static var all: [WelcomeHeroBadge] {
+        [
+            WelcomeHeroBadge(symbol: "scissors", tint: DS.ColorToken.primary, offset: CGSize(width: -96, height: -38)),
+            WelcomeHeroBadge(symbol: "heart.fill", tint: DS.ColorToken.genderFemale, offset: CGSize(width: 98, height: -48)),
+            WelcomeHeroBadge(symbol: "sparkles", tint: DS.ColorToken.warning, offset: CGSize(width: 90, height: 50)),
+            WelcomeHeroBadge(symbol: "drop.fill", tint: DS.ColorToken.info, offset: CGSize(width: -86, height: 54))
+        ]
+    }
+}
+
+/// A static brand glow behind the Welcome screen. It never animates, so it
+/// costs nothing per frame and stays put under Reduce Motion.
+private struct WelcomeBackdrop: View {
+    var body: some View {
+        ZStack {
+            RadialGradient(
+                colors: [DS.ColorToken.primary.opacity(0.22), .clear],
+                center: .top, startRadius: 0, endRadius: 420
+            )
+            RadialGradient(
+                colors: [DS.ColorToken.info.opacity(0.10), .clear],
+                center: .bottomLeading, startRadius: 0, endRadius: 380
+            )
+            RadialGradient(
+                colors: [DS.ColorToken.genderFemale.opacity(0.08), .clear],
+                center: .bottomTrailing, startRadius: 0, endRadius: 340
+            )
+        }
+        .allowsHitTesting(false)
+        .accessibilityHidden(true)
+    }
+}
+
+private extension View {
+    /// Fades and lifts a Welcome element into place once; Reduce Motion keeps the fade only.
+    func welcomeEntrance(_ appeared: Bool, delay: Double, reduceMotion: Bool) -> some View {
+        self
+            .opacity(appeared ? 1 : 0)
+            .offset(y: appeared || reduceMotion ? 0 : 14)
+            .animation(
+                reduceMotion ? .easeOut(duration: 0.2) : .spring(response: 0.45, dampingFraction: 0.82).delay(delay),
+                value: appeared
+            )
     }
 }
