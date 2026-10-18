@@ -29,6 +29,14 @@ enum UITestDataSeeder {
             return
         }
 
+        #if DEBUG
+        // The stress book is written asynchronously after the commit bridge is installed.
+        if AppRuntime.shouldSeedSearchStressFixture {
+            try context.save()
+            return
+        }
+        #endif
+
         let owner = Client(
             firstName: "UITest",
             lastName: "Owner",

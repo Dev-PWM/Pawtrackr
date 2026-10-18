@@ -134,6 +134,11 @@ final class ClientsViewModel {
     // MARK: - Data Fetching
     private func scheduleFetch() {
         searchTask?.cancel()
+        // Invalidate the old request as soon as typing changes. Waiting until
+        // the debounce ends lets an obsolete result replace the current list.
+        refreshTask?.cancel()
+        loadMoreTask?.cancel()
+        isLoadingMore = false
         if searchText.trimmed.isEmpty { fetchClients(); return }
         searchTask = Task { [weak self] in
             try? await Task.sleep(for: .milliseconds(300)) // Debounce search

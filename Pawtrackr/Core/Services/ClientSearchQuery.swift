@@ -2,6 +2,10 @@ import Foundation
 import SwiftData
 
 private enum ClientSearchText {
+    private static let phoneExtension = try? NSRegularExpression(
+        pattern: #"(?<![\p{L}\p{N}])(\+?\(?\d[\d\s()+./–‑-]*\d)\s*,?\s*(?:ext(?:ension)?\.?|x|#)\s*\d+(?![\p{L}\p{N}])"#
+    )
+
     /// Treats punctuation as word boundaries and apostrophes as part of a name.
     static func words(_ folded: String) -> [String] {
         folded.replacingOccurrences(of: "'", with: "")
@@ -9,6 +13,29 @@ private enum ClientSearchText {
             .replacingOccurrences(of: "ʼ", with: "")
             .split { !$0.isLetter && !$0.isNumber }
             .map(String.init)
+    }
+
+    /// Removes an extension only from a complete phone, even when owner or dog words follow it.
+    static func withoutPhoneExtensions(_ text: String) -> String {
+        guard let phoneExtension else { return text }
+        let result = NSMutableString(string: text)
+        let matches = phoneExtension.matches(in: text, range: NSRange(text.startIndex..., in: text))
+        for match in matches.reversed() {
+            guard let range = Range(match.range(at: 1), in: text) else { continue }
+            let number = String(text[range])
+            let fragments = number.split(whereSeparator: \.isWhitespace).map(String.init)
+            let completeLength = hasCountryPrefix(fragments) ? 11 : 10
+            guard number.filter(\.isNumber).count >= completeLength else { continue }
+            result.replaceCharacters(in: match.range, with: number)
+        }
+        return result as String
+    }
+
+    /// Distinguishes a written country prefix from ordinary digit substrings.
+    static func hasCountryPrefix(_ fragments: [String]) -> Bool {
+        let input = fragments.joined()
+        return input.hasPrefix("+1") || (fragments.count > 1 && fragments.first == "1")
+            || ["1(", "1-", "1.", "1/"].contains { input.hasPrefix($0) }
     }
 }
 
@@ -35,12 +62,8 @@ struct ClientSearchQuery: Sendable {
         }
         let hadInput = !text.isEmpty
         text = text.folding(options: [.caseInsensitive, .diacriticInsensitive, .widthInsensitive], locale: .current)
-        // Extensions aren't stored in the lookup key; ignore them only after a complete number.
-        if scope == nil || scope == "p",
-           let suffix = text.range(of: #"(?<=\d)\s*(?:ext(?:ension)?\.?|x|#)\s*\d+\s*$"#,
-                                   options: .regularExpression),
-           text[..<suffix.lowerBound].filter(\.isNumber).count >= 10 {
-            text.removeSubrange(suffix)
+        if scope == nil || scope == "p" {
+            text = ClientSearchText.withoutPhoneExtensions(text)
         }
         let tokens = text.replacingOccurrences(of: ",", with: " ")
             .replacingOccurrences(of: "\"", with: " ")
@@ -72,11 +95,11 @@ struct ClientSearchQuery: Sendable {
         self.isValid = valid && (!hadInput || !parsed.isEmpty)
     }
 
-    /// Keeps a typed +1 prefix from hiding matches while the main number is incomplete.
+    /// Recognizes an explicit NANP country prefix before the main number is complete.
     private static func phoneDigits(_ fragments: [String]) -> String {
         let input = fragments.joined()
         let digits = PhoneUtils.searchKey(input)
-        if input.hasPrefix("+1"), input.filter(\.isNumber).count <= 10 {
+        if ClientSearchText.hasCountryPrefix(fragments), input.filter(\.isNumber).count <= 10 {
             return String(digits.dropFirst())
         }
         return digits
