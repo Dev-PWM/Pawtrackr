@@ -8,7 +8,6 @@ import Combine
 @MainActor
 final class LoyaltyBalanceState {
     private(set) var points: Int
-    private(set) var tier: LoyaltyTier = .bronze
     private(set) var errorMessage: String?
     private var loadGeneration = 0
 
@@ -22,7 +21,6 @@ final class LoyaltyBalanceState {
             let committed = try await DataStoreService(container: container).fetchLoyaltyAccount(clientUUID: clientUUID)
             guard !Task.isCancelled, generation == loadGeneration, let committed else { return }
             points = committed.points
-            tier = committed.tier
             errorMessage = nil
         } catch {
             guard !Task.isCancelled, generation == loadGeneration else { return }

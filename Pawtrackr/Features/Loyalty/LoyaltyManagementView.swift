@@ -25,7 +25,6 @@ struct LoyaltyManagementView: View {
                 VStack(alignment: .leading, spacing: 12) {
                     Text(LoyaltyExplainer.earning(config: config, currencySymbol: appSettings.currencySymbol))
                     Text(LoyaltyExplainer.rebook)
-                    Text(LoyaltyExplainer.tiers)
                 }
                 .font(.footnote).foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)

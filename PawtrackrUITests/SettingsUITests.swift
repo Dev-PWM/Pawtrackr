@@ -92,6 +92,40 @@ final class SettingsUITests: XCTestCase {
 
     // MARK: - App Lock toggle confirmation
 
+    func testHapticPreferenceHasAVisiblePreviewAndOffState() throws {
+        waitForDashboard()
+        tapTab("Settings")
+        openSettingsSection(identifier: "preferences", title: "Preferences")
+        let toggle = app.switches["settings.haptics.toggle"]
+        let scroll = app.scrollViews.firstMatch
+        for _ in 0..<6 where !toggle.isHittable {
+            scroll.exists ? scroll.swipeUp() : app.swipeUp()
+        }
+        XCTAssertTrue(toggle.waitForHittable(timeout: 5))
+        if toggle.value as? String == "1" { toggle.tap() }
+        let preview = app.buttons["settings.haptics.preview"]
+        XCTAssertFalse(preview.isEnabled)
+        let status = app.descendants(matching: .any)["settings.haptics.previewStatus"].firstMatch
+        XCTAssertTrue(status.label.contains("Feedback is off"))
+
+        toggle.tap()
+        for _ in 0..<3 where !preview.isHittable {
+            scroll.exists ? scroll.swipeUp() : app.swipeUp()
+        }
+        XCTAssertTrue(preview.waitForHittable(timeout: 5))
+        preview.tap()
+        XCTAssertTrue(waitForAny([{ status.label.contains("Feedback previewed") }], timeout: 4))
+        let availability = app.descendants(matching: .any)["settings.haptics.availability"].firstMatch
+        XCTAssertTrue(availability.exists)
+        #if targetEnvironment(simulator)
+        XCTAssertTrue(availability.label.contains("Simulator shows the visual preview"))
+        #endif
+        let attachment = XCTAttachment(screenshot: app.screenshot())
+        attachment.name = "Haptic feedback visual preview and hardware explanation"
+        attachment.lifetime = .keepAlways
+        add(attachment)
+    }
+
     func testDisableAppLockShowsConfirmationAlert() throws {
         waitForDashboard()
         tapTab("Settings")

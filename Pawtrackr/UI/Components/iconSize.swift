@@ -66,36 +66,6 @@ public enum IconSizeToken: Equatable, Sendable, Hashable {
     }
 }
 
-/// Helpers for scaling icon metrics for Dynamic Type.
-public enum IconSizing {
-    /// Returns a scaled diameter for a given token and content size category.
-    public static func scaledDiameter(
-        for token: IconSizeToken,
-        sizeCategory: ContentSizeCategory
-    ) -> CGFloat {
-        token.diameter * scaleMultiplier(for: sizeCategory)
-    }
-
-    /// A gently stepped multiplier tuned for circular icons.
-    private static func scaleMultiplier(for category: ContentSizeCategory) -> CGFloat {
-        switch category {
-        case .extraSmall:                    0.90
-        case .small:                         0.95
-        case .medium:                        1.00
-        case .large:                         1.05
-        case .extraLarge:                    1.10
-        case .extraExtraLarge:               1.15
-        case .extraExtraExtraLarge:          1.20
-        case .accessibilityMedium:           1.25
-        case .accessibilityLarge:            1.30
-        case .accessibilityExtraLarge:       1.35
-        case .accessibilityExtraExtraLarge:  1.40
-        case .accessibilityExtraExtraExtraLarge: 1.45
-        @unknown default:                    1.0
-        }
-    }
-}
-
 #if DEBUG
 #Preview("IconSize tokens") {
     VStack(spacing: 16) {

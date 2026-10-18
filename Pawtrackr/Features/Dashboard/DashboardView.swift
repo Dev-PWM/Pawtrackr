@@ -642,15 +642,26 @@ struct DashboardView: View {
             Grid(horizontalSpacing: 12, verticalSpacing: 12) {
                 GridRow {
                     inProgressKPICard(vm)
-                    kpiCard(title: NSLocalizedString("dashboard.completed", comment: ""), value: "\(vm.kpi.completedToday)", symbol: "checkmark.circle")
-                        .accessibilityIdentifier("dashboard.kpi.completedCount")
+                    kpiCard(
+                        title: NSLocalizedString("dashboard.completed", comment: ""),
+                        value: "\(vm.kpi.completedToday)",
+                        symbol: "checkmark.circle.fill",
+                        tint: DS.ColorToken.success
+                    )
+                    .accessibilityIdentifier("dashboard.kpi.completedCount")
                 }
                 GridRow {
                     Button {
                         selectSurface(.insights, resetPath: true)
                     } label: {
-                        kpiCard(title: NSLocalizedString("dashboard.revenue", comment: ""), value: vm.kpi.revenueTodayString, symbol: "dollarsign.circle", trend: vm.kpi.revenueTrend)
-                            .contentShape(Rectangle())
+                        kpiCard(
+                            title: NSLocalizedString("dashboard.revenue", comment: ""),
+                            value: vm.kpi.revenueTodayString,
+                            symbol: "dollarsign.circle.fill",
+                            tint: DS.ColorToken.calmBlue,
+                            trend: vm.kpi.revenueTrend
+                        )
+                        .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
                     .contentShape(Rectangle())
@@ -669,7 +680,7 @@ struct DashboardView: View {
     @ViewBuilder
     private func inProgressKPICard(_ vm: DashboardViewModel) -> some View {
         let label = NSLocalizedString("dashboard.in_progress", comment: "")
-        kpiCard(title: label, value: "\(vm.kpi.inProgressCount)", symbol: "hourglass")
+        kpiCard(title: label, value: "\(vm.kpi.inProgressCount)", symbol: "hourglass", tint: DS.ColorToken.warning)
             .accessibilityIdentifier("dashboard.kpi.inProgressCount")
     }
 
@@ -680,11 +691,13 @@ struct DashboardView: View {
                 actionCard(
                     title: NSLocalizedString("dashboard.new_client", comment: ""),
                     symbol: "person.crop.circle.badge.plus",
+                    tint: DS.ColorToken.primary,
                     accessibilityIdentifier: "dashboard.quickAction.newClient"
                 ) { showNewClient = true }
                 actionCard(
                     title: NSLocalizedString("dashboard.check_out", comment: ""),
                     symbol: "stop.circle",
+                    tint: DS.ColorToken.calmBlue,
                     accessibilityIdentifier: "dashboard.quickAction.checkOut"
                 ) {
                     // Present the active sessions so one can be completed via the
@@ -962,10 +975,10 @@ struct DashboardView: View {
         return vm.revenueSeries.first { calendar.isDate($0.date, inSameDayAs: selectedRevenueDate) }
     }
 
-    private func kpiCard(title: String, value: String, symbol: String, trend: Double? = nil) -> some View {
+    private func kpiCard(title: String, value: String, symbol: String, tint: Color, trend: Double? = nil) -> some View {
         Card {
             HStack(alignment: .top) {
-                IconCircle(systemImage: symbol, size: .md)
+                IconCircle(systemImage: symbol, size: .md, style: .solid(bg: tint.opacity(0.12), fg: tint))
                 VStack(alignment: .leading, spacing: 4) {
                     Text(title).font(.footnote).foregroundStyle(.secondary)
                     HStack(alignment: .firstTextBaseline, spacing: 6) {
@@ -995,9 +1008,15 @@ struct DashboardView: View {
         .accessibilityHint(trend != nil ? String(format: NSLocalizedString("dashboard.trend.accessibility_fmt", value: "Trend: %@ %@", comment: ""), trend! >= 0 ? NSLocalizedString("dashboard.trend.up_label", value: "Up", comment: "") : NSLocalizedString("dashboard.trend.down_label", value: "Down", comment: ""), Formatters.percentString(abs(trend!), showSign: false) ?? "") : "")
     }
 
-    private func actionCard(title: String, symbol: String, accessibilityIdentifier: String, action: @escaping () -> Void) -> some View {
+    private func actionCard(
+        title: String,
+        symbol: String,
+        tint: Color,
+        accessibilityIdentifier: String,
+        action: @escaping () -> Void
+    ) -> some View {
         Button(action: action) {
-            actionCardLabel(title: title, symbol: symbol)
+            actionCardLabel(title: title, symbol: symbol, tint: tint)
                 .contentShape(Rectangle())
         }
             .buttonStyle(.plain)
@@ -1009,30 +1028,10 @@ struct DashboardView: View {
             .frame(maxWidth: .infinity)
     }
 
-    private func recentHistoryLink<Label: View>(
-        scope: RecentHistoryViewModel.Scope?,
-        accessibilityIdentifier: String? = nil,
-        accessibilityLabel: String? = nil,
-        @ViewBuilder label: @escaping () -> Label
-    ) -> some View {
-        NavigationLink {
-            RecentHistoryView(initialScope: scope)
-        } label: {
-            label()
-                .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .contentShape(Rectangle())
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(Text(accessibilityLabel ?? NSLocalizedString("history.title", value: "Recent History", comment: "")))
-        .applyAccessibilityIdentifier(accessibilityIdentifier)
-        .accessibilityAddTraits(.isButton)
-    }
-
-    private func actionCardLabel(title: String, symbol: String) -> some View {
+    private func actionCardLabel(title: String, symbol: String, tint: Color) -> some View {
         Card {
             VStack(spacing: 8) {
-                IconCircle(systemImage: symbol, size: .lg)
+                IconCircle(systemImage: symbol, size: .lg, style: .solid(bg: tint.opacity(0.12), fg: tint))
                 Text(title)
                     .font(.body.weight(.medium))
                     .lineLimit(2)
@@ -1057,11 +1056,6 @@ struct DashboardView: View {
         ])
     }
     
-    private func openPet(_ pet: Pet) {
-        NotificationCenter.default.post(name: .navigateToPet, object: nil, userInfo: [
-            "uuid": pet.uuid
-        ])
-    }
 }
 
 // MARK: - Skeleton Components

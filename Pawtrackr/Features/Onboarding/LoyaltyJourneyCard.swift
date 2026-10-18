@@ -107,19 +107,10 @@ enum LoyaltyRewardCatalog {
 enum LoyaltyExplainer {
     /// How a checkout earns, for the current rules.
     static func earning(config: LoyaltyConfigSnapshot, currencySymbol: String) -> String {
-        AppLocalization.localized("loyalty.earning.completed_visit", value: "Every completed, settled visit earns 20 points, including a free reward visit. Price, membership tier and return timing do not change the award.")
-    }
-
-    /// The tier ladder: thresholds and what a tier does.
-    static var tiers: String {
-        String(
-            format: AppLocalization.localized(
-                "loyalty.preview.tiers_fixed_fmt",
-                value: "Points earned at checkout move a client up: Silver at %1$@, Gold at %2$@ and Platinum at %3$@. Every completed visit earns 20 points. Spending points never lowers a tier."
-            ),
-            count(LoyaltyTier.silver.threshold),
-            count(LoyaltyTier.gold.threshold),
-            count(LoyaltyTier.platinum.threshold)
+        AppLocalization.localized(
+            "loyalty.earning.completed_visit",
+            value: "Every completed, settled visit earns 20 points, including a free reward visit. "
+                + "Points are tracked automatically and stay available until used."
         )
     }
 
@@ -150,17 +141,7 @@ enum LoyaltyExplainer {
         )
     }
 
-    /// "Silver ×1.1" for the tier picker.
-    static func tierChoice(_ tier: LoyaltyTier) -> String {
-        String(
-            format: AppLocalization.localized("loyalty.preview.tier_choice_fmt", value: "%1$@ %2$@"),
-            tier.displayName,
-            tier.earnRateText
-        )
-    }
-
-    /// The lines under the total, e.g. "From the total: 80 points",
-    /// "Silver ×1.1: 88 points", "Rebook bonus: +20 points".
+    /// Explains the flat award for this completed visit.
     static func breakdown(_ preview: LoyaltyEarnPreview, config: LoyaltyConfigSnapshot) -> [String] {
         [String(format: AppLocalization.localized("loyalty.preview.base_flat_fmt", value: "Per visit: %@"), LoyaltyCopy.points(preview.total))]
     }

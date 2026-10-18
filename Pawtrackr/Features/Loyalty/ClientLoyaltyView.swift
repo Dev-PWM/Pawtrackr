@@ -9,7 +9,6 @@ struct ClientLoyaltyView: View {
     @Query(sort: \LoyaltyRewardTemplate.sortOrder) private var templates: [LoyaltyRewardTemplate]
     @Query(sort: \LoyaltyConfig.createdAt) private var configs: [LoyaltyConfig]
     @State private var showAllActivity = false
-    @State private var displayedProgress = 0.0
     @State private var loyaltyBalance: LoyaltyBalanceState
 
     init(client: Client) {
@@ -48,9 +47,6 @@ struct ClientLoyaltyView: View {
         .navigationBarTitleDisplayMode(.inline)
         #endif
         .loyaltyBalanceTracking(loyaltyBalance, clientUUID: client.uuid)
-        .onAppear { updateProgress(animated: true) }
-        .onChange(of: loyaltyBalance.points) { _, _ in updateProgress(animated: true) }
-        .onChange(of: catalog.map { "\($0.id):\($0.pointCost)" }) { _, _ in updateProgress(animated: true) }
     }
 
     private var catalog: [LoyaltyReward] {
@@ -71,7 +67,6 @@ struct ClientLoyaltyView: View {
                 Text(client.fullName).font(.caption).foregroundStyle(.secondary)
             }
             LoyaltyPointsBadge(client: client, scale: .prominent, balanceOverride: loyaltyBalance.points, errorMessage: loyaltyBalance.errorMessage)
-            Text(loyaltyBalance.tier.displayName).font(.caption).foregroundStyle(DS.ColorToken.primary)
             Text(AppLocalization.localized("loyalty.points.keep_note", value: "Use points when you choose. They never expire, and there’s no balance limit."))
                 .font(.subheadline).foregroundStyle(.secondary)
         }
@@ -87,6 +82,7 @@ struct ClientLoyaltyView: View {
                  ? AppLocalization.localized("loyalty.client.all_unlocked", value: "All rewards unlocked")
                  : AppLocalization.localized("loyalty.client.next_reward", value: "Your next thank-you"))
                 .font(.caption.weight(.medium)).foregroundStyle(.secondary)
+                .accessibilityIdentifier("clientLoyalty.rewardProgress")
             HStack(alignment: .top, spacing: 12) {
                 Image(systemName: "gift").foregroundStyle(DS.ColorToken.primary).font(.title3)
                 VStack(alignment: .leading, spacing: 4) {
@@ -98,21 +94,8 @@ struct ClientLoyaltyView: View {
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }
-            ProgressView(value: displayedProgress)
-                .tint(DS.ColorToken.primary)
-                .accessibilityLabel(LoyaltyRewardCatalog.displayTitle(for: reward))
-                .accessibilityValue(String(format: AppLocalization.localized("loyalty.client.progress_value_fmt", value: "%1$d of %2$d points"), min(loyaltyBalance.points, reward.pointCost), reward.pointCost))
-        }
-        .accessibilityIdentifier("clientLoyalty.rewardProgress")
-    }
-
-    private func updateProgress(animated: Bool) {
-        guard let reward = nextReward ?? catalog.last else { displayedProgress = 0; return }
-        let target = nextReward == nil ? 1.0 : min(1, max(0, Double(loyaltyBalance.points) / Double(max(1, reward.pointCost))))
-        if animated && MotionGovernor.shouldAnimate(reduceMotion: reduceMotion) {
-            withAnimation(MotionSystem.snappy) { displayedProgress = target }
-        } else {
-            displayedProgress = target
+            AnimatedRewardProgressBar(currentPoints: loyaltyBalance.points, targetPoints: reward.pointCost,
+                                      rewardTitle: LoyaltyRewardCatalog.displayTitle(for: reward))
         }
     }
 

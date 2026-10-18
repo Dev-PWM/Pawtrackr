@@ -103,6 +103,19 @@ struct PawtrackrApp: App {
 
         // 3. Start side effects AFTER full initialization
         if initialContainer != nil {
+            #if DEBUG
+            if AppRuntime.shouldSeedSearchStressFixture, let container = initialContainer {
+                Task {
+                    do {
+                        _ = try await ClientSearchStressFixture.seed(in: container)
+                    } catch {
+                        Logger.database.error(
+                            "Search stress fixture failed: \(error.localizedDescription, privacy: .public)"
+                        )
+                    }
+                }
+            }
+            #endif
             if !inMemory {
                 initialTasks?.start()
 

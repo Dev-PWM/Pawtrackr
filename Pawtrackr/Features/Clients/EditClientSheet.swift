@@ -58,12 +58,7 @@ struct EditClientSheet: View {
                     TextField(NSLocalizedString("new_client.email", comment: ""), text: $email)
                         .accessibilityIdentifier("editClient.email")
                         .textLengthLimit($email, to: TextInputLimits.email)
-                    #if os(iOS)
-                    .keyboardType(.emailAddress)
-                    .textContentType(.emailAddress)
-                    .textInputAutocapitalization(.never)
-                    .autocorrectionDisabled(true)
-                    #endif
+                        .emailFieldInput()
                     TextField(NSLocalizedString("new_client.address", comment: ""), text: $address)
                         .accessibilityIdentifier("editClient.address")
                         .textLengthLimit($address, to: TextInputLimits.address)

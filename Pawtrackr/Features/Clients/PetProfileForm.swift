@@ -130,7 +130,8 @@ struct PetBirthdayFields: View {
     private var birthdayModePicker: some View {
         Picker(AppLocalization.localized("pet.birthday.title", value: "Birthday"), selection: selectedOption) {
             Text(AppLocalization.localized("pet.birthday.known", value: "Known birthdate")).tag(BirthdayOption.known)
-            Text(AppLocalization.localized("pet.birthday.celebration", value: "Chosen celebration day")).tag(BirthdayOption.celebration)
+            Text(AppLocalization.localized("pet.birthday.celebration", value: "Salon anniversary"))
+                .tag(BirthdayOption.celebration)
         }
     }
 
@@ -156,11 +157,15 @@ struct PetBirthdayFields: View {
                 .accessibilityLabel(AppLocalization.localized("pet.birthday.date", value: "Date"))
                 .accessibilityIdentifier("petProfile.birthdate")
             } else {
-                LabeledContent(AppLocalization.localized("pet.birthday.celebration", value: "Chosen celebration day")) {
+                LabeledContent(AppLocalization.localized("pet.birthday.registered", value: "Pet registered")) {
                     Text(registrationDate, format: .dateTime.month(.wide).day())
                 }
                 .font(.subheadline)
-                Text(AppLocalization.localized("pet.birthday.celebration_help", value: "Starts with today, your day together at the salon. Celebrate it each year; it does not set the pet’s age or the owner’s birthday."))
+                Text(AppLocalization.localized(
+                    "pet.birthday.celebration_help",
+                    value: "When the birthdate is unknown, celebrate the client’s years with the salon, "
+                        + "using their earliest registration or completed visit. This never sets the pet’s age."
+                ))
                     .font(.caption).foregroundStyle(.secondary)
             }
             TimelineView(.periodic(from: .now, by: 60)) { context in

@@ -56,6 +56,7 @@ struct IconCircle: View {
     /// - Parameters:
     ///   - systemImage: The name of an SF Symbol to display.
     ///   - initials: A name or string to be converted into initials.
+    ///   - initialsOverride: Precomputed initials when separate name fields determine their order.
     ///   - imageData: Raw `Data` for a local image.
     ///   - thumbnailData: Small pre-downsampled `Data` for performance.
     ///   - imageURL: A `URL` for a remote image to be loaded asynchronously.
@@ -68,6 +69,7 @@ struct IconCircle: View {
     ///   - isDecorative: If `true`, the icon is ignored by accessibility services.
     public init(systemImage: String? = nil,
                 initials: String? = nil,
+                initialsOverride: String? = nil,
                 imageData: Data? = nil,
                 thumbnailData: Data? = nil,
                 imageURL: URL? = nil,
@@ -87,7 +89,7 @@ struct IconCircle: View {
         self.isDecorative = isDecorative
         
         // Determine the glyph content based on priority
-        let initialsGlyph = Self.makeInitials(from: initials).map { GlyphContent.initials($0) }
+        let initialsGlyph = (initialsOverride ?? Self.makeInitials(from: initials)).map { GlyphContent.initials($0) }
         let symbolGlyph = systemImage.map { GlyphContent.symbol($0) }
         let fallback = initialsGlyph ?? symbolGlyph ?? .fallback
 
@@ -114,6 +116,7 @@ struct IconCircle: View {
                 .frame(width: dim, height: dim)
 
             glyphView(content: glyphContent, tints: tints)
+                .frame(width: dim, height: dim)
             
             badgeView(tints: tints)
         }
@@ -272,6 +275,13 @@ extension IconCircle {
             }
             return String(String.UnicodeScalarView(clean)).uppercased()
         }.joined()
+        return initials.isEmpty ? nil : initials
+    }
+
+    /// Takes one initial per name field and follows the list's displayed name order.
+    static func makeClientInitials(firstName: String, lastName: String, lastNameFirst: Bool) -> String? {
+        let names = lastNameFirst ? [lastName, firstName] : [firstName, lastName]
+        let initials = names.compactMap { makeInitials(from: $0)?.first }.map(String.init).joined()
         return initials.isEmpty ? nil : initials
     }
 }

@@ -10,18 +10,12 @@
 
 import SwiftUI
 
-#if os(iOS)
-import UIKit
-#elseif os(macOS)
-import AppKit
-#endif
-
 // MARK: - Core Card View
 
 /// A highly configurable container view that provides a consistent background, border, and shadow.
 public struct Card<Content: View>: View {
-    @Environment(\.colorScheme) private var colorScheme
     #if os(macOS)
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var isHovered: Bool = false
     #endif
 
@@ -41,7 +35,7 @@ public struct Card<Content: View>: View {
     /// - Parameters:
     ///   - cornerRadius: The corner radius for the card's shape.
     ///   - padding: The padding applied inside the card, around the content.
-    ///   - background: The background color. Defaults to the platform's system background.
+    ///   - background: The background color. Defaults to the adaptive card surface.
     ///   - elevation: The shadow style to apply.
     ///   - showBorder: If `true`, a thin separator border is drawn.
     ///   - hoverRaises: If `true`, the card's shadow elevates on hover (macOS only).
@@ -63,7 +57,7 @@ public struct Card<Content: View>: View {
     ) {
         self.cornerRadius = cornerRadius
         self.padding = padding
-        self.background = (background ?? Self.defaultBackground)
+        self.background = background ?? (elevation == .raised ? DS.ColorToken.surfaceElevated : DS.ColorToken.surface)
         self.elevation = elevation
         self.showBorder = showBorder
         self.hoverRaises = hoverRaises
@@ -91,6 +85,7 @@ public struct Card<Content: View>: View {
         let shape = RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
         
         return content()
+            .foregroundStyle(DS.ColorToken.textPrimary, DS.ColorToken.textSecondary)
             .padding(padding)
             .background(background)
             .clipShape(shape)
@@ -100,7 +95,10 @@ public struct Card<Content: View>: View {
             .overlay(borderAndAccentOverlay(for: shape))
             #if os(macOS)
             .scaleEffect(isHoveredIfEnabled ? 1.012 : 1.0)
-            .animation(MotionSystem.snappy, value: isHoveredIfEnabled)
+            .animation(
+                MotionSystem.resolved(MotionSystem.snappy, reduceMotion: reduceMotion),
+                value: isHoveredIfEnabled
+            )
             .onHover { hovering in
                 if hoverRaises { isHovered = hovering }
             }
@@ -149,19 +147,8 @@ extension Card {
     }
 }
 
-
 // MARK: - Private Helpers
 private extension Card {
-    static var defaultBackground: Color {
-        #if os(iOS)
-        Color(.systemBackground)
-        #elseif os(macOS)
-        Color(nsColor: .windowBackgroundColor)
-        #else
-        Color.white
-        #endif
-    }
-
     var isHoveredIfEnabled: Bool {
         #if os(macOS)
         return hoverRaises && isHovered
@@ -175,7 +162,7 @@ private extension Card {
         if showBorder || accent != nil {
             ZStack(alignment: accent?.edge.alignment ?? .top) {
                 if showBorder {
-                    shape.strokeBorder(separatorColor, lineWidth: hairline)
+                    shape.strokeBorder(separatorColor, lineWidth: 1)
                 }
                 if let accent {
                     accentView(for: accent, in: shape)
@@ -203,24 +190,8 @@ private extension Card {
         .clipShape(shape) // Clip the accent to the card's rounded corners
     }
 
-    var hairline: CGFloat {
-        #if os(iOS)
-        1 / UIScreen.main.scale
-        #elseif os(macOS)
-        1 / (NSScreen.main?.backingScaleFactor ?? 2.0)
-        #else
-        1.0
-        #endif
-    }
-
     var separatorColor: Color {
-        #if os(iOS)
-        return Color(UIColor.separator).opacity(0.18)
-        #elseif os(macOS)
-        return Color(nsColor: .separatorColor).opacity(0.18)
-        #else
-        return Color.gray.opacity(0.18)
-        #endif
+        DS.ColorToken.border
     }
 }
 
@@ -231,7 +202,10 @@ private struct ScaleOnPressStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .scaleEffect(configuration.isPressed ? 0.98 : 1.0)
-            .animation(reduceMotion ? .none : .spring(response: 0.25, dampingFraction: 0.75), value: configuration.isPressed)
+            .animation(
+                MotionSystem.resolved(.spring(response: 0.25, dampingFraction: 0.75), reduceMotion: reduceMotion),
+                value: configuration.isPressed
+            )
             .onChange(of: configuration.isPressed) { _, isPressed in
                 if isPressed {
                     HapticManager.impact(.light)

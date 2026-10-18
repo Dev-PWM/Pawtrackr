@@ -29,6 +29,20 @@ struct ClientCard: View {
     private var missingInfo: [ClientMissingInfo] { ClientMissingInfo.items(for: client) }
     private var hasMissingInfo: Bool { !missingInfo.isEmpty }
     private var displayName: String { client.displayName(lastNameFirst: displaysLastNameFirst) }
+
+    private var ownerAvatar: some View {
+        AvatarView(
+            .client(name: client.fullName),
+            size: .sm,
+            accessibilityLabel: client.fullName,
+            initialsOverride: IconCircle.makeClientInitials(
+                firstName: client.firstName,
+                lastName: client.lastName,
+                lastNameFirst: displaysLastNameFirst
+            )
+        )
+        .accessibilityIdentifier("clients.avatar.\(client.fullName)")
+    }
     private var sortedPets: [Pet] {
         (client.pets ?? []).filter { $0.archivedAt == nil }.sorted {
             $0.name.localizedStandardCompare($1.name) == .orderedAscending
@@ -74,10 +88,10 @@ struct ClientCard: View {
     private var header: some View {
         HStack(alignment: .center, spacing: 12) {
             if let namespace {
-                AvatarView(.client(name: "\(client.firstName) \(client.lastName)"), size: .sm)
+                ownerAvatar
                     .matchedGeometryEffect(id: "avatar-\(client.id)", in: namespace)
             } else {
-                AvatarView(.client(name: "\(client.firstName) \(client.lastName)"), size: .sm)
+                ownerAvatar
             }
             
             VStack(alignment: .leading, spacing: 0) {

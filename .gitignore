@@ -50,12 +50,10 @@ Pawtrackr-Architecture-Comparison.md
 # (ripgrep honors .gitignore even for files that are still tracked).
 /build_*.txt
 
-# Agent skills live only in .claude/skills (installed by script/update-skills.sh).
-# The `skills` CLI installs into every agent it detects on the machine, so keep
-# the copies it writes for other agents out of the repo.
+# Retired skill mirrors; canonical repository skills live in .claude/skills.
+# Reinstall them with script/update-skills.sh. A plain `skills update` writes
+# copies for every agent it detects on the machine, plus .agents/skills.
 /.agents/
-/skills/
-/data/skills/
 /.adal/
 /.aider-desk/
 /.augment/
@@ -102,3 +100,14 @@ Pawtrackr-Architecture-Comparison.md
 /.vibe/
 /.windsurf/
 /.zencoder/
+/data/skills/
+/skills/
+
+# Retired cloud implementation docs (ADR-0005).
+/docs/cloudkit/
+/docs/icloud-optimization.md
+/docs/icloud-validation.md
+
+# Python verification caches
+__pycache__/
+*.pyc

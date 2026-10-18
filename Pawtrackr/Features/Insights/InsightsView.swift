@@ -787,57 +787,6 @@ struct InsightsView: View {
         .frame(maxWidth: .infinity).frame(height: 120)
     }
 
-    private func showRevenueDrilldown(_ vm: InsightsViewModel) {
-        selectedDrilldown = InsightsDrilldown(
-            title: localized("insights.drilldown.revenue_title", value: "Revenue Detail"),
-            subtitle: String(format: localized("insights.window_days_fmt", value: "%d-day window"), vm.revenuePeriodDays),
-            summary: localized(
-                "insights.drilldown.revenue_summary",
-                value: "This lists the completed visits included in the selected revenue window. Use it to reconcile cash, card, and checkout history."
-            ),
-            rows: visitDrilldownRows(vm.revenueDrilldown)
-        )
-    }
-
-    private func showCategoryDrilldown(_ vm: InsightsViewModel) {
-        selectedDrilldown = InsightsDrilldown(
-            title: localized("insights.drilldown.category_title", value: "Visit Category Detail"),
-            subtitle: localized("insights.drilldown.category_subtitle", value: "Category share for completed visit line items"),
-            summary: localized(
-                "insights.drilldown.category_summary",
-                value: "This breaks down which types of services are driving completed visits. A category can count more than once when a checkout includes multiple line items."
-            ),
-            rows: categoryDrilldownRows(vm.categoryDistribution, total: vm.totalCategoryVisits)
-        )
-    }
-
-    private func categoryDrilldownRows(_ rows: [InsightsViewModel.DistributionData], total: Int) -> [InsightsDrilldownRow] {
-        rows.map { item in
-            let percent = total > 0 ? Int((Double(item.count) / Double(total) * 100).rounded()) : 0
-            return InsightsDrilldownRow(
-                title: item.name,
-                subtitle: String(format: localized("insights.category.row_detail_fmt", value: "%d%% of categorized visit line items"), percent),
-                trailing: String(format: localized("insights.visits_count_fmt", value: "%d visits"), item.count)
-            )
-        }
-    }
-
-    private func visitDrilldownRows(_ rows: [InsightsViewModel.RevenueVisitData]) -> [InsightsDrilldownRow] {
-        rows.map {
-            InsightsDrilldownRow(
-                title: "\($0.petName) • \($0.clientName)",
-                subtitle: "\($0.date.formatted(date: .abbreviated, time: .omitted)) • \($0.serviceSummary) • \($0.paymentMethod)",
-                trailing: $0.total.moneyString
-            )
-        }
-    }
-
-    private func percentString(_ value: Double) -> String {
-        guard value.isFinite else { return "0%" }
-        let sign = value > 0 ? "+" : ""
-        return "\(sign)\(Int((value * 100).rounded()))%"
-    }
-
     private func localized(_ key: String, value: String) -> String {
         NSLocalizedString(key, value: value, comment: "")
     }

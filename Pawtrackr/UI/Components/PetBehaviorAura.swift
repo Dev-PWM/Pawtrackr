@@ -3,26 +3,19 @@ import SwiftUI
 /// A restrained handling cue that never intercepts pet actions or Academy targets.
 private struct PetBehaviorAura: ViewModifier {
     let pet: Pet
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @Environment(\.scenePhase) private var scenePhase
     @Environment(\.colorScheme) private var colorScheme
-
-    @State private var resourceAllowsAnimation = MotionGovernor.shouldAnimate(reduceMotion: false)
-
-    private var shouldAnimate: Bool {
-        resourceAllowsAnimation && !reduceMotion && scenePhase == .active
-    }
 
     private var tint: Color? {
         pet.prominentBehavior.map { BehaviorTagIcons.tint(for: $0) }
     }
 
     func body(content: Content) -> some View {
-        content
+        MotionAwareView { shouldAnimate in
+            content
             .background {
-                if let tint {
+                if let tint, shouldAnimate {
                     RoundedRectangle(cornerRadius: 18, style: .continuous)
-                        .fill(tint.opacity(colorScheme == .dark ? 0.30 : 0.16))
+                        .fill(tint.opacity(0.10))
                         .blur(radius: 12)
                         .padding(-3)
                         .allowsHitTesting(false)
@@ -41,19 +34,14 @@ private struct PetBehaviorAura: ViewModifier {
                             }
                         } else {
                             RoundedRectangle(cornerRadius: 18, style: .continuous)
-                                .strokeBorder(tint, lineWidth: 1.5)
+                                .strokeBorder(tint.opacity(0.35), lineWidth: 1)
                         }
                     }
                     .allowsHitTesting(false)
                     .accessibilityHidden(true)
                 }
             }
-            .onReceive(NotificationCenter.default.publisher(for: .NSProcessInfoPowerStateDidChange).receive(on: DispatchQueue.main)) { _ in
-                resourceAllowsAnimation = MotionGovernor.shouldAnimate(reduceMotion: false)
-            }
-            .onReceive(NotificationCenter.default.publisher(for: ProcessInfo.thermalStateDidChangeNotification).receive(on: DispatchQueue.main)) { _ in
-                resourceAllowsAnimation = MotionGovernor.shouldAnimate(reduceMotion: false)
-            }
+        }
     }
 }
 

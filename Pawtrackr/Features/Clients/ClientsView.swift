@@ -174,9 +174,9 @@ struct ClientsView: View {
                 }
             }
             .onChange(of: viewModel?.sortOption) { oldValue, newValue in
-                guard oldValue != nil, oldValue != newValue,
-                      walkthrough?.currentStep?.advancesOn == .clientSortChanged
-                else { return }
+                guard oldValue != nil, oldValue != newValue else { return }
+                HapticManager.selectionChanged()
+                guard walkthrough?.currentStep?.advancesOn == .clientSortChanged else { return }
                 // Leave the re-sorted list on screen for a moment, so the
                 // names visibly flip before the next stop.
                 Task { @MainActor in
@@ -235,6 +235,8 @@ struct ClientsView: View {
             HStack(spacing: 8) {
                 ForEach(ClientsViewModel.Filter.allCases, id: \.self) { filter in
                     Button {
+                        guard viewModel.selectedFilter != filter else { return }
+                        HapticManager.selectionChanged()
                         withAnimation(.spring(duration: 0.3)) {
                             viewModel.selectedFilter = filter
                         }
@@ -251,6 +253,7 @@ struct ClientsView: View {
                             .foregroundStyle(viewModel.selectedFilter == filter ? .white : .primary)
                     }
                     .buttonStyle(.plain)
+                    .accessibilityAddTraits(viewModel.selectedFilter == filter ? .isSelected : [])
                 }
             }
             // The tour spotlights the pills themselves, not the full-width
@@ -708,31 +711,3 @@ private struct MacToolbarSearchField: NSViewRepresentable {
     }
 }
 #endif
-
-private struct QuickStatCard: View {
-    let title: String
-    let value: String
-    let icon: String
-    let color: Color
-
-    var body: some View {
-        Card(elevation: .flat, showBorder: false) {
-            VStack(alignment: .leading, spacing: 6) {
-                HStack {
-                    Image(systemName: icon)
-                        .font(.title2)
-                        .foregroundStyle(color)
-                    Spacer()
-                }
-                Text(value)
-                    .font(.title.weight(.bold))
-                    .contentTransition(.numericText())
-                Text(title)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-        }
-        .background(color.opacity(0.1))
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-    }
-}

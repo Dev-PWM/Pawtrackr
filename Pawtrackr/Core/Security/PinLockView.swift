@@ -132,6 +132,7 @@ public struct PinLockView: View {
     /// (which would churn an LAContext on every redraw).
     @State private var cachedBiometricType: BiometricType = .none
     @Binding var isUnlocked: Bool
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var digits: [Int] = []
     @State private var shakeOffset: CGFloat = 0
     @State private var lockoutCountdown: TimeInterval = 0
@@ -346,6 +347,8 @@ public struct PinLockView: View {
     }
 
     private func performShake() {
+        // The error haptic and cleared dots still signal a wrong PIN.
+        guard !reduceMotion else { return }
         let sequence: [CGFloat] = [-10, 10, -8, 8, -5, 5, 0]
         var delay: Double = 0
         for x in sequence {

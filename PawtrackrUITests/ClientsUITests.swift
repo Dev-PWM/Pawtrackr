@@ -47,6 +47,44 @@ final class ClientsUITests: XCTestCase {
 
     // MARK: - New Client sheet
 
+    func testNameSortAndFormattedPhoneSearchStayConsistent() throws {
+        waitForDashboard()
+        tapTab("Clients")
+        let row = app.buttons["clients.row.UITest Owner"]
+        XCTAssertTrue(row.waitForExistence(timeout: 8))
+        let sort = app.buttons["clients.sortMenu.inline"]
+        XCTAssertTrue(sort.waitForHittable(timeout: 5))
+        XCTAssertTrue(sort.label.contains("Last Name"), "Last Name must remain the default.")
+        XCTAssertTrue(row.label.contains("Owner UITest"))
+        captureClientList("Last-name order and matching initials")
+
+        sort.tap()
+        let firstName = app.buttons["First Name"]
+        XCTAssertTrue(firstName.waitForHittable(timeout: 4))
+        firstName.tap()
+        XCTAssertTrue(waitForAny([
+            { sort.label.contains("First Name") && !row.label.contains("Owner UITest") }
+        ], timeout: 6))
+        captureClientList("First-name order and matching initials")
+
+        let search = app.searchFields.firstMatch
+        XCTAssertTrue(search.waitForHittable(timeout: 5))
+        search.tap()
+        search.typeText("+1 (312) 555-0100")
+        XCTAssertTrue(row.waitForExistence(timeout: 6))
+        search.typeText("9")
+        XCTAssertTrue(waitForAny([{ !row.exists }], timeout: 6), "An extra phone digit must not keep a false match.")
+        search.typeText(XCUIKeyboardKey.delete.rawValue)
+        XCTAssertTrue(row.waitForExistence(timeout: 6), "Restoring the complete phone number must restore the match.")
+    }
+
+    private func captureClientList(_ name: String) {
+        let attachment = XCTAttachment(screenshot: app.screenshot())
+        attachment.name = name
+        attachment.lifetime = .keepAlways
+        add(attachment)
+    }
+
     func testFABOpensNewClientSheet() throws {
         waitForDashboard()
         tapTab("Clients")
