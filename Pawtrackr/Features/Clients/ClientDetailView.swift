@@ -691,9 +691,18 @@ struct ClientDetailView: View {
                     Spacer()
                     if isEditingClientInline {
                         HStack(spacing: 8) {
-                            Button { cancelInlineEdit(client) } label: { Image(systemName: "xmark.circle.fill") }
+                            ClientActionButton(
+                                systemImage: "xmark",
+                                tint: .secondary,
+                                label: NSLocalizedString("common.cancel", comment: "")
+                            ) { cancelInlineEdit(client) }
                                 .accessibilityIdentifier("clientDetail.inlineEdit.cancel")
-                            Button { saveInlineEdit(client) } label: { Image(systemName: "checkmark.circle.fill") }
+                            ClientActionButton(
+                                systemImage: "checkmark",
+                                tint: DS.ColorToken.primary,
+                                isProminent: true,
+                                label: NSLocalizedString("common.save", comment: "")
+                            ) { saveInlineEdit(client) }
                                 .disabled(
                                     editFirst.trimmed.isEmpty ||
                                     editLast.trimmed.isEmpty ||
@@ -701,10 +710,13 @@ struct ClientDetailView: View {
                                 )
                                 .accessibilityIdentifier("clientDetail.inlineEdit.save")
                         }
-                        .font(.title3)
                     } else {
-                        HStack(spacing: 12) {
-                            Button {
+                        HStack(spacing: 8) {
+                            ClientActionButton(
+                                systemImage: "message.fill",
+                                tint: DS.ColorToken.calmBlue,
+                                label: NSLocalizedString("client_detail.message", value: "Message", comment: "")
+                            ) {
                                 guard let firstPet = (client.pets ?? []).first else { return }
                                 viewModel?.recordAttentionOutreach(method: "message")
                                 // Route through the single `.sheet(item:)` so the
@@ -712,17 +724,14 @@ struct ClientDetailView: View {
                                 // `.sheet(isPresented:)` on the outer Group was being
                                 // silently dropped by SwiftUI on macOS.
                                 sheetDestination = .communication(firstPet)
-                            } label: { Image(systemName: "message.circle.fill") }
-                                .font(.title3)
-                                .foregroundStyle(DS.ColorToken.calmBlue)
+                            }
                                 .disabled((client.pets ?? []).isEmpty)
-                                .accessibilityLabel(
-                                    NSLocalizedString("client_detail.message", value: "Message", comment: "")
-                                )
                                 .accessibilityIdentifier("clientDetail.message")
-                            Button { beginInlineEdit(client) } label: { Image(systemName: "ellipsis.circle") }
-                                .font(.title3)
-                                .accessibilityLabel(NSLocalizedString("a11y.more_actions", comment: ""))
+                            ClientActionButton(
+                                systemImage: "pencil",
+                                tint: DS.ColorToken.textSecondary,
+                                label: NSLocalizedString("common.edit", value: "Edit", comment: "")
+                            ) { beginInlineEdit(client) }
                                 .accessibilityIdentifier("clientDetail.editInline")
                         }
                     }
@@ -763,22 +772,25 @@ struct ClientDetailView: View {
                         } trailing: {
                             HStack(spacing: 8) {
                                 if PhoneUtils.smsURLString(client.phone ?? "") != nil {
-                                    Button {
+                                    ClientActionButton(
+                                        systemImage: "message.fill",
+                                        tint: DS.ColorToken.success,
+                                        label: NSLocalizedString("client_detail.message", value: "Message", comment: "")
+                                    ) {
                                         guard let firstPet = (client.pets ?? []).first else { return }
                                         sheetDestination = .communication(firstPet)
-                                    } label: { Image(systemName: "message.fill") }
-                                    .foregroundStyle(DS.ColorToken.success)
-                                    .accessibilityLabel(NSLocalizedString("client_detail.message", value: "Message", comment: ""))
+                                    }
                                 }
                                 if let tel = PhoneUtils.telURLString(client.phone ?? ""), let telURL = URL(string: tel) {
-                                    Button {
+                                    ClientActionButton(
+                                        systemImage: "phone.fill",
+                                        tint: DS.ColorToken.success,
+                                        isProminent: true,
+                                        label: NSLocalizedString("client_detail.call", value: "Call", comment: "")
+                                    ) {
                                         viewModel?.recordAttentionOutreach(method: "call")
                                         URLOpener.open(telURL)
-                                    } label: { Image(systemName: "phone.fill") }
-                                    .foregroundStyle(DS.ColorToken.success)
-                                    .accessibilityLabel(
-                                        NSLocalizedString("client_detail.call", value: "Call", comment: "")
-                                    )
+                                    }
                                 }
                             }
                         }
@@ -786,11 +798,11 @@ struct ClientDetailView: View {
                             if let email = client.email, let url = URL(string: "mailto:\(email)") { URLOpener.open(url) }
                         } trailing: {
                             if let email = client.email, let url = URL(string: "mailto:\(email)") {
-                                Button { URLOpener.open(url) } label: { Image(systemName: "envelope.fill") }
-                                    .foregroundStyle(DS.ColorToken.calmBlue)
-                                    .accessibilityLabel(
-                                        NSLocalizedString("client_detail.email", value: "Email", comment: "")
-                                    )
+                                ClientActionButton(
+                                    systemImage: "envelope.fill",
+                                    tint: DS.ColorToken.calmBlue,
+                                    label: NSLocalizedString("client_detail.email", value: "Email", comment: "")
+                                ) { URLOpener.open(url) }
                             }
                         }
                         contactRow(
@@ -799,11 +811,11 @@ struct ClientDetailView: View {
                             text: client.address ?? "—"
                         ) {} trailing: {
                             if let addr = client.address?.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed), let url = URL(string: "http://maps.apple.com/?q=\(addr)") {
-                                Button { URLOpener.open(url) } label: { Image(systemName: "map.fill") }
-                                    .foregroundStyle(DS.ColorToken.warning)
-                                    .accessibilityLabel(
-                                        NSLocalizedString("client_detail.directions", value: "Directions", comment: "")
-                                    )
+                                ClientActionButton(
+                                    systemImage: "map.fill",
+                                    tint: DS.ColorToken.warning,
+                                    label: NSLocalizedString("client_detail.directions", value: "Directions", comment: "")
+                                ) { URLOpener.open(url) }
                             }
                         }
                         if let primaryEmergencyContact {
@@ -831,18 +843,22 @@ struct ClientDetailView: View {
         } trailing: {
             #if os(macOS)
             if !contact.phone.trimmed.isEmpty {
-                Button { PasteboardWriter.copy(EmergencyContactRules.displayPhone(contact.phone)) } label: { Image(systemName: "doc.on.doc") }
-                    .buttonStyle(.borderless)
-                    .accessibilityLabel(AppLocalization.localized("client_detail.copy_phone", value: "Copy Phone"))
+                ClientActionButton(
+                    systemImage: "doc.on.doc",
+                    tint: DS.ColorToken.textSecondary,
+                    label: AppLocalization.localized("client_detail.copy_phone", value: "Copy Phone")
+                ) { PasteboardWriter.copy(EmergencyContactRules.displayPhone(contact.phone)) }
             }
             #endif
             if let telURL {
-                Button { URLOpener.open(telURL) } label: { Image(systemName: "phone.fill") }
-                    .foregroundStyle(DS.ColorToken.success)
-                    .accessibilityLabel(String(
+                ClientActionButton(
+                    systemImage: "phone.fill",
+                    tint: DS.ColorToken.success,
+                    label: String(
                         format: AppLocalization.localized("client_detail.call_contact_fmt", value: "Call %@"),
                         contact.name
-                    ))
+                    )
+                ) { URLOpener.open(telURL) }
             }
         }
         .accessibilityIdentifier("clientDetail.primaryEmergencyContact")
@@ -1691,6 +1707,45 @@ private struct CheckoutPresentationModifier: ViewModifier {
 }
 
 // MARK: - Local UI building blocks
+
+/// A round, tinted icon button for the owner card's quick actions.
+///
+/// It matches the tinted circles that lead each contact row, uses the shared
+/// press feedback, and shows its label as a tooltip on the Mac. A prominent
+/// button fills the circle with the tint for the row's main action.
+private struct ClientActionButton: View {
+    let systemImage: String
+    let tint: Color
+    var isProminent = false
+    let label: String
+    let action: () -> Void
+
+    @Environment(\.isEnabled) private var isEnabled
+
+    init(systemImage: String, tint: Color, isProminent: Bool = false, label: String, action: @escaping () -> Void) {
+        self.systemImage = systemImage
+        self.tint = tint
+        self.isProminent = isProminent
+        self.label = label
+        self.action = action
+    }
+
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: systemImage)
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(isProminent ? Color.white : tint)
+                .frame(width: 34, height: 34)
+                .background(isProminent ? tint : tint.opacity(0.14), in: Circle())
+                .overlay(Circle().strokeBorder(tint.opacity(isProminent ? 0 : 0.22), lineWidth: 0.5))
+                .contentShape(Circle().inset(by: -5))
+                .opacity(isEnabled ? 1 : 0.4)
+        }
+        .pressScaleStyle()
+        .accessibilityLabel(label)
+        .help(label)
+    }
+}
 
 @ViewBuilder private func contactRow(
     icon: String,
