@@ -55,16 +55,7 @@ extension View {
         // background — exactly how the frame preference is already emitted, and
         // observed to merge correctly — lets every target's anchor reduce-merge
         // independently, so deeply nested controls resolve tightly.
-        self.background {
-            GeometryReader { proxy in
-                Color.clear
-                    .anchorPreference(key: WalkthroughAnchorPreferenceKey.self, value: .bounds) { anchor in [id: anchor] }
-                    .preference(
-                        key: WalkthroughFramePreferenceKey.self,
-                        value: [id: proxy.frame(in: .global)]
-                    )
-            }
-        }
+        modifier(WalkthroughAnchorMeasurement(id: id))
     }
 
     /// Registers this view as BOTH a spotlight anchor and a scroll target, so the
@@ -88,20 +79,29 @@ extension View {
     }
 
     @ViewBuilder
-    func optionalWalkthroughAnchor(_ id: WalkthroughAnchorID?) -> some View {
-        if let id {
-            walkthroughAnchor(id)
-        } else {
-            self
-        }
-    }
-
-    @ViewBuilder
     func optionalWalkthroughTarget(_ id: WalkthroughAnchorID?) -> some View {
         if let id {
             walkthroughTarget(id)
         } else {
             self
+        }
+    }
+}
+
+/// Keeps content identity stable while completely removing idle tour geometry from scrolling views.
+private struct WalkthroughAnchorMeasurement: ViewModifier {
+    let id: WalkthroughAnchorID
+    @Environment(WalkthroughController.self) private var controller: WalkthroughController?
+
+    func body(content: Content) -> some View {
+        content.background {
+            if controller?.isActive == true {
+                GeometryReader { proxy in
+                    Color.clear
+                        .anchorPreference(key: WalkthroughAnchorPreferenceKey.self, value: .bounds) { [id: $0] }
+                        .preference(key: WalkthroughFramePreferenceKey.self, value: [id: proxy.frame(in: .global)])
+                }
+            }
         }
     }
 }

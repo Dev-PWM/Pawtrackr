@@ -523,6 +523,9 @@
 "clients.notifications_unread_fmt" = "Notifications, %d unread";
 "clients.needs_attention" = "Needs Attention";
 "clients.action.view_details" = "View Details";
+"client_detail.call" = "Call";
+"client_detail.email" = "Email";
+"client_detail.directions" = "Directions";
 "clients.action.call" = "Call";
 "clients.action.message" = "Message";
 "clients.action.email" = "Email";
@@ -894,11 +897,21 @@
 "onboarding.permissions.auto_lock.subtitle" = "Automatically relock the app after a few idle minutes.";
 "onboarding.business.preview_name" = "Your Business Name";
 "onboarding.welcome.title" = "Welcome to Pawtrackr";
-"onboarding.welcome.message" = "The modern workspace for pet groomers.\nLet's get your business set up in minutes.";
+"onboarding.welcome.message" = "Clients, pets, visits and checkout in one calm workspace.\nSet up your salon in a few minutes.";
 "onboarding.feature.privacy.title" = "Privacy First";
 "onboarding.feature.privacy.subtitle_device" = "Your clients are saved on your device. You can lock the app with a PIN and Face ID or Touch ID.";
 "onboarding.feature.insights.title" = "Business Insights";
-"onboarding.feature.insights.subtitle" = "Track revenue, service trends, and client loyalty effortlessly.";
+"onboarding.feature.insights.subtitle" = "Revenue, trends and reports you can open in Excel and Numbers.";
+"onboarding.welcome.version_fmt" = "Version %@";
+"onboarding.welcome.trust" = "No account needed · Works offline";
+"onboarding.feature.pets.title" = "Every Pet, One Profile";
+"onboarding.feature.pets.subtitle" = "Photos, behavior notes, safety alerts and visit history for each pet.";
+"onboarding.feature.checkout.title" = "Checkout in Seconds";
+"onboarding.feature.checkout.subtitle" = "Enter what you charge and share a PDF receipt by AirDrop, Messages or Mail.";
+"onboarding.feature.loyalty.title" = "Loyalty That Runs Itself";
+"onboarding.feature.loyalty.subtitle" = "Points are added after every paid visit. Clients choose rewards at checkout.";
+"onboarding.feature.celebrations.title" = "Birthdays & Anniversaries";
+"onboarding.feature.celebrations.subtitle" = "Pet birthdays and salon anniversaries are flagged so you can celebrate them.";
 "onboarding.business.upload_logo" = "Upload Business Logo";
 "onboarding.business.change_logo" = "Change Logo";
 "onboarding.business.name" = "Business Name";
@@ -1110,16 +1123,18 @@
 "message_template.follow_up.content" = "Hi [OwnerName], thanks for bringing [PetName] to Pawtrackr today! We hope they enjoyed their spa day.";
 "whats_new.title" = "What's New in Pawtrackr";
 "whats_new.continue" = "Continue";
-"whats_new.local_data.title" = "Your Data Stays on This Device";
-"whats_new.local_data.description" = "iCloud sync is off. Everything already here stays, and from now on each iPhone, iPad and Mac keeps its own records. Export a copy anytime in Settings › Data Export.";
-"whats_new.academy.title" = "Pawtrackr Academy";
-"whats_new.academy.description" = "Learn the app in five short chapters with hands-on missions, in a practice salon that never touches your real clients. Start it in Settings › About.";
-"whats_new.exports.title" = "Better Reports and Exports";
-"whats_new.exports.description" = "The business report PDF now shows trends, charts and highlights, and CSV files open cleanly in Excel and Numbers. Send them by AirDrop, Messages or Mail.";
-"whats_new.missing_info.title" = "Smarter Missing Info Filter";
-"whats_new.missing_info.description" = "Clients without an emergency contact, phone or email now show up under Missing Info, and their cards say what to add.";
-"whats_new.checkout.title" = "Roomier, Simpler Checkout";
-"whats_new.checkout.description" = "Checkout is wider on the Mac, and the tip step is gone: the total is your services, or the amount you type.";
+"whats_new.celebrations.title" = "Birthdays & Anniversaries";
+"whats_new.celebrations.description" = "On a pet's birthday, its card celebrates with confetti. No birthdate on file? Pawtrackr celebrates each year the client has been with you.";
+"whats_new.rewards.title" = "Simpler Rewards";
+"whats_new.rewards.description" = "Rewards show the points balance, the next reward and the history. Membership tiers are gone, and points are used only when you confirm payment.";
+"whats_new.search.title" = "Smarter Client Search";
+"whats_new.search.description" = "Search several words at once or any part of a phone number. Type pet:, breed: or email: to narrow the results.";
+"whats_new.checkout_amount.title" = "Checkout You Control";
+"whats_new.checkout_amount.description" = "Type the amount you charge. Choosing services never changes it, and an unfinished checkout is saved so you can pick up where you left off.";
+"whats_new.safety.title" = "Clearer Safety Alerts";
+"whats_new.safety.description" = "Pet cards glow by temperament, and an aggressive flag clears only after three recorded visits without aggression.";
+"whats_new.smoother.title" = "Smoother Everywhere";
+"whats_new.smoother.description" = "A new welcome screen, lighter animations that respect Reduce Motion and Low Power Mode, and an email keyboard with the @ key.";
 
 // Raw SwiftUI literal localization cleanup.
 "dashboard.activity.title" = "Salon Activity";
@@ -1678,7 +1693,7 @@
 "tour.academy.cd_emergency.what" = "Backup people staff can call when the owner can’t be reached.";
 "tour.academy.cd_emergency.try" = "Tap + to add a backup contact, then save or close the form.";
 "tour.academy.cd_loyalty.title" = "Loyalty points";
-"tour.academy.cd_loyalty.what" = "Loyalty & Rewards shows this client’s points. The badge color shows their tier.";
+"tour.academy.cd_loyalty.what" = "Loyalty & Rewards shows this client’s points, reward progress and visit history.";
 "tour.academy.cd_loyalty.why" = "Every checkout adds points on its own, by default from what the client pays. Points buy rewards like a visit credit, so regulars have a reason to come back.";
 "tour.academy.cd_addpet.title" = "Pets & Add Pet";
 "tour.academy.cd_addpet.what" = "Pet cards show profile details, handling cues and birthdays. Add Pet adds another.";
@@ -1902,9 +1917,9 @@
 "pet.birthday.date_type" = "Birthday details";
 "pet.birthday.unknown" = "Not known yet";
 "pet.birthday.known" = "Known birthdate";
-"pet.birthday.celebration" = "Chosen celebration day";
+"pet.birthday.celebration" = "Salon anniversary";
 "pet.birthday.date" = "Date";
-"pet.birthday.celebration_help" = "Starts with today, your day together at the salon. Celebrate it each year; it does not set the pet’s age or the owner’s birthday.";
+"pet.birthday.celebration_help" = "When the birthdate is unknown, celebrate the client’s years with the salon, using their earliest registration or completed visit. This never sets the pet’s age.";
 "pet.stage.title" = "Life stage";
 "pet.stage.automatic" = "Estimate from birthdate";
 "pet.stage.help" = "Age gives a general guide: puppy/kitten under 1, adult, senior at 8+ for dogs or 11+ for cats. Dogs vary by breed and size. Choose the owner’s or vet’s reported stage when needed. Senior does not automatically mean special needs.";
@@ -1924,7 +1939,7 @@
 "checkout.loyalty.spa_required" = "Select Spa Package before redeeming the VIP Spa reward.";
 "checkout.loyalty.spa_ready" = "Free spa available: select Spa Package, then redeem VIP Spa in Payment. Points are used only when you confirm.";
 "checkout.loyalty.spa_free" = "VIP Spa redeemed: the entered service amount is free, including selected add-ons. Editing the amount will not add a charge.";
-"loyalty.earning.completed_visit" = "Every completed, settled visit earns 20 points, including a free reward visit. Price, membership tier and return timing do not change the award.";
+"loyalty.earning.completed_visit" = "Every completed, settled visit earns 20 points, including a free reward visit. Points are tracked automatically and stay available until used.";
 "loyalty.earning.once" = "Points are saved once per completed visit. Payment retries never add a second award.";
 "loyalty.preview.tiers_fixed_fmt" = "Points earned at checkout move a client up: Silver at %1$@, Gold at %2$@ and Platinum at %3$@. Every completed visit earns 20 points. Spending points never lowers a tier.";
 "loyalty.preview.redeem_spa" = "Choose an available reward on the Payment step of checkout, or keep points for later. Credits lower the amount due automatically; redeeming VIP Spa with Spa Package selected makes the entered service amount free.";
@@ -1936,3 +1951,25 @@
 "settings.preferences.try_haptics" = "Try Feedback";
 
 "checkout.error.invalid_amount" = "Enter a valid amount.";
+
+// Feedback status and hardware-aware preview
+"settings.haptics.off" = "Feedback is off";
+"settings.haptics.ready" = "Feedback is on · Preview ready";
+"settings.haptics.previewed" = "Feedback previewed";
+"settings.haptics.off_detail" = "Turn on feedback for taps, selections, and confirmations.";
+"settings.haptics.simulator" = "Simulator shows the visual preview. Feel tactile feedback on a supported iPhone.";
+"settings.haptics.unavailable" = "This device has no supported haptic hardware. The visual preview is still available.";
+"settings.haptics.trackpad" = "Tactile feedback uses a compatible Force Touch trackpad. The visual preview is always available.";
+"settings.haptics.device" = "Feel light taps for selections and distinct cues for confirmations. System settings can affect tactile feedback.";
+
+"pet.celebration.boy" = "Birthday boy, %@!";
+"pet.celebration.girl" = "Birthday girl, %@!";
+"pet.celebration.birthday" = "Happy birthday, %@!";
+"pet.celebration.one_year" = "%d year with us!";
+"pet.celebration.years" = "%d years with us!";
+"pet.celebration.born" = "Welcome to the world!";
+"pet.celebration.turning" = "Turning %d today. Let’s celebrate!";
+"pet.celebration.family" = "Celebrating your family’s time at the salon.";
+"pet.celebration.thanks" = "Thank you, %@, for being part of our salon family.";
+"pet.celebration.replay" = "Tap to celebrate again.";
+"pet.birthday.registered" = "Pet registered";

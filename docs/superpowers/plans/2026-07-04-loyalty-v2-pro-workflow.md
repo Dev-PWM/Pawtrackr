@@ -1,5 +1,7 @@
 # Loyalty V2 and Pro Workflow Implementation Plan
 
+> Historical record. ADR-0003/0004 supersede the staged-migration examples, ADR-0005 supersedes CloudKit guidance, and subscriptions are paused. Current implementation rules are in root `AGENTS.md` and scoped subsystem guides.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Build configurable client-owned loyalty rewards, add the required SwiftData V2 migration, then add SwiftUI-native Mac/iPad pro windows and insights scrubbing.

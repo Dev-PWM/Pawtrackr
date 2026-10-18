@@ -27,18 +27,14 @@ final class VisitTimer: ObservableObject {
     @Published private(set) var endedAt: Date?
 
     /// Whole seconds elapsed for the *current* run (derived from `startedAt`).
-    @Published private(set) var elapsedSeconds: Int = 0 {
-        didSet {
-            formattedElapsed = Self.format(seconds: elapsedSeconds)
-            accessibilityElapsedLabel = Self.spelledOut(seconds: elapsedSeconds)
-        }
-    }
+    /// The only per-tick published value, so each second invalidates observers once.
+    @Published private(set) var elapsedSeconds: Int = 0
 
     /// Human-friendly clock string like "1h 12m" (USD app uses English).
-    @Published private(set) var formattedElapsed: String = "0m"
+    var formattedElapsed: String { Self.format(seconds: elapsedSeconds) }
 
     /// Accessibility-friendly, fully spelled-out duration (e.g., "1 hour 2 minutes", "45 seconds").
-    @Published private(set) var accessibilityElapsedLabel: String = "0 seconds"
+    var accessibilityElapsedLabel: String { Self.spelledOut(seconds: elapsedSeconds) }
 
     // MARK: - Internal state
 
@@ -190,12 +186,24 @@ final class VisitTimer: ObservableObject {
     /// Fully spelled-out duration for VoiceOver (e.g., "1 hour 2 minutes", "12 minutes", "45 seconds").
     static func spelledOut(seconds: Int) -> String {
         let s = max(0, seconds)
-        let f = DateComponentsFormatter()
-        f.unitsStyle = .full
         // Prefer hours+minutes when applicable, else minutes, else seconds.
-        f.allowedUnits = s >= 3600 ? [.hour, .minute] : (s >= 60 ? [.minute] : [.second])
-        f.zeroFormattingBehavior = [.dropAll]
+        let f = s >= 3600 ? hourMinuteFormatter : (s >= 60 ? minuteFormatter : secondFormatter)
         return f.string(from: TimeInterval(s)) ?? "\(s) seconds"
+    }
+
+    // Live timers ask for this label every second, so the formatters are built once.
+    // The autoupdating calendar keeps them following the system locale like a fresh formatter.
+    private static let hourMinuteFormatter = makeSpelledOutFormatter([.hour, .minute])
+    private static let minuteFormatter = makeSpelledOutFormatter([.minute])
+    private static let secondFormatter = makeSpelledOutFormatter([.second])
+
+    private static func makeSpelledOutFormatter(_ units: NSCalendar.Unit) -> DateComponentsFormatter {
+        let f = DateComponentsFormatter()
+        f.calendar = .autoupdatingCurrent
+        f.unitsStyle = .full
+        f.allowedUnits = units
+        f.zeroFormattingBehavior = [.dropAll]
+        return f
     }
 
     // MARK: - Private helpers
@@ -216,9 +224,7 @@ final class VisitTimer: ObservableObject {
     private func updateElapsed(now: Date) {
         let newValue: Int
         if let started = startedAt {
-            // Using Calendar.current.dateComponents to get integer seconds between dates
-            let components = Calendar.current.dateComponents([.second], from: started, to: now)
-            newValue = max(0, components.second ?? 0)
+            newValue = Self.seconds(between: started, and: now)
         } else {
             newValue = accumulatedSeconds
         }

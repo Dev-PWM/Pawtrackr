@@ -199,7 +199,14 @@ struct ClientDetailView: View {
                 macAddPetToolbarItem
             }
             #if os(iOS)
-            .fabOverlay { addPetFab }
+            .safeAreaInset(edge: .bottom, alignment: .trailing, spacing: 0) {
+                if usesFloatingAddPetAction {
+                    addPetFab
+                        .padding(.trailing, 24)
+                        .padding(.top, 8)
+                        .padding(.bottom, 16)
+                }
+            }
             #endif
             .sheet(item: $sheetDestination) { destination in
                 destinationSheet(destination, vm: vm)
@@ -293,22 +300,25 @@ struct ClientDetailView: View {
         horizontalSizeClass == .compact
     }
 
-    /// The FAB lives in a `.fabOverlay` that ignores the bottom safe area, so it
-    /// renders ABOVE the guided-tour spotlight dim and pokes through as a bright
-    /// distraction on every step. Hide it during the tour EXCEPT on its own
-    /// `cdAddPet` step, where it is the spotlight target. Opacity (not removal)
-    /// keeps its anchor registered so the spotlight still resolves.
+    /// Keep the add-pet action inside the content safe area, above the tab bar.
+    /// During the tour only its own step displays it; opacity preserves the anchor.
     private var isAddPetFabHiddenForWalkthrough: Bool {
         !usesFloatingAddPetAction || (walkthrough?.isActive == true && walkthrough?.currentStep?.anchor != .cdAddPet)
     }
 
     @ViewBuilder
     private var addPetFab: some View {
-        let fab = FAB(systemImage: "pawprint.fill", accessibilityLabel: NSLocalizedString("a11y.add_new_pet", comment: "")) {
+        let fab = FAB(
+            systemImage: "pawprint.fill",
+            accessibilityLabel: NSLocalizedString("a11y.add_new_pet", comment: ""),
+            tint: DS.ColorToken.primary
+        ) {
             sheetDestination = .addPet
         }
         .opacity(isAddPetFabHiddenForWalkthrough ? 0 : 1)
         .allowsHitTesting(!isAddPetFabHiddenForWalkthrough)
+        .accessibilityHidden(isAddPetFabHiddenForWalkthrough)
+        .accessibilityIdentifier("clientDetail.addPet.floating")
         .animation(.easeInOut(duration: 0.2), value: isAddPetFabHiddenForWalkthrough)
 
         // Only the *visible* add-pet control may own the `.cdAddPet` spotlight
@@ -439,10 +449,13 @@ struct ClientDetailView: View {
         case .checkIn(let pet):
             Button(NSLocalizedString("common.yes", comment: "")) {
                 vm.checkIn(pet: pet)
-                withAnimation(Animations.fastEaseOut) { showSessionStartedToast = true }
-                DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
-                    withAnimation(Animations.fastEaseOut) { showSessionStartedToast = false }
-                }
+                // Replace any earlier "already in session" text before showing.
+                sessionStartedToastText = NSLocalizedString(
+                    "client_detail.session_started",
+                    value: "Session started for \(pet.name)",
+                    comment: ""
+                )
+                flashSessionToast()
             }
             Button(NSLocalizedString("common.no", comment: ""), role: .cancel) {}
         case .deleteClient:
@@ -534,29 +547,29 @@ struct ClientDetailView: View {
         .overlay(alignment: .top) {
             VStack(spacing: 6) {
                 if showSessionStartedToast {
-                    SessionToast(
-                        text: sessionStartedToastText.isEmpty
-                            ? NSLocalizedString("client_detail.session_started", comment: "")
-                            : sessionStartedToastText,
-                        tint: .blue
-                    )
+                    SessionToast(text: sessionToastMessage, tint: .blue)
                         .transition(.move(edge: .top).combined(with: .opacity))
                 }
                 if showSavedToast {
-                    SavedToast(text: NSLocalizedString("client_detail.saved_successfully", comment: ""))
+                    SavedToast(text: savedToastMessage)
                         .transition(.move(edge: .top).combined(with: .opacity))
                 }
             }
             .padding(.top, 8)
             .allowsHitTesting(false)
         }
+        // `.task(id:)` cancels the previous countdown whenever a toast is shown
+        // again, so an older timer never hides a newer toast early.
+        .task(id: sessionToastRequest) {
+            await autoHideToast(request: sessionToastRequest, message: sessionToastMessage) { showSessionStartedToast = false }
+        }
+        .task(id: savedToastRequest) {
+            await autoHideToast(request: savedToastRequest, message: savedToastMessage) { showSavedToast = false }
+        }
         .onReceive(NotificationCenter.default.publisher(for: .clientDidCreate)) { notif in
             guard let id = notif.createdClientID, notif.clientCreatePhase == .navigated else { return }
             if id == vm.client.persistentModelID {
-                withAnimation(Animations.fastEaseOut) { showSavedToast = true }
-                DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
-                    withAnimation(Animations.fastEaseOut) { showSavedToast = false }
-                }
+                flashSavedToast()
             }
         }
     }
@@ -692,9 +705,18 @@ struct ClientDetailView: View {
                     Spacer()
                     if isEditingClientInline {
                         HStack(spacing: 8) {
-                            Button { cancelInlineEdit(client) } label: { Image(systemName: "xmark.circle.fill") }
+                            ClientActionButton(
+                                systemImage: "xmark",
+                                tint: .secondary,
+                                label: NSLocalizedString("common.cancel", comment: "")
+                            ) { cancelInlineEdit(client) }
                                 .accessibilityIdentifier("clientDetail.inlineEdit.cancel")
-                            Button { saveInlineEdit(client) } label: { Image(systemName: "checkmark.circle.fill") }
+                            ClientActionButton(
+                                systemImage: "checkmark",
+                                tint: DS.ColorToken.primary,
+                                isProminent: true,
+                                label: NSLocalizedString("common.save", comment: "")
+                            ) { saveInlineEdit(client) }
                                 .disabled(
                                     editFirst.trimmed.isEmpty ||
                                     editLast.trimmed.isEmpty ||
@@ -702,10 +724,13 @@ struct ClientDetailView: View {
                                 )
                                 .accessibilityIdentifier("clientDetail.inlineEdit.save")
                         }
-                        .font(.title3)
                     } else {
-                        HStack(spacing: 12) {
-                            Button {
+                        HStack(spacing: 8) {
+                            ClientActionButton(
+                                systemImage: "message.fill",
+                                tint: DS.ColorToken.calmBlue,
+                                label: NSLocalizedString("client_detail.message", value: "Message", comment: "")
+                            ) {
                                 guard let firstPet = (client.pets ?? []).first else { return }
                                 viewModel?.recordAttentionOutreach(method: "message")
                                 // Route through the single `.sheet(item:)` so the
@@ -713,14 +738,14 @@ struct ClientDetailView: View {
                                 // `.sheet(isPresented:)` on the outer Group was being
                                 // silently dropped by SwiftUI on macOS.
                                 sheetDestination = .communication(firstPet)
-                            } label: { Image(systemName: "message.circle.fill") }
-                                .font(.title3)
-                                .foregroundStyle(.blue)
+                            }
                                 .disabled((client.pets ?? []).isEmpty)
                                 .accessibilityIdentifier("clientDetail.message")
-                            Button { beginInlineEdit(client) } label: { Image(systemName: "ellipsis.circle") }
-                                .font(.title3)
-                                .accessibilityLabel(NSLocalizedString("a11y.more_actions", comment: ""))
+                            ClientActionButton(
+                                systemImage: "pencil",
+                                tint: DS.ColorToken.textSecondary,
+                                label: NSLocalizedString("common.edit", value: "Edit", comment: "")
+                            ) { beginInlineEdit(client) }
                                 .accessibilityIdentifier("clientDetail.editInline")
                         }
                     }
@@ -744,11 +769,16 @@ struct ClientDetailView: View {
                             TextField(NSLocalizedString("new_client.email", comment: ""), text: $editEmail)
                                 .textFieldStyle(.roundedBorder)
                                 .textLengthLimit($editEmail, to: TextInputLimits.email)
+                                .emailFieldInput()
                         }
                     }
                 } else {
                     VStack(spacing: 10) {
-                        contactRow(icon: "phone.fill", text: PhoneUtils.display(client.phone ?? "") ?? "—") {
+                        contactRow(
+                            icon: "phone.fill",
+                            tint: DS.ColorToken.success,
+                            text: PhoneUtils.display(client.phone ?? "") ?? "—"
+                        ) {
                             if let tel = PhoneUtils.telURLString(client.phone ?? ""), let url = URL(string: tel) {
                                 viewModel?.recordAttentionOutreach(method: "call")
                                 URLOpener.open(url)
@@ -756,30 +786,50 @@ struct ClientDetailView: View {
                         } trailing: {
                             HStack(spacing: 8) {
                                 if PhoneUtils.smsURLString(client.phone ?? "") != nil {
-                                    Button {
+                                    ClientActionButton(
+                                        systemImage: "message.fill",
+                                        tint: DS.ColorToken.success,
+                                        label: NSLocalizedString("client_detail.message", value: "Message", comment: "")
+                                    ) {
                                         guard let firstPet = (client.pets ?? []).first else { return }
                                         sheetDestination = .communication(firstPet)
-                                    } label: { Image(systemName: "message.fill") }
-                                    .accessibilityLabel(NSLocalizedString("client_detail.message", value: "Message", comment: ""))
+                                    }
                                 }
                                 if let tel = PhoneUtils.telURLString(client.phone ?? ""), let telURL = URL(string: tel) {
-                                    Button {
+                                    ClientActionButton(
+                                        systemImage: "phone.fill",
+                                        tint: DS.ColorToken.success,
+                                        isProminent: true,
+                                        label: NSLocalizedString("client_detail.call", value: "Call", comment: "")
+                                    ) {
                                         viewModel?.recordAttentionOutreach(method: "call")
                                         URLOpener.open(telURL)
-                                    } label: { Image(systemName: "phone.fill") }
+                                    }
                                 }
                             }
                         }
-                        contactRow(icon: "envelope.fill", text: (client.email ?? "—")) {
+                        contactRow(icon: "envelope.fill", tint: DS.ColorToken.calmBlue, text: (client.email ?? "—")) {
                             if let email = client.email, let url = URL(string: "mailto:\(email)") { URLOpener.open(url) }
                         } trailing: {
                             if let email = client.email, let url = URL(string: "mailto:\(email)") {
-                                Button { URLOpener.open(url) } label: { Image(systemName: "envelope.fill") }
+                                ClientActionButton(
+                                    systemImage: "envelope.fill",
+                                    tint: DS.ColorToken.calmBlue,
+                                    label: NSLocalizedString("client_detail.email", value: "Email", comment: "")
+                                ) { URLOpener.open(url) }
                             }
                         }
-                        contactRow(icon: "mappin.and.ellipse", text: (client.address ?? "—")) {} trailing: {
+                        contactRow(
+                            icon: "mappin.and.ellipse",
+                            tint: DS.ColorToken.warning,
+                            text: client.address ?? "—"
+                        ) {} trailing: {
                             if let addr = client.address?.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed), let url = URL(string: "http://maps.apple.com/?q=\(addr)") {
-                                Button { URLOpener.open(url) } label: { Image(systemName: "map.fill") }
+                                ClientActionButton(
+                                    systemImage: "map.fill",
+                                    tint: DS.ColorToken.warning,
+                                    label: NSLocalizedString("client_detail.directions", value: "Directions", comment: "")
+                                ) { URLOpener.open(url) }
                             }
                         }
                         if let primaryEmergencyContact {
@@ -802,22 +852,27 @@ struct ClientDetailView: View {
             summary
         )
         let telURL = PhoneUtils.telURLString(contact.phone).flatMap { URL(string: $0) }
-        return contactRow(icon: "cross.case.fill", text: text) {
+        return contactRow(icon: "cross.fill", tint: DS.ColorToken.danger, filledIcon: true, text: text) {
             if let telURL { URLOpener.open(telURL) }
         } trailing: {
             #if os(macOS)
             if !contact.phone.trimmed.isEmpty {
-                Button { PasteboardWriter.copy(EmergencyContactRules.displayPhone(contact.phone)) } label: { Image(systemName: "doc.on.doc") }
-                    .buttonStyle(.borderless)
-                    .accessibilityLabel(AppLocalization.localized("client_detail.copy_phone", value: "Copy Phone"))
+                ClientActionButton(
+                    systemImage: "doc.on.doc",
+                    tint: DS.ColorToken.textSecondary,
+                    label: AppLocalization.localized("client_detail.copy_phone", value: "Copy Phone")
+                ) { PasteboardWriter.copy(EmergencyContactRules.displayPhone(contact.phone)) }
             }
             #endif
             if let telURL {
-                Button { URLOpener.open(telURL) } label: { Image(systemName: "phone.fill") }
-                    .accessibilityLabel(String(
+                ClientActionButton(
+                    systemImage: "phone.fill",
+                    tint: DS.ColorToken.success,
+                    label: String(
                         format: AppLocalization.localized("client_detail.call_contact_fmt", value: "Call %@"),
                         contact.name
-                    ))
+                    )
+                ) { URLOpener.open(telURL) }
             }
         }
         .accessibilityIdentifier("clientDetail.primaryEmergencyContact")
@@ -1101,10 +1156,7 @@ struct ClientDetailView: View {
                                                 format: AppLocalization.localized("client_detail.pet_already_in_session", value: "%@ is already in session"),
                                                 pet.name
                                             )
-                                            withAnimation(Animations.fastEaseOut) { showSessionStartedToast = true }
-                                            DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
-                                                withAnimation(Animations.fastEaseOut) { showSessionStartedToast = false }
-                                            }
+                                            flashSessionToast()
                                             HapticManager.notify(.warning)
                                             return
                                         }
@@ -1114,10 +1166,7 @@ struct ClientDetailView: View {
                                             value: "Session started for \(pet.name)",
                                             comment: ""
                                         )
-                                        withAnimation(Animations.fastEaseOut) { showSessionStartedToast = true }
-                                        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
-                                            withAnimation(Animations.fastEaseOut) { showSessionStartedToast = false }
-                                        }
+                                        flashSessionToast()
                                     }
                                     .opacity(activeVisit == nil && !isCheckingIn ? 1.0 : 0.55)
                                     .disabled(activeVisit != nil || isCheckingIn)
@@ -1295,13 +1344,6 @@ struct ClientDetailView: View {
     }
 
     // MARK: - Actions
-    private func openClientWindow(_ mode: DetachedClientWindowMode) {
-        guard entitlements.isPremium else {
-            sheetDestination = .subscriptionPaywall
-            return
-        }
-        openWindow(id: "client-window", value: DetachedClientWindowRoute(clientUUID: client.uuid, mode: mode))
-    }
 
     private func deleteClient(vm: ClientDetailViewModel) {
         Task { await performDeleteClient(vm: vm) }
@@ -1412,11 +1454,7 @@ struct ClientDetailView: View {
         }
         inlineEditBaseline = nil
         withAnimation(Animations.fastEaseOut) { isEditingClientInline = false }
-        // Optional: show a small saved toast for inline edits
-        withAnimation(Animations.fastEaseOut) { showSavedToast = true }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
-            withAnimation(Animations.fastEaseOut) { showSavedToast = false }
-        }
+        flashSavedToast()
     }
 
     private func continueWalkthroughAfterVisitStart(_ notification: Notification, vm: ClientDetailViewModel) {
@@ -1543,6 +1581,43 @@ struct ClientDetailView: View {
     @State private var showSavedToast = false
     @State private var showSessionStartedToast = false
     @State private var sessionStartedToastText: String = ""
+    /// Bumped on every show; each value restarts that toast's hide countdown.
+    @State private var savedToastRequest = 0
+    @State private var sessionToastRequest = 0
+
+    private var sessionToastMessage: String {
+        sessionStartedToastText.isEmpty
+            ? NSLocalizedString("client_detail.session_started", comment: "")
+            : sessionStartedToastText
+    }
+
+    private var savedToastMessage: String {
+        NSLocalizedString("client_detail.saved_successfully", comment: "")
+    }
+
+    private func flashSavedToast() {
+        withAnimation(Animations.fastEaseOut) { showSavedToast = true }
+        savedToastRequest &+= 1
+        AccessibilityNotification.Announcement(savedToastMessage).post()
+    }
+
+    private func flashSessionToast() {
+        withAnimation(Animations.fastEaseOut) { showSessionStartedToast = true }
+        sessionToastRequest &+= 1
+        AccessibilityNotification.Announcement(sessionToastMessage).post()
+    }
+
+    /// Hides a toast once it has been visible long enough, unless the view
+    /// shows it again first (which cancels this task).
+    private func autoHideToast(request: Int, message: String, hide: @escaping () -> Void) async {
+        guard request > 0 else { return }
+        do {
+            try await Task.sleep(for: ToastTiming.visibleDuration(for: message))
+        } catch {
+            return
+        }
+        withAnimation(Animations.fastEaseOut) { hide() }
+    }
 
     private struct SavedToast: View {
         var text: String
@@ -1573,6 +1648,16 @@ struct ClientDetailView: View {
             .background(Capsule().fill(tint.opacity(0.9)))
             .shadow(radius: 6)
         }
+    }
+}
+
+/// How long Client Detail's status toasts stay on screen.
+private enum ToastTiming {
+    /// Returns how long a toast showing `message` stays visible before it hides.
+    // TODO(learning): choose the visibility policy (fixed, scaled to message
+    // length, longer under VoiceOver). 2 s matches the previous behavior.
+    static func visibleDuration(for message: String) -> Duration {
+        .seconds(2)
     }
 }
 
@@ -1636,28 +1721,61 @@ private struct CheckoutPresentationModifier: ViewModifier {
 }
 
 // MARK: - Local UI building blocks
-private func clientInitials(_ client: Client) -> String {
-    let f = client.firstName.trimmingCharacters(in: .whitespacesAndNewlines)
-    let l = client.lastName.trimmingCharacters(in: .whitespacesAndNewlines)
-    let fi = f.first.map { String($0) } ?? ""
-    let li = l.first.map { String($0) } ?? ""
-    return (fi + li).uppercased()
-}
 
-private struct InitialsCircle: View {
-    let initials: String
-    var gradient: Gradient = Gradient(colors: [Color.blue, Color.blue.opacity(0.85)])
+/// A round, tinted icon button for the owner card's quick actions.
+///
+/// It matches the tinted circles that lead each contact row, uses the shared
+/// press feedback, and shows its label as a tooltip on the Mac. A prominent
+/// button fills the circle with the tint for the row's main action.
+private struct ClientActionButton: View {
+    let systemImage: String
+    let tint: Color
+    var isProminent = false
+    let label: String
+    let action: () -> Void
+
+    @Environment(\.isEnabled) private var isEnabled
+
+    init(systemImage: String, tint: Color, isProminent: Bool = false, label: String, action: @escaping () -> Void) {
+        self.systemImage = systemImage
+        self.tint = tint
+        self.isProminent = isProminent
+        self.label = label
+        self.action = action
+    }
+
     var body: some View {
-        ZStack {
-            Circle().fill(LinearGradient(gradient: gradient, startPoint: .topLeading, endPoint: .bottomTrailing))
-            Text(initials).font(.headline.weight(.semibold)).foregroundStyle(.primary)
+        Button(action: action) {
+            Image(systemName: systemImage)
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(isProminent ? Color.white : tint)
+                .frame(width: 34, height: 34)
+                .background(isProminent ? tint : tint.opacity(0.14), in: Circle())
+                .overlay(Circle().strokeBorder(tint.opacity(isProminent ? 0 : 0.22), lineWidth: 0.5))
+                .contentShape(Circle().inset(by: -5))
+                .opacity(isEnabled ? 1 : 0.4)
         }
+        .pressScaleStyle()
+        .accessibilityLabel(label)
+        .help(label)
     }
 }
 
-@ViewBuilder private func contactRow(icon: String, text: String, onTap: @escaping () -> Void, @ViewBuilder trailing: () -> some View) -> some View {
+@ViewBuilder private func contactRow(
+    icon: String,
+    tint: Color,
+    filledIcon: Bool = false,
+    text: String,
+    onTap: @escaping () -> Void,
+    @ViewBuilder trailing: () -> some View
+) -> some View {
     HStack(spacing: 10) {
-        Circle().fill(Color.gray.opacity(0.12)).frame(width: 28, height: 28).overlay(Image(systemName: icon).foregroundStyle(.secondary).font(.subheadline))
+        Image(systemName: icon)
+            .font(.subheadline.weight(.semibold))
+            .foregroundStyle(filledIcon ? .white : tint)
+            .frame(width: 28, height: 28)
+            .background(filledIcon ? tint : tint.opacity(0.12), in: Circle())
+            .accessibilityHidden(true)
         Text(text).font(.subheadline.weight(.medium))
         Spacer()
         HStack(spacing: 8) { trailing() }
@@ -1720,14 +1838,6 @@ private extension Logger {
 }
 
 // Nonisolated small helper for duration string to use inside TimelineView
-private func humanDuration(_ seconds: Int) -> String {
-    let h = seconds / 3600
-    let m = (seconds % 3600) / 60
-    let s = seconds % 60
-    if h > 0 { return m > 0 ? "\(h)h \(m)m" : "\(h)h" }
-    if m > 0 { return s > 0 ? "\(m)m \(s)s" : "\(m)m" }
-    return "\(s)s"
-}
 
 // Format as H:MM:SS with monospaced digits for stable layout
 private func hms(_ seconds: Int) -> String {

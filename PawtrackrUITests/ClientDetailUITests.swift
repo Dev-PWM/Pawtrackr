@@ -48,6 +48,49 @@ final class ClientDetailUITests: XCTestCase {
 
     // MARK: - Inline edit
 
+    func testAddPetButtonClearsTabBarAndOpensFormInBothAppearances() throws {
+        let baselineArguments = app.launchArguments
+        for appearance in ["light", "dark"] {
+            app.terminate()
+            app.launchArguments = baselineArguments + ["-preferredColorScheme", appearance]
+            app.launch()
+            waitForDashboard()
+            guard app.tabBars.firstMatch.exists else {
+                throw XCTSkip("This regression covers the compact iPhone action; regular layouts use inline Add Pet.")
+            }
+            openSeededClient()
+
+            let addPet = app.buttons["clientDetail.addPet.floating"]
+            XCTAssertTrue(addPet.waitForHittable(timeout: 6))
+            let tabBar = app.tabBars.firstMatch
+            XCTAssertTrue(tabBar.exists)
+            XCTAssertLessThanOrEqual(addPet.frame.maxY + 8, tabBar.frame.minY,
+                                     "The add-pet button must remain fully above the tab bar in \(appearance) mode.")
+
+            let attachment = XCTAttachment(screenshot: app.screenshot())
+            attachment.name = "Client detail add-pet clearance — \(appearance)"
+            attachment.lifetime = .keepAlways
+            add(attachment)
+
+            let scroll = app.scrollViews.firstMatch
+            XCTAssertTrue(scroll.exists)
+            let historyHeading = app.staticTexts["Recent History"]
+            XCTAssertTrue(historyHeading.exists)
+            let historyPositionBeforeScroll = historyHeading.frame.minY
+            scroll.swipeUp()
+            XCTAssertLessThan(historyHeading.frame.minY, historyPositionBeforeScroll - 20,
+                              "The detail content must actually scroll before checking the floating action again.")
+            XCTAssertTrue(addPet.isHittable)
+            XCTAssertLessThanOrEqual(addPet.frame.maxY + 8, tabBar.frame.minY)
+
+            addPet.tap()
+            let cancel = app.buttons["addPet.cancel"]
+            XCTAssertTrue(cancel.waitForHittable(timeout: 6), "Add Pet must open from the floating action.")
+            cancel.tap()
+            XCTAssertTrue(addPet.waitForHittable(timeout: 6), "Add Pet form must dismiss on cancel.")
+        }
+    }
+
     func testInlineEditEntersAndCancels() throws {
         waitForDashboard()
         openSeededClient()

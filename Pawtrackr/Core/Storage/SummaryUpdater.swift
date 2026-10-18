@@ -489,56 +489,6 @@ enum SummaryUpdater {
         )
     }
 
-    /// Synchronous version that reuses already-fetched visits for efficiency
-    private static func rebuildDaySync(
-        for date: Date,
-        allVisits: [Visit],
-        existingSummary: DaySummary?,
-        existingServiceSummaries: [ServiceDaySummary],
-        in context: ModelContext
-    ) {
-        let cal = Calendar.current
-        let start = cal.startOfDay(for: date)
-        guard let end = cal.date(byAdding: .day, value: 1, to: start) else { return }
-
-        // Filter visits for this day
-        let visits = allVisits.filter { visit in
-            guard let endedAt = visit.endedAt else { return false }
-            return endedAt >= start && endedAt < end
-        }
-        let count = visits.count
-        let revenue = visits.reduce(Decimal.zero) { $0 +~ $1.total }
-
-        // Upsert DaySummary
-        if let s = existingSummary {
-            s.revenue = revenue
-            s.visitCount = count
-        } else {
-            context.insert(DaySummary(day: start, revenue: revenue, visitCount: count))
-        }
-
-        // Rebuild per-service counts
-        var svcCounts: [String: Int] = [:]
-        for v in visits {
-            for item in v.items ?? [] { svcCounts[item.displayName, default: 0] += 1 }
-        }
-
-        var existingSvcDict = existingServiceSummaries.reduce(into: [String: ServiceDaySummary]()) { $0[$1.serviceName] = $1 }
-
-        for (name, svcCount) in svcCounts {
-            if let summary = existingSvcDict[name] {
-                summary.count = svcCount
-                existingSvcDict.removeValue(forKey: name)
-            } else {
-                context.insert(ServiceDaySummary(day: start, serviceName: name, count: svcCount))
-            }
-        }
-
-        for summary in existingSvcDict.values {
-            context.delete(summary)
-        }
-    }
-
     private struct SummaryNameKey: Hashable {
         let day: Date
         let name: String

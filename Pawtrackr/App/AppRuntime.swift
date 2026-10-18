@@ -51,6 +51,13 @@ enum AppRuntime {
         return ProcessInfo.processInfo.environment[uiTestingStartTabEnvironmentKey]?.lowercased()
     }
 
+    #if DEBUG
+    /// Opts UI automation into the disposable thousand-client search fixture.
+    static var shouldSeedSearchStressFixture: Bool {
+        isUITesting && ProcessInfo.processInfo.environment["PAWTRACKR_UI_SEARCH_STRESS"] == "1"
+    }
+    #endif
+
     /// True only when a UI test explicitly asks the app shell to launch the
     /// guided walkthrough. Normal UI tests keep the production guard that
     /// prevents onboarding chrome from covering unrelated test screens.

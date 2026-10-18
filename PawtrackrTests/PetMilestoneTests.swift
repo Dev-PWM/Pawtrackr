@@ -59,6 +59,93 @@ final class PetMilestoneTests: XCTestCase {
         XCTAssertFalse(pet.celebrationStatus(on: date(2026), calendar: calendar).isHonorary)
     }
 
+    func testBirthdayTakesPriorityAndDoesNotMutateSavedDates() {
+        let owner = Client(firstName: "Ava", lastName: "Martinez")
+        owner.createdAt = date(2019)
+        let pet = Pet(name: "Luna", species: .dog, gender: .female)
+        pet.owner = owner
+        pet.createdAt = date(2025)
+        pet.birthdate = date(2023, 5, 6)
+        XCTAssertNil(pet.celebration(on: date(2026), calendar: calendar))
+        XCTAssertEqual(pet.celebration(on: date(2026, 5, 6), calendar: calendar), .birthday(age: 3))
+        XCTAssertEqual(pet.createdAt, date(2025))
+        XCTAssertEqual(owner.createdAt, date(2019))
+        XCTAssertEqual(pet.birthdate, date(2023, 5, 6))
+    }
+
+    func testUnknownBirthdateUsesClientHistoryIncludingOtherPets() {
+        let owner = Client(firstName: "Ava", lastName: "Martinez")
+        owner.createdAt = date(2025)
+        let pet = Pet(name: "Luna", species: .dog)
+        pet.createdAt = date(2026)
+        pet.owner = owner
+        let other = Pet(name: "Milo", species: .dog)
+        other.owner = owner
+        owner.pets = [pet, other]
+        let oldVisit = Visit(pet: other, startedAt: date(2020))
+        oldVisit.endedAt = date(2020).addingTimeInterval(3600)
+        let unfinished = Visit(pet: other, startedAt: date(2018))
+        let future = Visit(pet: other, startedAt: date(2017))
+        future.endedAt = date(2028)
+        let invalid = Visit(pet: other, startedAt: date(2016))
+        invalid.endedAt = date(2015)
+        other.visits = [oldVisit, unfinished, future, invalid]
+        XCTAssertEqual(pet.salonAnniversaryDate(on: date(2026)), date(2020))
+        XCTAssertEqual(pet.celebration(on: date(2026), calendar: calendar), .salonAnniversary(years: 6))
+        XCTAssertNil(pet.birthdate)
+        XCTAssertNil(pet.lifeStage(on: date(2026)))
+    }
+
+    func testClientRegistrationAndFirstLeapDayAnniversary() {
+        let owner = Client(firstName: "Ava", lastName: "Martinez")
+        owner.createdAt = date(2024, 2, 29)
+        let pet = Pet(name: "Luna", species: .dog)
+        pet.createdAt = date(2024, 6, 1)
+        pet.owner = owner
+        XCTAssertEqual(pet.celebration(on: date(2025, 2, 28), calendar: calendar), .salonAnniversary(years: 1))
+        XCTAssertNil(pet.celebration(on: date(2028, 2, 28), calendar: calendar))
+        XCTAssertEqual(pet.celebration(on: date(2028, 2, 29), calendar: calendar), .salonAnniversary(years: 4))
+        pet.birthdate = date(2024, 2, 29)
+        XCTAssertEqual(pet.celebration(on: date(2025, 2, 28), calendar: calendar), .birthday(age: 1))
+    }
+
+    func testCelebrationChangesAtLocalMidnight() throws {
+        var local = Calendar(identifier: .gregorian)
+        local.timeZone = try XCTUnwrap(TimeZone(identifier: "America/Los_Angeles"))
+        let midnight = try XCTUnwrap(local.date(from: DateComponents(year: 2026, month: 10, day: 12)))
+        let pet = Pet(name: "Luna", species: .dog)
+        pet.birthdate = try XCTUnwrap(local.date(from: DateComponents(year: 2023, month: 10, day: 12)))
+        XCTAssertNil(pet.celebration(on: midnight.addingTimeInterval(-1), calendar: local))
+        XCTAssertEqual(pet.celebration(on: midnight, calendar: local), .birthday(age: 3))
+        let nextDay = try XCTUnwrap(local.date(byAdding: .day, value: 1, to: midnight))
+        XCTAssertNil(pet.celebration(on: nextDay, calendar: local))
+        pet.birthdate = date(2027)
+        XCTAssertNil(pet.celebration(on: midnight, calendar: local))
+    }
+
+    func testBirthdayAndAnniversaryCopyInBothLanguages() {
+        let previous = UserDefaults.standard.object(forKey: AppSettingsKeys.appLanguageOverride)
+        defer { UserDefaults.standard.set(previous, forKey: AppSettingsKeys.appLanguageOverride) }
+        for language in [AppLanguageOverride.en, .es] {
+            UserDefaults.standard.set(language.rawValue, forKey: AppSettingsKeys.appLanguageOverride)
+            let male = PetCelebrationCopy.title(.birthday(age: 3), name: "Milo", gender: .male)
+            let female = PetCelebrationCopy.title(.birthday(age: 3), name: "Luna", gender: .female)
+            let neutral = PetCelebrationCopy.title(.birthday(age: 3), name: "Pepper", gender: nil)
+            XCTAssertTrue(male.contains("Milo"))
+            XCTAssertTrue(female.contains("Luna"))
+            XCTAssertTrue(neutral.contains("Pepper"))
+            XCTAssertNotEqual(male.replacingOccurrences(of: "Milo", with: "Pet"),
+                              female.replacingOccurrences(of: "Luna", with: "Pet"))
+            let firstYear = PetCelebrationCopy.title(.salonAnniversary(years: 1), name: "Luna", gender: .female)
+            let thirdYear = PetCelebrationCopy.title(.salonAnniversary(years: 3), name: "Luna", gender: .female)
+            let thanks = PetCelebrationCopy.detail(.salonAnniversary(years: 3), clientName: "Ava Martinez")
+            XCTAssertTrue(firstYear.contains("1"))
+            XCTAssertTrue(thirdYear.contains("3"))
+            XCTAssertTrue(thanks.contains("Ava Martinez"))
+            XCTAssertFalse(PetCelebrationCopy.detail(.birthday(age: 0), clientName: nil).isEmpty)
+        }
+    }
+
     func testActorSavesMilestonesAndPreservesConcurrentCareChanges() async throws {
         let schema = Schema(PawtrackrSchema.models)
         let container = try ModelContainer(for: schema, configurations: ModelConfiguration(schema: schema, isStoredInMemoryOnly: true, cloudKitDatabase: .none))
@@ -71,7 +158,7 @@ final class PetMilestoneTests: XCTestCase {
         let fresh = ModelContext(container)
         let pet = try XCTUnwrap(fresh.model(for: id) as? Pet)
         XCTAssertNil(pet.birthdate)
-        XCTAssertEqual(pet.annualCelebrationDate, pet.createdAt)
+        XCTAssertEqual(pet.annualCelebrationDate, pet.salonAnniversaryDate())
         let baseline = PetEditFields(pet: pet)
         pet.health = "Updated care"
         pet.weightLbs = 0 // Legacy data must not block an unrelated profile edit.
@@ -102,7 +189,7 @@ final class PetMilestoneTests: XCTestCase {
         let fresh = ModelContext(container)
         let pet = try XCTUnwrap(fresh.fetch(FetchDescriptor<Pet>()).first)
         XCTAssertNil(pet.birthdate)
-        XCTAssertEqual(pet.annualCelebrationDate, pet.createdAt)
+        XCTAssertEqual(pet.annualCelebrationDate, pet.salonAnniversaryDate())
         XCTAssertNil(pet.lifeStage(on: date(2026)))
     }
 

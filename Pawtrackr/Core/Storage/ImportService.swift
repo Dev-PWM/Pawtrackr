@@ -6,7 +6,6 @@ import OSLog
 /// Supports a flexible mapping of columns.
 final class ImportService {
     static let shared = ImportService()
-    private let log = Logger(subsystem: "com.pawtrackr", category: "ImportService")
     
     struct ImportResult {
         let clientsCreated: Int

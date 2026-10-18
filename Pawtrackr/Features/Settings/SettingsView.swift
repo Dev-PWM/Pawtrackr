@@ -69,6 +69,15 @@ enum SettingSection: String, CaseIterable, Identifiable {
         }
     }
 
+    var iconTint: Color {
+        switch self {
+        case .business, .dataExport, .about: return DS.ColorToken.calmBlue
+        case .preferences, .help: return DS.ColorToken.primary
+        case .loyalty: return DS.ColorToken.warning
+        case .security: return DS.ColorToken.success
+        }
+    }
+
     var walkthroughAnchorID: WalkthroughAnchorID? {
         switch self {
         case .business:
@@ -135,7 +144,6 @@ struct SettingsView: View {
     
     // State needed for sub-views
     @State private var showChangePIN = false
-    @State private var pinChangeError: String? = nil
     @State private var showWipeConfirm = false
 
     var body: some View {
@@ -170,7 +178,12 @@ struct SettingsView: View {
         List(SettingSection.allCases) { section in
             NavigationLink(value: section) {
                 HStack(spacing: 10) {
-                    Image(systemName: section.icon).foregroundStyle(Color.primary)
+                    Image(systemName: section.icon)
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundStyle(.white)
+                        .frame(width: 28, height: 28)
+                        .background(section.iconTint, in: RoundedRectangle(cornerRadius: 7, style: .continuous))
+                        .accessibilityHidden(true)
                     Text(section.title).foregroundStyle(Color.primary)
                 }
             }
@@ -855,6 +868,8 @@ private struct BusinessSectionView: View {
 
 private struct PreferencesSectionView: View {
     @Bindable var appSettings: AppSettings
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var feedbackPreviewCount = 0
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -926,21 +941,91 @@ private struct PreferencesSectionView: View {
                     Label(settingsLocalized("settings.preferences.haptics", value: "Haptic Feedback"), systemImage: "hand.tap.fill")
                 }
                 .onChange(of: appSettings.hapticsEnabled) { _, _ in
+                    feedbackPreviewCount = 0
                     HapticManager.preferenceDidChange()
                 }
+                .accessibilityIdentifier("settings.haptics.toggle")
                 Text(settingsLocalized("settings.preferences.smart_haptics", value: "Feedback adapts to selections, rewards and saved actions. Rapid repeats are filtered. Supported hardware provides tactile feedback; other devices keep visual feedback."))
                     .font(.callout).foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
                 Button {
                     HapticManager.notify(.success)
+                    feedbackPreviewCount += 1
                 } label: {
                     Label(settingsLocalized("settings.preferences.try_haptics", value: "Try Feedback"), systemImage: "hand.tap")
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 8)
+                        .foregroundStyle(DS.ColorToken.primary)
+                        .background(DS.ColorToken.primary.opacity(0.12), in: Capsule())
                 }
-                .pressScaleStyle()
+                .pressScaleStyle(hapticsEnabled: false)
                 .accessibilityLabel(settingsLocalized("settings.preferences.try_haptics", value: "Try Feedback"))
                 .accessibilityIdentifier("settings.haptics.preview")
                 .disabled(!appSettings.hapticsEnabled)
+
+                Label {
+                    Text(feedbackPreviewTitle)
+                        .font(.subheadline.weight(.semibold))
+                } icon: {
+                    Image(systemName: feedbackPreviewCount > 0 ? "checkmark.circle.fill" : "hand.tap.fill")
+                        .foregroundStyle(
+                            appSettings.hapticsEnabled ? DS.ColorToken.success : DS.ColorToken.textSecondary
+                        )
+                        .id(feedbackPreviewCount)
+                        .transition(.opacity)
+                }
+                .animation(MotionSystem.resolved(.easeOut(duration: 0.2), reduceMotion: reduceMotion),
+                           value: feedbackPreviewCount)
+                .accessibilityIdentifier("settings.haptics.previewStatus")
+
+                Text(feedbackAvailabilityDescription)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .accessibilityIdentifier("settings.haptics.availability")
             }
+        }
+    }
+
+    private var feedbackPreviewTitle: String {
+        guard appSettings.hapticsEnabled else {
+            return settingsLocalized("settings.haptics.off", value: "Feedback is off")
+        }
+        return feedbackPreviewCount > 0
+            ? settingsLocalized("settings.haptics.previewed", value: "Feedback previewed")
+            : settingsLocalized("settings.haptics.ready", value: "Feedback is on · Preview ready")
+    }
+
+    private var feedbackAvailabilityDescription: String {
+        guard appSettings.hapticsEnabled else {
+            return settingsLocalized(
+                "settings.haptics.off_detail",
+                value: "Turn on feedback for taps, selections, and confirmations."
+            )
+        }
+        switch HapticManager.support {
+        case .simulator:
+            return settingsLocalized(
+                "settings.haptics.simulator",
+                value: "Simulator shows the visual preview. Feel tactile feedback on a supported iPhone."
+            )
+        case .unavailable:
+            return settingsLocalized(
+                "settings.haptics.unavailable",
+                value: "This device has no supported haptic hardware. The visual preview is still available."
+            )
+        case .trackpad:
+            return settingsLocalized(
+                "settings.haptics.trackpad",
+                value: "Tactile feedback uses a compatible Force Touch trackpad. "
+                    + "The visual preview is always available."
+            )
+        case .device:
+            return settingsLocalized(
+                "settings.haptics.device",
+                value: "Feel light taps for selections and distinct cues for confirmations. "
+                    + "System settings can affect tactile feedback."
+            )
         }
     }
 
@@ -1307,8 +1392,13 @@ private struct AboutSectionView: View {
     private var academyActions: some View {
         VStack(alignment: .leading, spacing: 16) {
             HStack(alignment: .firstTextBaseline, spacing: 8) {
-                Label(settingsLocalized("settings.tour.title", value: "Pawtrackr Academy"), systemImage: "graduationcap.fill")
-                    .font(.headline)
+                Label {
+                    Text(settingsLocalized("settings.tour.title", value: "Pawtrackr Academy"))
+                } icon: {
+                    Image(systemName: "graduationcap.fill")
+                        .foregroundStyle(DS.ColorToken.primary)
+                }
+                .font(.headline)
                 Spacer(minLength: 8)
                 if hasCompletedAcademy {
                     Label(settingsLocalized("settings.tour.graduate", value: "Graduate"), systemImage: "medal.fill")
@@ -1334,8 +1424,13 @@ private struct AboutSectionView: View {
             } label: {
                 Label(continueTourTitle, systemImage: "play.fill")
                     .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 10)
+                    .foregroundStyle(.white)
+                    .background(DS.ColorToken.primary, in: Capsule())
             }
-            .buttonStyle(.borderedProminent)
+            .pressScaleStyle()
+            .accessibilityLabel(continueTourTitle)
             .accessibilityIdentifier("settings.continueTour")
 
             if showsRerun {
@@ -1344,8 +1439,13 @@ private struct AboutSectionView: View {
                 } label: {
                     Label(settingsLocalized("settings.tour.rerun_academy", value: "Re-run Academy"), systemImage: "arrow.counterclockwise")
                         .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 10)
+                        .foregroundStyle(DS.ColorToken.primary)
+                        .background(DS.ColorToken.primary.opacity(0.12), in: Capsule())
                 }
-                .buttonStyle(.bordered)
+                .pressScaleStyle()
+                .accessibilityLabel(settingsLocalized("settings.tour.rerun_academy", value: "Re-run Academy"))
                 .accessibilityIdentifier("settings.rerunAcademy")
             }
         }
@@ -1384,9 +1484,14 @@ private struct AboutSectionView: View {
                     .foregroundStyle(DS.ColorToken.primary)
                     .frame(width: 22, height: 22)
                     .background(DS.ColorToken.primary.opacity(0.12), in: Circle())
-                Label(lesson.title, systemImage: lesson.icon)
-                    .font(.subheadline)
-                    .foregroundStyle(.primary)
+                Label {
+                    Text(lesson.title)
+                        .foregroundStyle(DS.ColorToken.textPrimary)
+                } icon: {
+                    Image(systemName: lesson.icon)
+                        .foregroundStyle(academyLessonTint(lesson))
+                }
+                .font(.subheadline)
                 Spacer(minLength: 8)
                 if isDone {
                     Image(systemName: "checkmark.circle.fill")
@@ -1404,6 +1509,17 @@ private struct AboutSectionView: View {
         .accessibilityElement(children: .combine)
         .accessibilityHint(settingsLocalized("settings.tour.lesson_hint", value: "Replays this chapter."))
         .accessibilityIdentifier("settings.tourLesson.\(lesson.rawValue)")
+    }
+
+    /// Reuses the app's semantic accents to distinguish Academy chapter subjects.
+    private func academyLessonTint(_ lesson: WalkthroughLesson) -> Color {
+        switch lesson {
+        case .dailyWorkflow: return DS.ColorToken.primary
+        case .clientRecords: return DS.ColorToken.calmBlue
+        case .clientProfiles: return DS.ColorToken.success
+        case .checkoutAndMoney: return DS.ColorToken.warning
+        case .businessInsights: return DS.ColorToken.calmBlue
+        }
     }
 
     /// Only while sample clients are in the salon: removes them. Trying the

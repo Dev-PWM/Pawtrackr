@@ -12,7 +12,7 @@ opt_in_rules:
 
 analyzer_rules:
   - unused_import
-  - unused_private_declaration
+  - unused_declaration
 
 included:
   - Pawtrackr

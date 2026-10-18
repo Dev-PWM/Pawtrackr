@@ -126,6 +126,64 @@ final class ClientSearchPrecisionTests: XCTestCase {
         XCTAssertFalse(client.matches(searchQuery: "p:(323) 555-0199"))
     }
 
+    func testOwnerNamesMatchInEitherDisplayOrderWithPunctuationAndAccents() {
+        let ava = Client(firstName: "Ava", lastName: "Martinez", email: "ava@example.com")
+        for query in ["ava martinez", "Martinez, Ava", "MARTINEZ,AVA", "\"Ava Martinez\"", "f:av", "l:mart", "n:Martinez, Ava", "ＡＶＡ ＭＡＲＴＩＮＥＺ"] {
+            XCTAssertTrue(ava.matches(searchQuery: query), query)
+        }
+        let owner = Client(firstName: "Anne-Marie", lastName: "O’Connor")
+        for query in ["Anne Marie O'Connor", "o’connor, anne-marie", "l:oconnor", "f:anne mar"] {
+            XCTAssertTrue(owner.matches(searchQuery: query), query)
+        }
+        XCTAssertTrue(Client(firstName: "José", lastName: "Peña").matches(searchQuery: "PENA, JOSE"))
+    }
+
+    func testNamePrefixesDoNotMatchTheMiddleOfUnrelatedNamesOrEmails() {
+        let unrelated = Client(firstName: "Havana", lastName: "Martinez", email: "havana@example.com")
+        XCTAssertFalse(unrelated.matches(searchQuery: "ava"))
+        XCTAssertFalse(unrelated.matches(searchQuery: "ava martinez"))
+        XCTAssertFalse(unrelated.matches(searchQuery: "f:ava"))
+        XCTAssertTrue(unrelated.matches(searchQuery: "hav mart"))
+        XCTAssertTrue(unrelated.matches(searchQuery: "email:ava"), "An explicit email scope retains substring matching.")
+        for query in [",", "\"\"", "p:+", "email:+"] {
+            XCTAssertFalse(unrelated.matches(searchQuery: query), query)
+        }
+    }
+
+    func testDottedNamesRemainSearchableAlongsideEmailFragments() {
+        let owner = Client(firstName: "Anne-Marie", lastName: "O’Connor", email: "anne.marie@example.com")
+        for query in ["Anne.Marie", "n:Anne.Marie", "Anne.Marie O'Connor", "example.com", "anne.marie@example.com"] {
+            XCTAssertTrue(owner.matches(searchQuery: query), query)
+        }
+        for query in ["Anne.Marie Smith", "Anne.Missing", "other@example.com"] {
+            XCTAssertFalse(owner.matches(searchQuery: query), query)
+        }
+        XCTAssertTrue(Client(firstName: "Anne Marie", lastName: "Smith").matches(searchQuery: "Anne.Marie"))
+    }
+
+    func testNumericEmailScopesPreserveTheEntireSubstring() {
+        let exact = Client(firstName: "Ava", lastName: "Martinez", email: "123.456@example.com")
+        let disconnected = Client(firstName: "Other", lastName: "Owner", email: "456foo123@example.com")
+        XCTAssertTrue(exact.matches(searchQuery: "email:123.456"))
+        XCTAssertFalse(disconnected.matches(searchQuery: "email:123.456"))
+        XCTAssertTrue(disconnected.matches(searchQuery: "email:123"))
+        XCTAssertTrue(Client(firstName: "Ana", lastName: "Smith", email: "123-456@example.com")
+            .matches(searchQuery: "email:123-456"))
+        XCTAssertFalse(disconnected.matches(searchQuery: "email:123-456"))
+    }
+
+    func testCompleteAndPartialPhonesMatchWithoutCountryCodeOrExtensionNoise() {
+        let client = Client(firstName: "Ava", lastName: "Martinez", phone: "+13125550110")
+        for query in ["3125550110", "(312) 555-0110", "+1 (312) 555-0110", "312.555.0110", "+1 (312)", "555-0110", "0110", "312‑555‑0110", "p:+1 (312) 555-0110 ext. 42", "ava +1 (312) 555-0110 x42"] {
+            XCTAssertTrue(client.matches(searchQuery: query), query)
+        }
+        for query in ["3125550119", "ava 3125550119", "missing 3125550110"] {
+            XCTAssertFalse(client.matches(searchQuery: query), query)
+        }
+        let malformed = Client(firstName: "Other", lastName: "Owner", phone: "99312555011099")
+        XCTAssertFalse(malformed.matches(searchQuery: "3125550110"), "A complete number requires an exact lookup key.")
+    }
+
     func testOnePhoneMatchCannotSatisfyUnrelatedNameTokens() {
         let client = Client(firstName: "José", lastName: "Peña", phone: "+13235550199")
         XCTAssertTrue(client.matches(searchQuery: "jose (323) 555-0199"))

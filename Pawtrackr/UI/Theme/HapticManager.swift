@@ -26,6 +26,11 @@ enum HapticEvent: Hashable, Sendable {
     }
 }
 
+/// Describes the available feedback channel without promising a physical vibration.
+enum HapticSupport {
+    case device, trackpad, simulator, unavailable
+}
+
 /// Deterministic arbitration using monotonic time; never queues feedback to play later.
 struct HapticFeedbackPolicy {
     private var lastPlayed: (event: HapticEvent, time: TimeInterval)?
@@ -90,14 +95,25 @@ enum HapticManager {
     }
 
     /// The system remains responsible for whether a supported actuator actually responds.
-    private static var isSupported: Bool {
+    static var support: HapticSupport {
         #if os(iOS)
-        hardwareSupportsHaptics
-        #elseif os(macOS)
-        true // AppKit safely handles the availability of a Force Touch trackpad.
+        #if targetEnvironment(simulator)
+        .simulator
         #else
-        false
+        hardwareSupportsHaptics ? .device : .unavailable
         #endif
+        #elseif os(macOS)
+        .trackpad // AppKit safely handles the availability of a Force Touch trackpad.
+        #else
+        .unavailable
+        #endif
+    }
+
+    private static var isSupported: Bool {
+        switch support {
+        case .device, .trackpad: true
+        case .simulator, .unavailable: false
+        }
     }
 
     private static var isConstrained: Bool {
@@ -109,7 +125,10 @@ enum HapticManager {
     /// Applies Settings changes immediately, including a fresh cue when feedback is enabled.
     static func preferenceDidChange() {
         policy.reset()
-        if isEnabled { play(.selection) }
+        if isEnabled {
+            prepare(.confirmation)
+            play(.confirmation)
+        }
     }
 
     /// Warms the relevant native generator before an anticipated interaction or save result.

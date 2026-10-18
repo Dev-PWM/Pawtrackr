@@ -10,8 +10,6 @@ import Foundation
 import SwiftData
 import OSLog
 
-private let predictiveLog = Logger(subsystem: Bundle.main.bundleIdentifier ?? "Pawtrackr", category: "PredictiveScheduling")
-
 struct SmartSuggestion: Identifiable, Sendable {
     let id = UUID()
     let petID: PersistentIdentifier

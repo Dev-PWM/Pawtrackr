@@ -23,6 +23,7 @@ struct ActiveVisitRow: View {
                     .monospacedDigit()
                     .foregroundStyle(DS.ColorToken.primary)
                     .frame(minWidth: 92, alignment: .trailing)
+                    .accessibilityLabel(timer.accessibilityElapsedLabel)
 
                 if visit.pet != nil {
                     Button {

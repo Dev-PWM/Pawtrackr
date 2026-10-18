@@ -1,5 +1,7 @@
 # Loyalty V2 and Mac/iPad Pro Workflow Design
 
+> Historical record. ADR-0003/0004 supersede the staged-migration examples, ADR-0005 supersedes CloudKit guidance, and subscriptions are paused. Current implementation rules are in root `AGENTS.md` and scoped subsystem guides.
+
 ## Context
 
 Pawtrackr already has StoreKit-backed subscription gating, client-owned loyalty points, a

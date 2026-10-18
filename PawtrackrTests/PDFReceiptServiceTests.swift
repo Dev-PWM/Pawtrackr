@@ -1,5 +1,11 @@
 import XCTest
 import SwiftData
+import PDFKit
+#if os(iOS)
+import UIKit
+#else
+import AppKit
+#endif
 @testable import Pawtrackr
 
 /// Coverage for the receipt snapshot pipeline. Especially the regression case where a Visit
@@ -84,6 +90,48 @@ final class PDFReceiptServiceTests: XCTestCase {
         // Sanity-check that the data is a real PDF (signature %PDF-).
         let prefix = String(data: data.prefix(5), encoding: .ascii)
         XCTAssertEqual(prefix, "%PDF-")
+    }
+
+    func testReceiptRendersIdenticalInkInLightAndDarkAppearances() throws {
+        let snapshot = PDFReceiptService.shared.makeSnapshot(for: try makePersistedCheckedOutVisit())
+        var light = Data()
+        var dark = Data()
+        #if os(iOS)
+        UITraitCollection(userInterfaceStyle: .light).performAsCurrent {
+            light = PDFReceiptService.render(snapshot: snapshot)
+        }
+        UITraitCollection(userInterfaceStyle: .dark).performAsCurrent {
+            dark = PDFReceiptService.render(snapshot: snapshot)
+        }
+        #else
+        try XCTUnwrap(NSAppearance(named: .aqua)).performAsCurrentDrawingAppearance {
+            light = PDFReceiptService.render(snapshot: snapshot)
+        }
+        try XCTUnwrap(NSAppearance(named: .darkAqua)).performAsCurrentDrawingAppearance {
+            dark = PDFReceiptService.render(snapshot: snapshot)
+        }
+        #endif
+        let lightPixels = try rasterizedPage(light)
+        let darkPixels = try rasterizedPage(dark)
+        XCTAssertEqual(lightPixels, darkPixels, "App appearance must never change printed receipt ink.")
+        let inkPixels = stride(from: 0, to: lightPixels.count, by: 4).filter {
+            lightPixels[$0] < 100 && lightPixels[$0 + 1] < 100 && lightPixels[$0 + 2] < 100
+        }.count
+        XCTAssertGreaterThan(inkPixels, 1_000, "The receipt must contain visible ink.")
+    }
+
+    private func rasterizedPage(_ data: Data) throws -> Data {
+        let document = try XCTUnwrap(PDFDocument(data: data))
+        let page = try XCTUnwrap(document.page(at: 0))
+        let context = try XCTUnwrap(CGContext(
+            data: nil, width: 306, height: 396, bitsPerComponent: 8, bytesPerRow: 306 * 4,
+            space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+        ))
+        context.setFillColor(CGColor(gray: 1, alpha: 1))
+        context.fill(CGRect(x: 0, y: 0, width: 306, height: 396))
+        context.scaleBy(x: 0.5, y: 0.5)
+        page.draw(with: .mediaBox, to: context)
+        return Data(bytes: try XCTUnwrap(context.data), count: 306 * 396 * 4)
     }
 
     private func makePet() -> Pet {

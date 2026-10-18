@@ -30,11 +30,21 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		C0DEC0DE2E9A000100000001 /* Exceptions for "Pawtrackr" folder in "Pawtrackr" target */ = {
+		C0DEC0DE2E80000100000002 /* Exceptions for "Pawtrackr" folder in "Pawtrackr" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				AGENTS.md,
+				Core/Storage/AGENTS.md,
+				Core/Storage/CLAUDE.md,
+				Features/Checkout/AGENTS.md,
+				Features/Checkout/CLAUDE.md,
+				Features/Clients/AGENTS.md,
+				Features/Clients/CLAUDE.md,
+				Features/Walkthrough/AGENTS.md,
+				Features/Walkthrough/CLAUDE.md,
 				GoldenRecord.json,
+				UI/Theme/AGENTS.md,
+				UI/Theme/CLAUDE.md,
 			);
 			target = 04B7B9122E4F07A900823E8F /* Pawtrackr */;
 		};
@@ -44,7 +54,7 @@
 		04B7B9152E4F07A900823E8F /* Pawtrackr */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
-				C0DEC0DE2E9A000100000001 /* Exceptions for "Pawtrackr" folder in "Pawtrackr" target */,
+				C0DEC0DE2E80000100000002 /* Exceptions for "Pawtrackr" folder in "Pawtrackr" target */,
 			);
 			path = Pawtrackr;
 			sourceTree = "<group>";

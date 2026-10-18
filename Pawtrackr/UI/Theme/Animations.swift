@@ -12,18 +12,12 @@ enum Animations {
     // Springs
     static let responsiveSpring = Animation.interpolatingSpring(stiffness: 170, damping: 15)
     static let responsiveSpringSoft = Animation.interpolatingSpring(stiffness: 145, damping: 18)
-    static let quickSpring = Animation.spring(response: 0.22, dampingFraction: 0.8)
     static let interactiveSpring = Animation.spring(response: 0.28, dampingFraction: 0.82)
-    static let gentleSpring = Animation.spring(response: 0.42, dampingFraction: 0.9)
 
     // Eases
     static let fastEaseOut = Animation.easeOut(duration: 0.20)
-    static let ease = Animation.easeInOut(duration: 0.30)
-    static let slowEase = Animation.easeInOut(duration: 0.45)
 
     // Transitions
-    static let moveAndFade = AnyTransition.move(edge: .trailing).combined(with: .opacity)
-    static let slideUpFade = AnyTransition.move(edge: .bottom).combined(with: .opacity)
     static let slideIn = AnyTransition.asymmetric(
         insertion: .move(edge: .trailing).combined(with: .opacity),
         removal: .move(edge: .leading).combined(with: .opacity)

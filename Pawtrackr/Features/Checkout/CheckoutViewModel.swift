@@ -99,12 +99,10 @@ final class CheckoutViewModel {
     }
 
     // Dependencies
-    private var visitRepository: VisitRepositoryProtocol?
     private var serviceRepository: ServiceRepositoryProtocol?
     private let draftStore: CheckoutDraftStore
     private let eventRecorder: CheckoutEventRecorder
     private var transactionActor: CheckoutTransactionActor?
-
 
     // MARK: Models
     var pet: Pet

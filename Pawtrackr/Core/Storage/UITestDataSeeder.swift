@@ -29,6 +29,14 @@ enum UITestDataSeeder {
             return
         }
 
+        #if DEBUG
+        // The stress book is written asynchronously after the commit bridge is installed.
+        if AppRuntime.shouldSeedSearchStressFixture {
+            try context.save()
+            return
+        }
+        #endif
+
         let owner = Client(
             firstName: "UITest",
             lastName: "Owner",
@@ -51,6 +59,9 @@ enum UITestDataSeeder {
                   let behavior = Pet.BehaviorTag(rawValue: raw) {
             pet.setBehaviorTags([behavior.displayName])
         }
+        #if DEBUG
+        configureCelebrationIfNeeded(pet: pet, owner: owner)
+        #endif
         pet.owner = owner
         owner.pets = [pet]
 
@@ -103,6 +114,25 @@ enum UITestDataSeeder {
 
         DataMigrations.ensureMessageTemplates(in: context)
     }
+
+    #if DEBUG
+    /// Disposable milestone fixtures never touch a normal app launch or its persistent store.
+    private static func configureCelebrationIfNeeded(pet: Pet, owner: Client) {
+        guard AppRuntime.isUITesting,
+              let scenario = ProcessInfo.processInfo.environment["PAWTRACKR_UI_CELEBRATION"] else { return }
+        let today = Calendar.current.startOfDay(for: .now)
+        guard let anniversary = Calendar.current.date(byAdding: .year, value: -3, to: today) else { return }
+        owner.loyaltyPoints = scenario == "unlocked" ? 1200 : 20
+        if scenario == "anniversary" {
+            owner.createdAt = anniversary
+            pet.createdAt = today
+            pet.birthdate = nil
+        } else {
+            pet.birthdate = anniversary
+            pet.gender = scenario == "boy" ? .male : .female
+        }
+    }
+    #endif
 
     private static func seedBusinessConfig(in context: ModelContext) throws {
         let configs = try context.fetch(FetchDescriptor<BusinessConfig>())

@@ -30,7 +30,6 @@ struct ContentView: View {
 
     @Environment(\.modelContext) private var modelContext
     @Environment(AppSettings.self) private var appSettings
-    @Environment(AuthenticationViewModel.self) private var authViewModel
     @Environment(DataStoreService.self) private var dataStore
     /// The Academy's sandbox (RootView owns it). Open while the tour runs.
     @Environment(PracticeSalon.self) private var practiceSalon: PracticeSalon?
@@ -809,7 +808,7 @@ struct ContentView: View {
             .tabItem { Label(NSLocalizedString("settings.tab", value: "Settings", comment: ""), systemImage: "gear") }
             .tag(NavigationItem.settings)
         }
-        .tint(.primary)
+        .tint(DS.ColorToken.primary)
         .accessibilityIdentifier("content.tabView")
         // Invisible anchor cells aligned to the real tab bar so the walkthrough
         // can spotlight tab items precisely (SwiftUI doesn't expose `.tabItem`
