@@ -626,8 +626,15 @@ private struct WalkthroughOverlayHost<Content: View>: View {
 
     var body: some View {
         content
+            .environment(controller)
             .coordinateSpace(name: WalkthroughFramePreferenceKey.coordinateSpaceName)
-            .onPreferenceChange(WalkthroughFramePreferenceKey.self) { frames = $0 }
+            .onPreferenceChange(WalkthroughFramePreferenceKey.self) { updated in
+                guard controller.isActive, frames != updated else { return }
+                frames = updated
+            }
+            .onChange(of: controller.isActive) { _, active in
+                if !active { frames.removeAll() }
+            }
             .overlayPreferenceValue(WalkthroughAnchorPreferenceKey.self) { anchors in
                 GeometryReader { proxy in
                     if controller.isActive, let step = controller.currentStep,

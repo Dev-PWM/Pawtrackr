@@ -47,6 +47,17 @@ struct NewClientSheet: View {
         #endif
         return [:]
     }
+    /// Only the compact Academy Save lesson needs native toolbar geometry.
+    private var tracksCreateButtonFrame: Bool {
+        #if os(iOS)
+        horizontalSizeClass == .compact && walkthrough?.isActive == true
+            && walkthrough?.currentStep?.presents == .newClient
+            && walkthrough?.currentStep?.anchor == .ncSave
+        #else
+        false
+        #endif
+    }
+
     @FocusState private var focusedField: FocusField?
 
     init(modelContext: ModelContext) {
@@ -89,8 +100,10 @@ struct NewClientSheet: View {
         }
         #if os(iOS)
         .background {
-            NewClientToolbarFrameReader { createButtonFrame = $0 }
-                .accessibilityHidden(true)
+            if tracksCreateButtonFrame {
+                NewClientToolbarFrameReader { createButtonFrame = $0 }
+                    .accessibilityHidden(true)
+            }
         }
         #endif
     }
@@ -316,6 +329,7 @@ struct NewClientSheet: View {
         }
         #else
         form
+        .scrollDismissesKeyboard(horizontalSizeClass == .compact ? .interactively : .automatic)
         .navigationTitle(NSLocalizedString("new_client.new_client", comment: ""))
         .toolbar {
             ToolbarItem(placement: .cancellationAction) {
@@ -484,14 +498,34 @@ private struct NewClientToolbarFrameReader: UIViewRepresentable {
         uiView.reportFrame()
     }
 
+    /// Releases scheduled work even if SwiftUI removes the marker before a retry fires.
+    static func dismantleUIView(_ uiView: FrameView, coordinator: Void) {
+        uiView.stopTracking()
+    }
+
     final class FrameView: UIView {
         var onFrameChange: ((CGRect) -> Void)?
         private var lastFrame: CGRect?
         private var retryCount = 0
+        private weak var cachedButton: UIView?
+        private var retryTask: Task<Void, Never>?
 
         override func didMoveToWindow() {
             super.didMoveToWindow()
-            reportFrame()
+            if window == nil {
+                stopTracking()
+            } else {
+                reportFrame()
+            }
+        }
+
+        /// Cancels pending retries when this native marker leaves the active tour.
+        func stopTracking() {
+            retryTask?.cancel()
+            retryTask = nil
+            cachedButton = nil
+            lastFrame = nil
+            retryCount = 0
         }
 
         override func layoutSubviews() {
@@ -502,12 +536,21 @@ private struct NewClientToolbarFrameReader: UIViewRepresentable {
         /// Reports the native button's minimum touch bounds after the layout pass.
         func reportFrame() {
             guard let window else { return }
-            guard let button = targetView(in: window), button.bounds.width > 0, button.bounds.height > 0 else {
-                guard retryCount < 20 else { return }
+            let button = cachedButton?.window === window ? cachedButton : targetView(in: window)
+            guard let button, button.bounds.width > 0, button.bounds.height > 0 else {
+                guard retryTask == nil, retryCount < 20 else { return }
                 retryCount += 1
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { [weak self] in self?.reportFrame() }
+                retryTask = Task { [weak self] in
+                    do { try await Task.sleep(for: .milliseconds(50)) } catch { return }
+                    guard let self else { return }
+                    self.retryTask = nil
+                    self.reportFrame()
+                }
                 return
             }
+            cachedButton = button
+            retryTask?.cancel()
+            retryTask = nil
             retryCount = 0
             let measured = button.convert(button.bounds, to: window)
             let frame = measured.insetBy(dx: -max(0, 44 - measured.width) / 2,

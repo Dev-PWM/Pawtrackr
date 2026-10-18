@@ -235,7 +235,8 @@ final class NewClientViewModel {
     }
 
     func clearValidationError(for field: Field) {
-        fieldErrors[field] = nil
+        guard fieldErrors[field] != nil else { return }
+        fieldErrors.removeValue(forKey: field)
     }
 
     func contactValidationError(for contactID: UUID, field: EmergencyContactRules.Field) -> String? {
@@ -245,8 +246,10 @@ final class NewClientViewModel {
     /// Editing either field of a row can fix either message (a name fixes
     /// "add a name", clearing the phone fixes it too), so both are cleared.
     func clearContactValidationErrors(for contactID: UUID) {
-        contactFieldErrors[ContactFieldKey(contactID: contactID, field: .name)] = nil
-        contactFieldErrors[ContactFieldKey(contactID: contactID, field: .phone)] = nil
+        let nameKey = ContactFieldKey(contactID: contactID, field: .name)
+        let phoneKey = ContactFieldKey(contactID: contactID, field: .phone)
+        guard contactFieldErrors[nameKey] != nil || contactFieldErrors[phoneKey] != nil else { return }
+        contactFieldErrors = contactFieldErrors.filter { $0.key.contactID != contactID }
     }
 
     private func isValidEmail(_ raw: String) -> Bool {
