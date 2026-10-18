@@ -1678,7 +1678,7 @@
 "tour.academy.cd_emergency.what" = "Backup people staff can call when the owner can’t be reached.";
 "tour.academy.cd_emergency.try" = "Tap + to add a backup contact, then save or close the form.";
 "tour.academy.cd_loyalty.title" = "Loyalty points";
-"tour.academy.cd_loyalty.what" = "Loyalty & Rewards shows this client’s points. The badge color shows their tier.";
+"tour.academy.cd_loyalty.what" = "Loyalty & Rewards shows this client’s points. Open it to see reward progress and visit history.";
 "tour.academy.cd_loyalty.why" = "Every checkout adds points on its own, by default from what the client pays. Points buy rewards like a visit credit, so regulars have a reason to come back.";
 "tour.academy.cd_addpet.title" = "Pets & Add Pet";
 "tour.academy.cd_addpet.what" = "Pet cards show profile details, handling cues and birthdays. Add Pet adds another.";
@@ -1902,9 +1902,9 @@
 "pet.birthday.date_type" = "Birthday details";
 "pet.birthday.unknown" = "Not known yet";
 "pet.birthday.known" = "Known birthdate";
-"pet.birthday.celebration" = "Chosen celebration day";
+"pet.birthday.celebration" = "Salon anniversary";
 "pet.birthday.date" = "Date";
-"pet.birthday.celebration_help" = "Starts with today, your day together at the salon. Celebrate it each year; it does not set the pet’s age or the owner’s birthday.";
+"pet.birthday.celebration_help" = "When the birthdate is unknown, celebrate the client’s years with the salon, using their earliest registration or completed visit. This never sets the pet’s age.";
 "pet.stage.title" = "Life stage";
 "pet.stage.automatic" = "Estimate from birthdate";
 "pet.stage.help" = "Age gives a general guide: puppy/kitten under 1, adult, senior at 8+ for dogs or 11+ for cats. Dogs vary by breed and size. Choose the owner’s or vet’s reported stage when needed. Senior does not automatically mean special needs.";
@@ -1924,7 +1924,7 @@
 "checkout.loyalty.spa_required" = "Select Spa Package before redeeming the VIP Spa reward.";
 "checkout.loyalty.spa_ready" = "Free spa available: select Spa Package, then redeem VIP Spa in Payment. Points are used only when you confirm.";
 "checkout.loyalty.spa_free" = "VIP Spa redeemed: the entered service amount is free, including selected add-ons. Editing the amount will not add a charge.";
-"loyalty.earning.completed_visit" = "Every completed, settled visit earns 20 points, including a free reward visit. Price, membership tier and return timing do not change the award.";
+"loyalty.earning.completed_visit" = "Every completed, settled visit earns 20 points, including a free reward visit. Points are tracked automatically and stay available until used.";
 "loyalty.earning.once" = "Points are saved once per completed visit. Payment retries never add a second award.";
 "loyalty.preview.tiers_fixed_fmt" = "Points earned at checkout move a client up: Silver at %1$@, Gold at %2$@ and Platinum at %3$@. Every completed visit earns 20 points. Spending points never lowers a tier.";
 "loyalty.preview.redeem_spa" = "Choose an available reward on the Payment step of checkout, or keep points for later. Credits lower the amount due automatically; redeeming VIP Spa with Spa Package selected makes the entered service amount free.";
@@ -1946,3 +1946,15 @@
 "settings.haptics.unavailable" = "This device has no supported haptic hardware. The visual preview is still available.";
 "settings.haptics.trackpad" = "Tactile feedback uses a compatible Force Touch trackpad. The visual preview is always available.";
 "settings.haptics.device" = "Feel light taps for selections and distinct cues for confirmations. System settings can affect tactile feedback.";
+
+"pet.celebration.boy" = "Birthday boy, %@!";
+"pet.celebration.girl" = "Birthday girl, %@!";
+"pet.celebration.birthday" = "Happy birthday, %@!";
+"pet.celebration.one_year" = "%d year with us!";
+"pet.celebration.years" = "%d years with us!";
+"pet.celebration.born" = "Welcome to the world!";
+"pet.celebration.turning" = "Turning %d today. Let’s celebrate!";
+"pet.celebration.family" = "Celebrating your family’s time at the salon.";
+"pet.celebration.thanks" = "Thank you, %@, for being part of our salon family.";
+"pet.celebration.replay" = "Tap to celebrate again.";
+"pet.birthday.registered" = "Pet registered";

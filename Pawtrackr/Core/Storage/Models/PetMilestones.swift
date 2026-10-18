@@ -32,16 +32,25 @@ enum PetMilestones {
     /// When requiresAtLeastOneYear is true, day-0 registrations do not trigger an anniversary.
     static func isAnniversary(_ anniversary: Date?, on date: Date, calendar: Calendar = .current, requiresAtLeastOneYear: Bool = false) -> Bool {
         guard let anniversary, calendar.startOfDay(for: anniversary) <= calendar.startOfDay(for: date) else { return false }
-        if requiresAtLeastOneYear {
-            let years = calendar.dateComponents([.year], from: calendar.startOfDay(for: anniversary), to: calendar.startOfDay(for: date)).year ?? 0
-            guard years >= 1 else { return false }
-        }
         let original = calendar.dateComponents([.month, .day], from: anniversary)
         let today = calendar.dateComponents([.year, .month, .day], from: date)
-        if original.month == today.month && original.day == today.day { return true }
-        return original.month == 2 && original.day == 29 && today.month == 2 && today.day == 28
-            && calendar.range(of: .day, in: .month, for: date)?.count == 28
+        let matches = (original.month == today.month && original.day == today.day)
+            || (original.month == 2 && original.day == 29 && today.month == 2 && today.day == 28
+                && calendar.range(of: .day, in: .month, for: date)?.count == 28)
+        guard matches else { return false }
+        return !requiresAtLeastOneYear || celebrationYears(since: anniversary, on: date, calendar: calendar) >= 1
     }
+
+    /// Counts years on the observed anniversary, including February 28 for leap-day registrations.
+    static func celebrationYears(since start: Date, on date: Date, calendar: Calendar = .current) -> Int {
+        max(0, calendar.component(.year, from: date) - calendar.component(.year, from: start))
+    }
+}
+
+/// A presentation milestone; never stored on a SwiftData model and never used to infer a birthdate.
+enum PetCelebration: Hashable, Sendable {
+    case birthday(age: Int)
+    case salonAnniversary(years: Int)
 }
 
 extension Pet {
@@ -50,9 +59,28 @@ extension Pet {
         PetLifeStage.estimate(birthdate: birthdate, species: species, on: date)
     }
 
-    /// Uses the real birthday when known, otherwise the day this pet joined the salon.
+    /// Uses the real birthday when known, otherwise the client’s earliest salon relationship.
     /// The fallback is only for celebrating; it never participates in age calculations.
-    var annualCelebrationDate: Date { birthdate ?? createdAt }
+    var annualCelebrationDate: Date { birthdate ?? salonAnniversaryDate() }
+
+    /// Uses the earliest evidence of this client's salon relationship, ignoring unfinished/future visits.
+    func salonAnniversaryDate(on date: Date = .now) -> Date {
+        let pets = [self] + (owner?.pets ?? []).filter { $0.uuid != uuid }
+        let visits = pets.flatMap { $0.visits ?? [] }.filter { visit in
+            guard let endedAt = visit.endedAt else { return false }
+            return endedAt <= date && visit.startedAt <= endedAt
+        }
+        return ([createdAt] + [owner?.createdAt].compactMap { $0 } + visits.map(\.startedAt)).min() ?? createdAt
+    }
+
+    /// Gives a factual birthday priority; an unknown birthday celebrates client tenure after year one.
+    func celebration(on date: Date = .now, calendar: Calendar = .current) -> PetCelebration? {
+        let anchor = birthdate ?? salonAnniversaryDate(on: date)
+        guard PetMilestones.isAnniversary(anchor, on: date, calendar: calendar,
+                                         requiresAtLeastOneYear: birthdate == nil) else { return nil }
+        let years = PetMilestones.celebrationYears(since: anchor, on: date, calendar: calendar)
+        return birthdate == nil ? .salonAnniversary(years: years) : .birthday(age: years)
+    }
 
     struct CelebrationStatus: Equatable, Sendable {
         let isCelebrating: Bool
@@ -61,16 +89,6 @@ extension Pet {
 
     /// True on the pet's birthday, or on the annual anniversary of joining the salon (after at least 1 year).
     func celebrationStatus(on date: Date = .now, calendar: Calendar = .current) -> CelebrationStatus {
-        if let birthdate {
-            return CelebrationStatus(
-                isCelebrating: PetMilestones.isAnniversary(birthdate, on: date, calendar: calendar, requiresAtLeastOneYear: false),
-                isHonorary: false
-            )
-        } else {
-            return CelebrationStatus(
-                isCelebrating: PetMilestones.isAnniversary(createdAt, on: date, calendar: calendar, requiresAtLeastOneYear: true),
-                isHonorary: true
-            )
-        }
+        CelebrationStatus(isCelebrating: celebration(on: date, calendar: calendar) != nil, isHonorary: birthdate == nil)
     }
 }

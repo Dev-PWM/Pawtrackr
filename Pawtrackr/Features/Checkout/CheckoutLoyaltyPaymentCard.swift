@@ -11,7 +11,6 @@ struct CheckoutLoyaltyPaymentCard: View {
                 Label(AppLocalization.localized("checkout.loyalty.title", value: "Visit rewards"), systemImage: "sparkles")
                     .font(.headline)
                 Spacer(minLength: 12)
-                Text(viewModel.loyaltyTier.displayName).font(.caption).foregroundStyle(.secondary)
             }
             HStack(alignment: .firstTextBaseline, spacing: 7) {
                 Text(viewModel.loyaltyPoints.formatted()).font(.system(.title, design: .serif)).monospacedDigit()
