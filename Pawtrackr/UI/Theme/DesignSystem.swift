@@ -153,20 +153,6 @@ enum DS {
 
 // MARK: - Convenience modifiers
 extension View {
-    /// Gender-colored 3pt top bar for cards/screens.
-    func genderAccentTopBar(_ gender: PetGender) -> some View {
-        self.overlay(alignment: .top) {
-            Rectangle().fill(DS.ColorToken.gender(gender)).frame(height: 3)
-        }
-    }
-
-    /// Circular avatar ring with white stroke + gender ring.
-    func avatarRings(gender: PetGender) -> some View {
-        self
-            .overlay(Circle().stroke(.white, lineWidth: 2))
-            .overlay(Circle().stroke(DS.ColorToken.gender(gender).opacity(0.9), lineWidth: 2))
-    }
-
     /// Adds a left accent rail. Use with DS.ColorToken.session for active sessions.
     func leftAccentRail(_ color: Color) -> some View {
         overlay(alignment: .leading) {

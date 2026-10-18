@@ -232,7 +232,7 @@ struct CheckoutView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-        .animation(Animations.interactiveSpring, value: viewModel.currentStep)
+        .animated(Animations.interactiveSpring, value: viewModel.currentStep)
     }
 
     private var stepIndicator: some View {

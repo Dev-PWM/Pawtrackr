@@ -515,6 +515,9 @@
 "clients.notifications_unread_fmt" = "Notificaciones, %d sin leer";
 "clients.needs_attention" = "Necesita atención";
 "clients.action.view_details" = "Ver detalles";
+"client_detail.call" = "Llamar";
+"client_detail.email" = "Correo";
+"client_detail.directions" = "Cómo llegar";
 "clients.action.call" = "Llamar";
 "clients.action.message" = "Mensaje";
 "clients.action.email" = "Correo";
@@ -1691,7 +1694,7 @@
 "tour.academy.cd_emergency.what" = "Personas de respaldo a las que el equipo puede llamar si no localiza al dueño.";
 "tour.academy.cd_emergency.try" = "Toca + para agregar un contacto de respaldo y luego guarda o cierra el formulario.";
 "tour.academy.cd_loyalty.title" = "Puntos de lealtad";
-"tour.academy.cd_loyalty.what" = "Lealtad y recompensas muestra los puntos del cliente. Ábrelo para ver el progreso hacia las recompensas y el historial de visitas.";
+"tour.academy.cd_loyalty.what" = "Lealtad y recompensas muestra los puntos, el progreso y el historial de visitas.";
 "tour.academy.cd_loyalty.why" = "Cada cobro suma puntos solo, por defecto según lo que paga el cliente. Se canjean por recompensas como un crédito de visita, así los clientes habituales vuelven.";
 "tour.academy.cd_addpet.title" = "Mascotas y Agregar mascota";
 "tour.academy.cd_addpet.what" = "Cada tarjeta muestra datos, cuidados y cumpleaños. Agregar mascota suma otra.";

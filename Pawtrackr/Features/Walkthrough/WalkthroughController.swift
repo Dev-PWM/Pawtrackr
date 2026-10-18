@@ -1181,8 +1181,7 @@ extension WalkthroughController {
                 id: WalkthroughStepID.clientLoyalty, anchor: .cdLoyalty, surface: .clients, route: .demoClientDetail,
                 title: text("tour.academy.cd_loyalty.title", "Loyalty points"),
                 directive: text("tour.academy.cd_loyalty.what",
-                                "Loyalty & Rewards shows this client’s points. "
-                                    + "Open it to see reward progress and visit history."),
+                                "Loyalty & Rewards shows this client’s points, reward progress and visit history."),
                 purpose: text("tour.academy.cd_loyalty.why", "Every checkout adds points on its own, by default from what the client pays. Points buy rewards like a visit credit, so regulars have a reason to come back."),
                 action: tapToContinue,
                 lesson: .clientProfiles,

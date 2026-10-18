@@ -523,6 +523,9 @@
 "clients.notifications_unread_fmt" = "Notifications, %d unread";
 "clients.needs_attention" = "Needs Attention";
 "clients.action.view_details" = "View Details";
+"client_detail.call" = "Call";
+"client_detail.email" = "Email";
+"client_detail.directions" = "Directions";
 "clients.action.call" = "Call";
 "clients.action.message" = "Message";
 "clients.action.email" = "Email";
@@ -1678,7 +1681,7 @@
 "tour.academy.cd_emergency.what" = "Backup people staff can call when the owner can’t be reached.";
 "tour.academy.cd_emergency.try" = "Tap + to add a backup contact, then save or close the form.";
 "tour.academy.cd_loyalty.title" = "Loyalty points";
-"tour.academy.cd_loyalty.what" = "Loyalty & Rewards shows this client’s points. Open it to see reward progress and visit history.";
+"tour.academy.cd_loyalty.what" = "Loyalty & Rewards shows this client’s points, reward progress and visit history.";
 "tour.academy.cd_loyalty.why" = "Every checkout adds points on its own, by default from what the client pays. Points buy rewards like a visit credit, so regulars have a reason to come back.";
 "tour.academy.cd_addpet.title" = "Pets & Add Pet";
 "tour.academy.cd_addpet.what" = "Pet cards show profile details, handling cues and birthdays. Add Pet adds another.";

@@ -136,7 +136,6 @@ struct RootView: View {
                 showOnboarding = false
             }
         }
-        .toastOverlay()
     }
 
     private var mainShell: some View {

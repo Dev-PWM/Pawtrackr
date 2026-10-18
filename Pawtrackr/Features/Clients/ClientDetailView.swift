@@ -435,10 +435,13 @@ struct ClientDetailView: View {
         case .checkIn(let pet):
             Button(NSLocalizedString("common.yes", comment: "")) {
                 vm.checkIn(pet: pet)
-                withAnimation(Animations.fastEaseOut) { showSessionStartedToast = true }
-                DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
-                    withAnimation(Animations.fastEaseOut) { showSessionStartedToast = false }
-                }
+                // Replace any earlier "already in session" text before showing.
+                sessionStartedToastText = NSLocalizedString(
+                    "client_detail.session_started",
+                    value: "Session started for \(pet.name)",
+                    comment: ""
+                )
+                flashSessionToast()
             }
             Button(NSLocalizedString("common.no", comment: ""), role: .cancel) {}
         case .deleteClient:
@@ -530,29 +533,29 @@ struct ClientDetailView: View {
         .overlay(alignment: .top) {
             VStack(spacing: 6) {
                 if showSessionStartedToast {
-                    SessionToast(
-                        text: sessionStartedToastText.isEmpty
-                            ? NSLocalizedString("client_detail.session_started", comment: "")
-                            : sessionStartedToastText,
-                        tint: .blue
-                    )
+                    SessionToast(text: sessionToastMessage, tint: .blue)
                         .transition(.move(edge: .top).combined(with: .opacity))
                 }
                 if showSavedToast {
-                    SavedToast(text: NSLocalizedString("client_detail.saved_successfully", comment: ""))
+                    SavedToast(text: savedToastMessage)
                         .transition(.move(edge: .top).combined(with: .opacity))
                 }
             }
             .padding(.top, 8)
             .allowsHitTesting(false)
         }
+        // `.task(id:)` cancels the previous countdown whenever a toast is shown
+        // again, so an older timer never hides a newer toast early.
+        .task(id: sessionToastRequest) {
+            await autoHideToast(request: sessionToastRequest, message: sessionToastMessage) { showSessionStartedToast = false }
+        }
+        .task(id: savedToastRequest) {
+            await autoHideToast(request: savedToastRequest, message: savedToastMessage) { showSavedToast = false }
+        }
         .onReceive(NotificationCenter.default.publisher(for: .clientDidCreate)) { notif in
             guard let id = notif.createdClientID, notif.clientCreatePhase == .navigated else { return }
             if id == vm.client.persistentModelID {
-                withAnimation(Animations.fastEaseOut) { showSavedToast = true }
-                DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
-                    withAnimation(Animations.fastEaseOut) { showSavedToast = false }
-                }
+                flashSavedToast()
             }
         }
     }
@@ -1122,10 +1125,7 @@ struct ClientDetailView: View {
                                                 format: AppLocalization.localized("client_detail.pet_already_in_session", value: "%@ is already in session"),
                                                 pet.name
                                             )
-                                            withAnimation(Animations.fastEaseOut) { showSessionStartedToast = true }
-                                            DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
-                                                withAnimation(Animations.fastEaseOut) { showSessionStartedToast = false }
-                                            }
+                                            flashSessionToast()
                                             HapticManager.notify(.warning)
                                             return
                                         }
@@ -1135,10 +1135,7 @@ struct ClientDetailView: View {
                                             value: "Session started for \(pet.name)",
                                             comment: ""
                                         )
-                                        withAnimation(Animations.fastEaseOut) { showSessionStartedToast = true }
-                                        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
-                                            withAnimation(Animations.fastEaseOut) { showSessionStartedToast = false }
-                                        }
+                                        flashSessionToast()
                                     }
                                     .opacity(activeVisit == nil && !isCheckingIn ? 1.0 : 0.55)
                                     .disabled(activeVisit != nil || isCheckingIn)
@@ -1426,11 +1423,7 @@ struct ClientDetailView: View {
         }
         inlineEditBaseline = nil
         withAnimation(Animations.fastEaseOut) { isEditingClientInline = false }
-        // Optional: show a small saved toast for inline edits
-        withAnimation(Animations.fastEaseOut) { showSavedToast = true }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
-            withAnimation(Animations.fastEaseOut) { showSavedToast = false }
-        }
+        flashSavedToast()
     }
 
     private func continueWalkthroughAfterVisitStart(_ notification: Notification, vm: ClientDetailViewModel) {
@@ -1557,6 +1550,43 @@ struct ClientDetailView: View {
     @State private var showSavedToast = false
     @State private var showSessionStartedToast = false
     @State private var sessionStartedToastText: String = ""
+    /// Bumped on every show; each value restarts that toast's hide countdown.
+    @State private var savedToastRequest = 0
+    @State private var sessionToastRequest = 0
+
+    private var sessionToastMessage: String {
+        sessionStartedToastText.isEmpty
+            ? NSLocalizedString("client_detail.session_started", comment: "")
+            : sessionStartedToastText
+    }
+
+    private var savedToastMessage: String {
+        NSLocalizedString("client_detail.saved_successfully", comment: "")
+    }
+
+    private func flashSavedToast() {
+        withAnimation(Animations.fastEaseOut) { showSavedToast = true }
+        savedToastRequest &+= 1
+        AccessibilityNotification.Announcement(savedToastMessage).post()
+    }
+
+    private func flashSessionToast() {
+        withAnimation(Animations.fastEaseOut) { showSessionStartedToast = true }
+        sessionToastRequest &+= 1
+        AccessibilityNotification.Announcement(sessionToastMessage).post()
+    }
+
+    /// Hides a toast once it has been visible long enough, unless the view
+    /// shows it again first (which cancels this task).
+    private func autoHideToast(request: Int, message: String, hide: @escaping () -> Void) async {
+        guard request > 0 else { return }
+        do {
+            try await Task.sleep(for: ToastTiming.visibleDuration(for: message))
+        } catch {
+            return
+        }
+        withAnimation(Animations.fastEaseOut) { hide() }
+    }
 
     private struct SavedToast: View {
         var text: String
@@ -1587,6 +1617,16 @@ struct ClientDetailView: View {
             .background(Capsule().fill(tint.opacity(0.9)))
             .shadow(radius: 6)
         }
+    }
+}
+
+/// How long Client Detail's status toasts stay on screen.
+private enum ToastTiming {
+    /// Returns how long a toast showing `message` stays visible before it hides.
+    // TODO(learning): choose the visibility policy (fixed, scaled to message
+    // length, longer under VoiceOver). 2 s matches the previous behavior.
+    static func visibleDuration(for message: String) -> Duration {
+        .seconds(2)
     }
 }
 
@@ -1650,17 +1690,6 @@ private struct CheckoutPresentationModifier: ViewModifier {
 }
 
 // MARK: - Local UI building blocks
-
-private struct InitialsCircle: View {
-    let initials: String
-    var gradient: Gradient = Gradient(colors: [Color.blue, Color.blue.opacity(0.85)])
-    var body: some View {
-        ZStack {
-            Circle().fill(LinearGradient(gradient: gradient, startPoint: .topLeading, endPoint: .bottomTrailing))
-            Text(initials).font(.headline.weight(.semibold)).foregroundStyle(.primary)
-        }
-    }
-}
 
 @ViewBuilder private func contactRow(
     icon: String,

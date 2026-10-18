@@ -88,15 +88,6 @@ extension View {
     }
 
     @ViewBuilder
-    func optionalWalkthroughAnchor(_ id: WalkthroughAnchorID?) -> some View {
-        if let id {
-            walkthroughAnchor(id)
-        } else {
-            self
-        }
-    }
-
-    @ViewBuilder
     func optionalWalkthroughTarget(_ id: WalkthroughAnchorID?) -> some View {
         if let id {
             walkthroughTarget(id)

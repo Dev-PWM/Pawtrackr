@@ -109,7 +109,7 @@ struct OnboardingView: View {
         .task {
             viewModel.bindIfNeeded(modelContext: modelContext, appSettings: appSettings)
         }
-        .animation(.spring(response: 0.5, dampingFraction: 0.85), value: viewModel.currentStep)
+        .animated(.spring(response: 0.5, dampingFraction: 0.85), value: viewModel.currentStep)
         .sheet(isPresented: $showStoreRestore) {
             StoreRestoreView(currentClientCount: 0)
         }
