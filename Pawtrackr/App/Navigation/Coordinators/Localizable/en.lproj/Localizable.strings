@@ -1123,16 +1123,18 @@
 "message_template.follow_up.content" = "Hi [OwnerName], thanks for bringing [PetName] to Pawtrackr today! We hope they enjoyed their spa day.";
 "whats_new.title" = "What's New in Pawtrackr";
 "whats_new.continue" = "Continue";
-"whats_new.local_data.title" = "Your Data Stays on This Device";
-"whats_new.local_data.description" = "iCloud sync is off. Everything already here stays, and from now on each iPhone, iPad and Mac keeps its own records. Export a copy anytime in Settings › Data Export.";
-"whats_new.academy.title" = "Pawtrackr Academy";
-"whats_new.academy.description" = "Learn the app in five short chapters with hands-on missions, in a practice salon that never touches your real clients. Start it in Settings › About.";
-"whats_new.exports.title" = "Better Reports and Exports";
-"whats_new.exports.description" = "The business report PDF now shows trends, charts and highlights, and CSV files open cleanly in Excel and Numbers. Send them by AirDrop, Messages or Mail.";
-"whats_new.missing_info.title" = "Smarter Missing Info Filter";
-"whats_new.missing_info.description" = "Clients without an emergency contact, phone or email now show up under Missing Info, and their cards say what to add.";
-"whats_new.checkout.title" = "Roomier, Simpler Checkout";
-"whats_new.checkout.description" = "Checkout is wider on the Mac, and the tip step is gone: the total is your services, or the amount you type.";
+"whats_new.celebrations.title" = "Birthdays & Anniversaries";
+"whats_new.celebrations.description" = "On a pet's birthday, its card celebrates with confetti. No birthdate on file? Pawtrackr celebrates each year the client has been with you.";
+"whats_new.rewards.title" = "Simpler Rewards";
+"whats_new.rewards.description" = "Rewards show the points balance, the next reward and the history. Membership tiers are gone, and points are used only when you confirm payment.";
+"whats_new.search.title" = "Smarter Client Search";
+"whats_new.search.description" = "Search several words at once or any part of a phone number. Type pet:, breed: or email: to narrow the results.";
+"whats_new.checkout_amount.title" = "Checkout You Control";
+"whats_new.checkout_amount.description" = "Type the amount you charge. Choosing services never changes it, and an unfinished checkout is saved so you can pick up where you left off.";
+"whats_new.safety.title" = "Clearer Safety Alerts";
+"whats_new.safety.description" = "Pet cards glow by temperament, and an aggressive flag clears only after three recorded visits without aggression.";
+"whats_new.smoother.title" = "Smoother Everywhere";
+"whats_new.smoother.description" = "A new welcome screen, lighter animations that respect Reduce Motion and Low Power Mode, and an email keyboard with the @ key.";
 
 // Raw SwiftUI literal localization cleanup.
 "dashboard.activity.title" = "Salon Activity";

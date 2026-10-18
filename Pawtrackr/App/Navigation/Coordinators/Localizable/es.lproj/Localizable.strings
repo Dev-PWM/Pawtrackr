@@ -1146,16 +1146,18 @@
 "message_template.follow_up.content" = "Hola [OwnerName], ¡gracias por traer a [PetName] a Pawtrackr hoy! Esperamos que haya disfrutado su día de spa.";
 "whats_new.title" = "Novedades de Pawtrackr";
 "whats_new.continue" = "Continuar";
-"whats_new.local_data.title" = "Tus datos se quedan en este dispositivo";
-"whats_new.local_data.description" = "La sincronización con iCloud está desactivada. Todo lo que ya tienes aquí se queda, y desde ahora cada iPhone, iPad y Mac guarda sus propios registros. Exporta una copia cuando quieras en Ajustes › Exportar datos.";
-"whats_new.academy.title" = "Academia Pawtrackr";
-"whats_new.academy.description" = "Aprende la app en cinco capítulos cortos con misiones prácticas, en un salón de práctica que nunca toca a tus clientes reales. Empiézala en Ajustes › Acerca de.";
-"whats_new.exports.title" = "Mejores informes y exportaciones";
-"whats_new.exports.description" = "El informe del negocio en PDF ahora muestra tendencias, gráficas y puntos clave, y los CSV se abren bien en Excel y Numbers. Envíalos por AirDrop, Mensajes o Mail.";
-"whats_new.missing_info.title" = "Filtro de información faltante más inteligente";
-"whats_new.missing_info.description" = "Los clientes sin contacto de emergencia, teléfono o correo ahora aparecen en Información faltante, y su tarjeta dice qué agregar.";
-"whats_new.checkout.title" = "Cobro más amplio y sencillo";
-"whats_new.checkout.description" = "El cobro es más ancho en la Mac y ya no pide propina: el total son tus servicios o el monto que escribas.";
+"whats_new.celebrations.title" = "Cumpleaños y aniversarios";
+"whats_new.celebrations.description" = "En el cumpleaños de una mascota, su tarjeta lo celebra con confeti. ¿Sin fecha de nacimiento? Pawtrackr celebra cada año que el cliente lleva contigo.";
+"whats_new.rewards.title" = "Recompensas más simples";
+"whats_new.rewards.description" = "Las recompensas muestran el saldo de puntos, la siguiente recompensa y el historial. Ya no hay niveles, y los puntos solo se usan al confirmar el pago.";
+"whats_new.search.title" = "Búsqueda de clientes más inteligente";
+"whats_new.search.description" = "Busca varias palabras a la vez o cualquier parte de un teléfono. Escribe pet:, breed: o email: para afinar los resultados.";
+"whats_new.checkout_amount.title" = "Tú decides el cobro";
+"whats_new.checkout_amount.description" = "Escribe el monto que cobras. Elegir servicios nunca lo cambia, y un cobro sin terminar se guarda para que sigas donde lo dejaste.";
+"whats_new.safety.title" = "Alertas de seguridad más claras";
+"whats_new.safety.description" = "Las tarjetas de las mascotas brillan según su temperamento, y la marca de agresividad solo se quita tras tres visitas registradas sin agresión.";
+"whats_new.smoother.title" = "Más fluida en todo";
+"whats_new.smoother.description" = "Una nueva pantalla de bienvenida, animaciones más ligeras que respetan Reducir movimiento y el Modo de bajo consumo, y un teclado de correo con la tecla @.";
 
 // Raw SwiftUI literal localization cleanup.
 "dashboard.activity.title" = "Actividad del salón";
