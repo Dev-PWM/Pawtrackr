@@ -42,6 +42,7 @@
 				Features/Clients/CLAUDE.md,
 				Features/Walkthrough/AGENTS.md,
 				Features/Walkthrough/CLAUDE.md,
+				GoldenRecord.json,
 				UI/Theme/AGENTS.md,
 				UI/Theme/CLAUDE.md,
 			);

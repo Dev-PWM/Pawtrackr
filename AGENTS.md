@@ -2,7 +2,7 @@
 
 Shared by Codex and Claude Code. `Pawtrackr/AGENTS.md` adds app conventions; nested `AGENTS.md` files own storage, clients, checkout, walkthrough and theme rules. Before editing cross-cutting code or tests, read the matching `.claude/rules/{storage,clients,checkout,loyalty,walkthrough,pet-behavior,theme}.md` and any guide it points to.
 
-Exclude agent docs under `Pawtrackr/` from the synchronized app target in `Pawtrackr.xcodeproj/project.pbxproj`; never ship instructions as resources. Keep reports outside app source. Canonical repository skills live in `.claude/skills/`. `.gitignore` excludes retired mirrors, history dumps and build logs from ordinary searches; it is not an access-control or universal context-indexing mechanism.
+Exclude agent docs under `Pawtrackr/` from the synchronized app target in `Pawtrackr.xcodeproj/project.pbxproj`; never ship instructions as resources. The same exception set keeps `GoldenRecord.json` (a schema note no code reads) out of the bundle. Keep reports outside app source. Canonical repository skills live in `.claude/skills/`. `.gitignore` excludes retired mirrors, history dumps and build logs from ordinary searches; it is not an access-control or universal context-indexing mechanism.
 
 ## Invariants
 
@@ -23,4 +23,4 @@ Exclude agent docs under `Pawtrackr/` from the synchronized app target in `Pawtr
 
 - Don't assume a simulator destination exists. Resolve one with `xcrun simctl list devices available` and pass `-destination "id=<UUID>"`. Resolve current device UUIDs at runtime; named-device + `OS:latest` lookups have failed on this machine.
 - The only shared scheme is `Pawtrackr`. Its `TestPlan.xctestplan` holds `PawtrackrTests` and `PawtrackrUITests`; narrow a run with `-only-testing:`.
-- The paywall loads StoreKit products from `Pawtrackr.storekit`. As of 2026-10-16 the shared scheme's LaunchAction does not reference it, so if `Product.products` returns nothing in a dev build, set the scheme's StoreKit Configuration before suspecting code.
+- The paywall loads StoreKit products from `Pawtrackr.storekit`; the shared scheme's LaunchAction references it (`StoreKitConfigurationFileReference`, restored 2026-10-16 after it was dropped in September). If `Product.products` returns nothing in a dev build, check that reference before suspecting code.

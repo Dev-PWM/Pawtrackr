@@ -173,7 +173,13 @@ struct ClientDetailView: View {
         }
     }
 
+    // Split in two: as one modifier chain this took ~11s to type-check and
+    // CI's compiler gave up on it ("unable to type-check this expression").
     private func navigationContent(vm: ClientDetailViewModel) -> some View {
+        observingChanges(presentingContent(vm: vm), vm: vm)
+    }
+
+    private func presentingContent(vm: ClientDetailViewModel) -> some View {
         content(vm: vm)
             .environment(\.modelContext, vm.client.modelContext ?? modelContext)
             .navigationTitle("client_details.title")
@@ -209,6 +215,10 @@ struct ClientDetailView: View {
                 contactEditorSheet
             }
             .modifier(CheckoutPresentationModifier(checkoutRoute: $checkoutRoute, vm: vm, walkthrough: walkthrough))
+    }
+
+    private func observingChanges(_ presented: some View, vm: ClientDetailViewModel) -> some View {
+        presented
             .onAppear {
                 synchronizeWalkthroughCheckoutPresentation(walkthrough?.currentStep?.presents, vm: vm)
                 releaseWalkthroughCheckInIfAlreadyInSession(vm: vm)
@@ -244,10 +254,7 @@ struct ClientDetailView: View {
             // Use the modern actions/message API instead.
             .alert(
                 alertTitleText(for: alertDestination, vm: vm),
-                isPresented: Binding(
-                    get: { alertDestination != nil },
-                    set: { if !$0 { alertDestination = nil } }
-                ),
+                isPresented: isAlertPresented,
                 presenting: alertDestination,
                 actions: { destination in
                     alertActions(for: destination, vm: vm)
@@ -408,6 +415,13 @@ struct ClientDetailView: View {
     private func clearContactFieldErrors() {
         contactNameError = nil
         contactPhoneError = nil
+    }
+
+    private var isAlertPresented: Binding<Bool> {
+        Binding(
+            get: { alertDestination != nil },
+            set: { if !$0 { alertDestination = nil } }
+        )
     }
 
     private func alertTitleText(for destination: AlertDestination?, vm: ClientDetailViewModel) -> Text {
