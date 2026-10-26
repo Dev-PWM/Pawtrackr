@@ -278,15 +278,37 @@ final class DashboardSecondaryUITests: XCTestCase {
     /// Service selection never prices a visit; the groomer types the amount,
     /// and Review stays disabled until one is entered.
     private func enterVisitAmount(_ text: String = "40") {
+        waitForCheckoutPageToSettle()
         let amount = app.textFields["checkout.amountField"]
-        if !amount.waitForHittable(timeout: 3) {
-            for _ in 0..<4 where !amount.isHittable { app.swipeUp() }
+        // Scroll toward the field, the way ClientDetailUITests does: a plain
+        // swipe up can carry it further off screen.
+        for _ in 0..<8 {
+            if amount.exists && amount.isHittable { break }
+            let scroll = app.scrollViews.firstMatch
+            let movesDown = amount.exists && amount.frame.midY < scroll.frame.midY
+            let start = scroll.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: movesDown ? 0.4 : 0.7))
+            let end = scroll.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: movesDown ? 0.7 : 0.4))
+            start.press(forDuration: 0.1, thenDragTo: end)
         }
         XCTAssertTrue(amount.waitForHittable(timeout: 5), "Checkout amount field was not hittable.")
         amount.tap()
         amount.typeText(text)
         let done = app.buttons["Done"]
         if done.waitForHittable(timeout: 2) { done.tap() }
+    }
+
+    /// Hit points are wrong while the step slides in, when the accessibility
+    /// frame spans both pages.
+    private func waitForCheckoutPageToSettle() {
+        let content = app.descendants(matching: .any)["checkout.content"].firstMatch
+        let settled = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
+            guard content.exists else { return false }
+            let viewport = self.app.frame
+            let frame = content.frame
+            return frame.width > 0 && frame.width <= viewport.width + 1
+                && frame.minX >= viewport.minX - 1 && frame.maxX <= viewport.maxX + 1
+        }, object: content)
+        _ = XCTWaiter.wait(for: [settled], timeout: 8)
     }
 
     private func tapPrimaryButton(named title: String) {
