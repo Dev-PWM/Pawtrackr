@@ -350,6 +350,18 @@ enum SummaryUpdater {
         }
     }
 
+    /// Stages removal of a deleted client's retention rows. They have no
+    /// relationship to the client, so nothing cascades to them, and a day
+    /// rebuild only touches clients that still have visits that day; without
+    /// this the client keeps counting in Insights retention until the next
+    /// full rebuild at launch.
+    static func stageClientInsightRemoval(for clientUUID: UUID, in context: ModelContext) throws {
+        let rows = try context.fetch(FetchDescriptor<ClientInsightSummary>(
+            predicate: #Predicate<ClientInsightSummary> { $0.clientUUID == clientUUID }
+        ))
+        for row in rows { context.delete(row) }
+    }
+
     static func resetSummaryRebuildState() {
         UserDefaults.standard.removeObject(forKey: "lastSummarySyncDate")
         UserDefaults.standard.removeObject(forKey: "lastSummaryRebuildDate")
@@ -483,7 +495,9 @@ enum SummaryUpdater {
             totalSpent: spent.roundedMoney(),
             visitCount: visits.count,
             isRecurring: visits.count > 1,
-            isChurnRisk: pets.contains { $0.isOverdue },
+            // A removed (archived) pet isn't coming back; the Clients screen's
+            // overdue filter skips it too.
+            isChurnRisk: pets.contains { $0.archivedAt == nil && $0.isOverdue },
             lastVisitAt: lastVisitAt,
             updatedAt: .now
         )

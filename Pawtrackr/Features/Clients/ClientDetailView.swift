@@ -1343,6 +1343,7 @@ struct ClientDetailView: View {
         modelContext.delete(client)
 
         do {
+            try SummaryUpdater.stageClientInsightRemoval(for: clientUUID, in: modelContext)
             try modelContext.save()
             SpotlightIndexer.shared.removeClientAndPetsFromIndex(clientID: clientUUID, petIDs: petUUIDs)
 

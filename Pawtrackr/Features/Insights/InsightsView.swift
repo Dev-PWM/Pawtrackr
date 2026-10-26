@@ -288,7 +288,7 @@ struct InsightsView: View {
             )
             kpiTile(
                 title: NSLocalizedString("insights.retention", comment: ""),
-                value: "\(Int(vm.retentionRate * 100))%",
+                value: retentionPercentText(vm),
                 icon: "person.2.fill",
                 color: DS.ColorToken.warning,
                 accessibilityIdentifier: "insights.kpi.retention"
@@ -381,6 +381,9 @@ struct InsightsView: View {
                             AxisGridLine()
                         }
                     }
+                    // Span the whole period, not just the days that have sales,
+                    // so "7-day window" shows seven days.
+                    .chartXScale(domain: revenueChartDomain(vm))
                     .chartXSelection(value: $selectedRevenueDate)
                     .frame(height: 155)
                     // Scrubbing previews individual days; reconciliation remains
@@ -404,6 +407,13 @@ struct InsightsView: View {
             }
         }
         .accessibilityIdentifier("insights.section.revenue")
+    }
+
+    private func revenueChartDomain(_ vm: InsightsViewModel) -> ClosedRange<Date> {
+        if let window = vm.revenueWindow { return window }
+        let first = vm.revenueSeries.first?.date ?? .now
+        let last = vm.revenueSeries.last?.date ?? first
+        return first...(Calendar.current.date(byAdding: .day, value: 1, to: last) ?? last)
     }
 
     private func revenuePeriodSelector(_ vm: InsightsViewModel) -> some View {
@@ -572,8 +582,10 @@ struct InsightsView: View {
                     .chartLegend(.hidden)
                     .overlay {
                         VStack {
+                            // Each slice counts services sold (visit line items); one
+                            // visit can hold several, so these aren't visits.
                             Text("\(vm.totalCategoryVisits)").font(.headline)
-                            Text(localized("insights.visits_lowercase", value: "visits")).font(.caption2).foregroundStyle(.secondary)
+                            Text(localized("insights.services_lowercase", value: "services")).font(.caption2).foregroundStyle(.secondary)
                         }
                     }
 
@@ -609,19 +621,27 @@ struct InsightsView: View {
                         .frame(width: 100, height: 100)
                         .chartLegend(.hidden)
                         .overlay {
-                            Text("\(Int(vm.retentionRate * 100))%").font(.headline)
+                            Text(retentionPercentText(vm)).font(.headline)
                         }
 
                         VStack(alignment: .leading, spacing: 10) {
-                            metricLabel(title: NSLocalizedString("insights.retention_rate", comment: ""), value: "\(Int(vm.retentionRate * 100))%", color: DS.ColorToken.primary)
+                            metricLabel(title: NSLocalizedString("insights.retention_rate", comment: ""), value: retentionPercentText(vm), color: DS.ColorToken.primary)
                             metricLabel(title: NSLocalizedString("insights.churn_risk", comment: ""), value: String(format: localized("insights.clients_count_fmt", value: "%d clients"), vm.churnRiskCount), color: DS.ColorToken.warning)
                         }
                     }
                 }
             }
+            // The fixed-size donut doesn't stretch the card like the charts
+            // above do; fill the width so it lines up with the other cards.
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("insights.section.retention")
+    }
+
+    /// Rounded, like the category shares: 2 of 3 clients is 67%, not 66%.
+    private func retentionPercentText(_ vm: InsightsViewModel) -> String {
+        "\(Int((vm.retentionRate * 100).rounded()))%"
     }
 
     private func metricLabel(title: String, value: String, color: Color) -> some View {
@@ -646,7 +666,9 @@ struct InsightsView: View {
                     .foregroundStyle(.secondary)
             }
             Spacer()
-            Text(String(format: localized("insights.visits_count_fmt", value: "%d visits"), item.count))
+            Text(item.count == 1
+                 ? localized("insights.services_one", value: "1 service")
+                 : String(format: localized("insights.services_count_fmt", value: "%d services"), item.count))
                 .font(.subheadline.weight(.bold))
         }
         .padding(.vertical, 8)
@@ -669,7 +691,9 @@ struct InsightsView: View {
     }
 
     private func paymentCountText(_ count: Int) -> String {
-        count == 1 ? "1 payment" : "\(count) payments"
+        count == 1
+            ? localized("insights.payments_one", value: "1 payment")
+            : String(format: localized("insights.payments_count_fmt", value: "%d payments"), count)
     }
 
     private func lowerSectionAccessibilityAnchor(identifier: String, label: String) -> some View {

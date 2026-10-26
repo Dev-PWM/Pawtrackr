@@ -259,6 +259,7 @@ final actor ClientRepository: ClientRepositoryProtocol {
         let visitActivityDates = visits.map { $0.endedAt ?? $0.startedAt }
 
         modelContext.delete(client)
+        try SummaryUpdater.stageClientInsightRemoval(for: clientUUID, in: modelContext)
         try modelContext.save()
         SpotlightIndexer.shared.removeClientAndPetsFromIndex(clientID: clientUUID, petIDs: petUUIDs)
 

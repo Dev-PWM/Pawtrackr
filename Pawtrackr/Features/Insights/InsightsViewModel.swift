@@ -88,6 +88,8 @@ class InsightsViewModel {
     var averageVisitValue:      Decimal = .zero
     var totalVisitsInPeriod:    Int     = 0
     var revenuePeriodDays:      Int     = 30
+    /// The days the revenue chart covers, from the last revenue fetch.
+    var revenueWindow:          ClosedRange<Date>?
     var revenueDrilldown:       [RevenueVisitData] = []
     var serviceProfitability:   [ServiceProfitabilityData] = []
     private(set) var isRefreshing  = false
@@ -191,10 +193,14 @@ class InsightsViewModel {
         startActionableInsightsRefresh()
     }
 
+    /// Reloads everything the period selector governs: revenue, payment
+    /// mix, categories and service profitability.
     func refreshRevenue() async {
         revenueFetchTask?.cancel()
         revenueFetchTask = Task {
-            await fetchRevenue()
+            async let revenue: Void = fetchRevenue()
+            async let distributions: Void = fetchDistributions()
+            _ = await (revenue, distributions)
             startActionableInsightsRefresh()
         }
         await revenueFetchTask?.value
@@ -220,20 +226,26 @@ class InsightsViewModel {
     // MARK: - Actor Delegations
 
     private func fetchRevenue() async {
+        let requestedPeriodDays = revenuePeriodDays
         do {
-            let result = try await actor.fetchRevenue(periodDays: revenuePeriodDays)
+            let result = try await actor.fetchRevenue(periodDays: requestedPeriodDays)
+            // A fetch for a period the user has since left must not overwrite the new one.
+            guard requestedPeriodDays == revenuePeriodDays else { return }
             revenueSeries = result.series
             totalRevenue = result.totalRevenue
             totalVisitsInPeriod = result.totalVisits
             averageVisitValue = result.averageVisitValue
+            revenueWindow = result.window
         } catch {
             Logger.insights.error("fetchRevenue failed: \(error)")
         }
     }
 
     private func fetchDistributions() async {
+        let requestedPeriodDays = revenuePeriodDays
         do {
-            let result = try await actor.fetchDistributions()
+            let result = try await actor.fetchDistributions(periodDays: requestedPeriodDays)
+            guard requestedPeriodDays == revenuePeriodDays else { return }
             serviceDistribution = result.services
             categoryDistribution = result.categories
             paymentMethodDistribution = result.payments

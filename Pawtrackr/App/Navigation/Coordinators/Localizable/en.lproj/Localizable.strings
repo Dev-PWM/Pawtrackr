@@ -1973,3 +1973,8 @@
 "pet.celebration.thanks" = "Thank you, %@, for being part of our salon family.";
 "pet.celebration.replay" = "Tap to celebrate again.";
 "pet.birthday.registered" = "Pet registered";
+"insights.services_lowercase" = "services";
+"insights.services_count_fmt" = "%d services";
+"insights.payments_one" = "1 payment";
+"insights.payments_count_fmt" = "%d payments";
+"insights.services_one" = "1 service";

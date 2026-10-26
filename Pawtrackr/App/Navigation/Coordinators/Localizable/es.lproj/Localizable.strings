@@ -1986,3 +1986,8 @@
 "pet.celebration.thanks" = "Gracias, %@, por ser parte de nuestra familia del salón.";
 "pet.celebration.replay" = "Toca para celebrar de nuevo.";
 "pet.birthday.registered" = "Registro de la mascota";
+"insights.services_lowercase" = "servicios";
+"insights.services_count_fmt" = "%d servicios";
+"insights.payments_one" = "1 pago";
+"insights.payments_count_fmt" = "%d pagos";
+"insights.services_one" = "1 servicio";

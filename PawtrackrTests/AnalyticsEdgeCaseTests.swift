@@ -39,7 +39,7 @@ final class AnalyticsEdgeCaseTests: XCTestCase {
         let actor = InsightsActor(modelContainer: container)
         
         // Fetch distributions with an empty database
-        let result = try await actor.fetchDistributions()
+        let result = try await actor.fetchDistributions(periodDays: 30)
         
         XCTAssertTrue(result.services.isEmpty)
         XCTAssertTrue(result.categories.isEmpty)

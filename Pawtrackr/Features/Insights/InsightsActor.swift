@@ -18,6 +18,9 @@ public final actor InsightsActor {
         let totalRevenue: Decimal
         let totalVisits: Int
         let averageVisitValue: Decimal
+        /// The first day of the period through the start of the day after today,
+        /// so the chart spans every day of the period, empty days included.
+        let window: ClosedRange<Date>
     }
     
     struct DistributionResult: Sendable {
@@ -40,11 +43,9 @@ public final actor InsightsActor {
     // MARK: - Core Analytics
     
     func fetchRevenue(periodDays: Int) async throws -> RevenueResult {
-        let cal = Calendar.current
-        let end = cal.startOfDay(for: .now)
-        guard let start = cal.date(byAdding: .day, value: -(periodDays - 1), to: end) else {
-            throw AppError.validation(.custom(message: AppLocalization.localized("validation.invalid_date_range", value: "The selected date range is invalid.")))
-        }
+        let period = try Self.periodWindow(days: periodDays)
+        let start = period.start
+        let end = period.today
         
         var descriptor = FetchDescriptor<DaySummary>(
             predicate: #Predicate<DaySummary> { summary in
@@ -63,14 +64,17 @@ public final actor InsightsActor {
             series: aggregates.map { InsightsViewModel.RevenueData(date: $0.day, amount: $0.revenue) },
             totalRevenue: totalRevenue,
             totalVisits: totalVisits,
-            averageVisitValue: totalVisits > 0 ? totalRevenue / Decimal(totalVisits) : .zero
+            averageVisitValue: totalVisits > 0 ? totalRevenue / Decimal(totalVisits) : .zero,
+            window: period.start...period.end
         )
     }
-    
-    func fetchDistributions() async throws -> DistributionResult {
-        let cal = Calendar.current
-        let end = cal.startOfDay(for: .now).addingTimeInterval(86400)
-        let start = cal.date(byAdding: .day, value: -30, to: end) ?? end
+
+    /// Services, categories and payment methods for the same days as the
+    /// revenue card, so the cards and the exported report agree.
+    func fetchDistributions(periodDays: Int) async throws -> DistributionResult {
+        let period = try Self.periodWindow(days: periodDays)
+        let start = period.start
+        let end = period.end
         
         // 1. Fetch Visits with pre-fetching
         var visitsDescriptor = FetchDescriptor<Visit>(
@@ -194,7 +198,9 @@ public final actor InsightsActor {
         let cal = Calendar.current
         let now = Date()
         let monthFormatter = DateFormatter()
-        monthFormatter.dateFormat = "MMM"
+        // The app's language setting, not the device's, like the rest of Insights.
+        monthFormatter.locale = AppLocalization.currentLocale
+        monthFormatter.setLocalizedDateFormatFromTemplate("MMM")
 
         guard let earliestMonthDate = cal.date(byAdding: .month, value: -5, to: now),
               let rangeStart = cal.date(from: cal.dateComponents([.year, .month], from: earliestMonthDate)),
@@ -275,6 +281,20 @@ public final actor InsightsActor {
     }
     
     // MARK: - Private Helpers
+
+    /// `days` calendar days ending with today: `start` is the first day,
+    /// `today` the last, and `end` the start of tomorrow. Day arithmetic
+    /// keeps the bounds on midnight across daylight-saving changes.
+    private static func periodWindow(days: Int, now: Date = .now) throws -> (start: Date, today: Date, end: Date) {
+        let cal = Calendar.current
+        let today = cal.startOfDay(for: now)
+        guard let start = cal.date(byAdding: .day, value: -(max(1, days) - 1), to: today),
+              let end = cal.date(byAdding: .day, value: 1, to: today)
+        else {
+            throw AppError.validation(.custom(message: AppLocalization.localized("validation.invalid_date_range", value: "The selected date range is invalid.")))
+        }
+        return (start, today, end)
+    }
     
     private func calculateLegacyClientInsights() async throws -> ClientInsightsResult {
         var clientDesc = FetchDescriptor<Client>()
@@ -289,7 +309,7 @@ public final actor InsightsActor {
             let visits = (client.pets ?? []).flatMap { $0.visits ?? [] }.filter { $0.isCompleted }
 
             if visits.count > 1 { recurring += 1 }
-            if (client.pets ?? []).contains(where: { $0.isOverdue }) { churn += 1 }
+            if (client.pets ?? []).contains(where: { $0.archivedAt == nil && $0.isOverdue }) { churn += 1 }
         }
 
         let oneTime = clients.count - recurring
