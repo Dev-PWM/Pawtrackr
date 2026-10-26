@@ -84,6 +84,14 @@ final class DashboardSecondaryUITests: XCTestCase {
 
         let action = app.buttons["dashboard.kpi.revenueInsights"]
         XCTAssertTrue(action.waitForHittable(timeout: 8), "Revenue KPI Insights button must be hittable.")
+        // The card can sit half under the floating tab bar, where a tap on its
+        // centre lands on the bar. Lift it clear first.
+        let tabBar = app.tabBars.firstMatch
+        let scroll = app.scrollViews["dashboard.scroll"]
+        for _ in 0..<4 where tabBar.exists && action.frame.maxY > tabBar.frame.minY {
+            let start = scroll.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.6))
+            start.press(forDuration: 0.1, thenDragTo: scroll.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.35)))
+        }
         action.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
 
         XCTAssertTrue(app.staticTexts["Revenue"].waitForExistence(timeout: 10),
