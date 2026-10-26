@@ -51,6 +51,9 @@ Pawtrackr-Architecture-Comparison.md
 /build_*.txt
 
 # Retired skill mirrors; canonical repository skills live in .claude/skills.
+# Reinstall them with script/update-skills.sh. A plain `skills update` writes
+# copies for every agent it detects on the machine, plus .agents/skills.
+/.agents/
 /.adal/
 /.aider-desk/
 /.augment/
