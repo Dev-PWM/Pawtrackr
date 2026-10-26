@@ -36,6 +36,8 @@ public struct PinLockGate<Content: View>: View {
                 }
             }
             .onChange(of: appSettings.autoLockAfterInactivity) { _, _ in resetInactivityLock() }
+            // A shorter timeout must apply now, not after the next drag.
+            .onChange(of: appSettings.idleLockMinutes) { _, _ in resetInactivityLock() }
             .onChange(of: appSettings.isBiometricLockEnabled) { _, _ in resetInactivityLock() }
             .onChange(of: appSettings.isLockEnabled) { _, enabled in
                 if !enabled {

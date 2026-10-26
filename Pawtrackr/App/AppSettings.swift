@@ -84,11 +84,46 @@ enum AppLanguageOverride: String, CaseIterable, Identifiable {
     }
 }
 
+/// Lets SwiftUI redraw text when the app language changes. `AppLocalization`
+/// registers a read on every lookup, so any view body that shows a localized
+/// string depends on the language, and `AppSettings` reports the change. The
+/// language itself stays in UserDefaults. Safe to touch from any thread.
+final class AppLanguageObservation: Observable, @unchecked Sendable {
+    static let shared = AppLanguageObservation()
+    private let registrar = ObservationRegistrar()
+    private var revision = 0
+
+    /// Records that the caller's output depends on the app language.
+    func track() {
+        registrar.access(self, keyPath: \.revision)
+    }
+
+    /// Invalidates every view that showed a localized string.
+    func languageDidChange() {
+        registrar.withMutation(of: self, keyPath: \.revision) {}
+    }
+}
+
 enum AppLocalization {
     static var currentLanguageOverride: AppLanguageOverride {
+        AppLanguageObservation.shared.track()
         let raw = UserDefaults.standard.string(forKey: AppSettingsKeys.appLanguageOverride)
             ?? AppLanguageOverride.system.rawValue
         return AppLanguageOverride(rawValue: raw) ?? .system
+    }
+
+    private static let lprojBundleLock = NSLock()
+    nonisolated(unsafe) private static var lprojBundles: [String: Bundle?] = [:]
+
+    /// The app's `<name>.lproj` bundle, looked up once: every visible string
+    /// goes through `localized`.
+    private static func lprojBundle(named name: String) -> Bundle? {
+        lprojBundleLock.lock()
+        defer { lprojBundleLock.unlock() }
+        if let cached = lprojBundles[name] { return cached }
+        let bundle = Bundle.main.url(forResource: name, withExtension: "lproj").flatMap(Bundle.init(url:))
+        lprojBundles[name] = bundle
+        return bundle
     }
 
     static var currentLocale: Locale {
@@ -109,9 +144,7 @@ enum AppLocalization {
         }
 
         for lprojName in override.preferredLprojNames {
-            guard let url = Bundle.main.url(forResource: lprojName, withExtension: "lproj"),
-                  let bundle = Bundle(url: url)
-            else { continue }
+            guard let bundle = lprojBundle(named: lprojName) else { continue }
             let localized = bundle.localizedString(forKey: key, value: nil, table: tableName)
             if localized != key {
                 return localized
@@ -304,6 +337,9 @@ final class AppSettings {
     var appLanguageOverride: AppLanguageOverride {
         didSet {
             UserDefaults.standard.set(appLanguageOverride.rawValue, forKey: AppSettingsKeys.appLanguageOverride)
+            if appLanguageOverride != oldValue {
+                AppLanguageObservation.shared.languageDidChange()
+            }
         }
     }
 
@@ -352,6 +388,10 @@ final class AppSettings {
             UserDefaults.standard.set(false, forKey: AppSettingsKeys.autoLockAfterInactivity)
             UserDefaults.standard.set(Defaults.currencySymbol, forKey: AppSettingsKeys.currencySymbol)
             UserDefaults.standard.removeObject(forKey: AppSettingsKeys.lastPINChangeDate)
+            // UI tests choose the language with -AppleLanguages, which only the
+            // System setting follows; a language saved by an earlier run wins
+            // over it and turns English assertions Spanish.
+            UserDefaults.standard.removeObject(forKey: AppSettingsKeys.appLanguageOverride)
             KeychainStorage.remove(forKey: AppSettingsKeys.appPINKeychainAccount)
             KeychainStorage.set(Defaults.uiTestPIN, forKey: AppSettingsKeys.appPINKeychainAccount)
             if AppRuntime.shouldStartWalkthroughForUITesting {

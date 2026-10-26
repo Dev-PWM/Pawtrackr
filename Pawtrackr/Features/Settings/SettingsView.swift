@@ -879,26 +879,38 @@ private struct PreferencesSectionView: View {
                     detail: settingsLocalized("settings.preferences.experience_detail", value: "Choose how Pawtrackr opens and which language and appearance it follows.")
                 )
 
-                Picker(selection: $appSettings.appLanguageOverride) {
-                    ForEach(AppLanguageOverride.allCases) { language in
-                        Text(language.displayName).tag(language)
+                SettingsPickerRow {
+                    Picker(selection: $appSettings.appLanguageOverride) {
+                        ForEach(AppLanguageOverride.allCases) { language in
+                            Text(language.displayName).tag(language)
+                        }
+                    } label: {
+                        Label(settingsLocalized("settings.preferences.language", value: "Language"), systemImage: "globe")
                     }
                 } label: {
                     Label(settingsLocalized("settings.preferences.language", value: "Language"), systemImage: "globe")
                 }
 
-                Picker(selection: $appSettings.preferredColorScheme) {
-                    ForEach(AppColorScheme.allCases) { scheme in
-                        Text(scheme.displayName).tag(scheme)
+                SettingsPickerRow {
+                    Picker(selection: $appSettings.preferredColorScheme) {
+                        ForEach(AppColorScheme.allCases) { scheme in
+                            Text(scheme.displayName).tag(scheme)
+                        }
+                    } label: {
+                        Label(settingsLocalized("settings.preferences.appearance", value: "Appearance"), systemImage: "circle.lefthalf.filled")
                     }
                 } label: {
                     Label(settingsLocalized("settings.preferences.appearance", value: "Appearance"), systemImage: "circle.lefthalf.filled")
                 }
 
-                Picker(selection: $appSettings.defaultLaunchTab) {
-                    ForEach(NavigationItem.allCases) { item in
-                        Label(item.label, systemImage: item.icon)
-                            .tag(item.rawValue)
+                SettingsPickerRow {
+                    Picker(selection: $appSettings.defaultLaunchTab) {
+                        ForEach(NavigationItem.allCases) { item in
+                            Label(item.label, systemImage: item.icon)
+                                .tag(item.rawValue)
+                        }
+                    } label: {
+                        Label(settingsLocalized("settings.preferences.default_launch", value: "Default Launch Tab"), systemImage: "rectangle.stack.fill")
                     }
                 } label: {
                     Label(settingsLocalized("settings.preferences.default_launch", value: "Default Launch Tab"), systemImage: "rectangle.stack.fill")
@@ -1242,6 +1254,26 @@ private struct SecuritySectionView: View {
                 showDisableLockConfirm = true
             }
         }
+    }
+}
+
+/// A picker with its title visible. Outside a `Form`, an iPhone menu picker
+/// shows only the selected value, so the label goes beside it; the Mac menu
+/// picker already shows its label and stays as it was.
+private struct SettingsPickerRow<PickerContent: View, LabelContent: View>: View {
+    @ViewBuilder let picker: () -> PickerContent
+    @ViewBuilder let label: () -> LabelContent
+
+    var body: some View {
+        #if os(iOS)
+        LabeledContent {
+            picker().labelsHidden()
+        } label: {
+            label()
+        }
+        #else
+        picker()
+        #endif
     }
 }
 
