@@ -151,10 +151,11 @@ final class VisitRepositoryTests: XCTestCase {
         visit.addItem(title: "Bath", unitPrice: Decimal(30))
         try await repository.checkOut(visit: visit, total: Decimal(30), now: .now)
         let day = Calendar.current.startOfDay(for: try XCTUnwrap(visit.endedAt))
+        // The delete runs in a fresh context; don't read the UI model afterwards.
+        let visitUUID = visit.uuid
 
         try await repository.deleteVisit(visit)
 
-        let visitUUID = visit.uuid
         XCTAssertEqual(try context.fetch(FetchDescriptor<Visit>(predicate: #Predicate<Visit> { $0.uuid == visitUUID })).count, 0)
 
         let summaries = try context.fetch(FetchDescriptor<DaySummary>(predicate: #Predicate<DaySummary> { $0.day == day }))

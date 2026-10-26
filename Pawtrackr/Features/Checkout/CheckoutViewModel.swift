@@ -22,26 +22,26 @@ final class CheckoutViewModel {
         var title: String {
             switch self {
             case .services:
-                return NSLocalizedString("checkout.step.services", value: "Services", comment: "")
+                return AppLocalization.localized("checkout.step.services", value: "Services")
             case .details:
-                return NSLocalizedString("checkout.step.details", value: "Notes & Photos", comment: "")
+                return AppLocalization.localized("checkout.step.details", value: "Notes & Photos")
             case .payment:
-                return NSLocalizedString("checkout.step.payment", value: "Payment", comment: "")
+                return AppLocalization.localized("checkout.step.payment", value: "Payment")
             case .review:
-                return NSLocalizedString("checkout.step.review", value: "Review", comment: "")
+                return AppLocalization.localized("checkout.step.review", value: "Review")
             }
         }
 
         var primaryButtonTitle: String {
             switch self {
             case .services:
-                return NSLocalizedString("checkout.action.continue_notes", value: "Continue to Notes", comment: "")
+                return AppLocalization.localized("checkout.action.continue_notes", value: "Continue to Notes")
             case .details:
-                return NSLocalizedString("checkout.action.continue_payment", value: "Continue to Payment", comment: "")
+                return AppLocalization.localized("checkout.action.continue_payment", value: "Continue to Payment")
             case .payment:
-                return NSLocalizedString("checkout.action.review_checkout", value: "Review Checkout", comment: "")
+                return AppLocalization.localized("checkout.action.review_checkout", value: "Review Checkout")
             case .review:
-                return NSLocalizedString("checkout.action.confirm_pay", value: "Confirm & Pay", comment: "")
+                return AppLocalization.localized("checkout.action.confirm_pay", value: "Confirm & Pay")
             }
         }
     }
@@ -68,24 +68,24 @@ final class CheckoutViewModel {
             let restoredTimestamp = restoredAt.formatted(date: .abbreviated, time: .shortened)
             if missingBeforePhoto && missingAfterPhoto {
                 return String.localizedStringWithFormat(
-                    NSLocalizedString("checkout.recovery.detail_both_fmt", value: "Recovered your saved checkout from %@. Re-add the before and after photos to finish cleanly.", comment: ""),
+                    AppLocalization.localized("checkout.recovery.detail_both_fmt", value: "Recovered your saved checkout from %@. Re-add the before and after photos to finish cleanly."),
                     restoredTimestamp
                 )
             }
             if missingBeforePhoto {
                 return String.localizedStringWithFormat(
-                    NSLocalizedString("checkout.recovery.detail_missing_before_fmt", value: "Recovered your saved checkout from %@. Re-add the before photo to finish cleanly.", comment: ""),
+                    AppLocalization.localized("checkout.recovery.detail_missing_before_fmt", value: "Recovered your saved checkout from %@. Re-add the before photo to finish cleanly."),
                     restoredTimestamp
                 )
             }
             if missingAfterPhoto {
                 return String.localizedStringWithFormat(
-                    NSLocalizedString("checkout.recovery.detail_missing_after_fmt", value: "Recovered your saved checkout from %@. Re-add the after photo to finish cleanly.", comment: ""),
+                    AppLocalization.localized("checkout.recovery.detail_missing_after_fmt", value: "Recovered your saved checkout from %@. Re-add the after photo to finish cleanly."),
                     restoredTimestamp
                 )
             }
             return String.localizedStringWithFormat(
-                NSLocalizedString("checkout.recovery.detail_fmt", value: "Recovered your saved checkout from %@.", comment: ""),
+                AppLocalization.localized("checkout.recovery.detail_fmt", value: "Recovered your saved checkout from %@."),
                 restoredTimestamp
             )
         }
@@ -250,19 +250,19 @@ final class CheckoutViewModel {
     var paymentMethodLabel: String { selectedPaymentMethod.displayName }
     var paymentReferenceSummary: String {
         let reference = externalReference.trimmed
-        return reference.isEmpty ? NSLocalizedString("common.none", value: "None", comment: "") : reference
+        return reference.isEmpty ? AppLocalization.localized("common.none", value: "None") : reference
     }
     var notesPreview: String {
         let trimmed = sessionNotes.trimmed
-        return trimmed.isEmpty ? NSLocalizedString("checkout.no_notes_added", value: "No notes added", comment: "") : trimmed
+        return trimmed.isEmpty ? AppLocalization.localized("checkout.no_notes_added", value: "No notes added") : trimmed
     }
     var behaviorTagsSummary: String {
         let values = tags.sorted()
-        return values.isEmpty ? NSLocalizedString("common.none", value: "None", comment: "") : values.joined(separator: ", ")
+        return values.isEmpty ? AppLocalization.localized("common.none", value: "None") : values.joined(separator: ", ")
     }
 
     // MARK: - Cached Computed Properties
-    private(set) var selectedServicesSummary: String = NSLocalizedString("common.none", value: "None", comment: "")
+    private(set) var selectedServicesSummary: String = AppLocalization.localized("common.none", value: "None")
     private(set) var finalTotalString: String = "$0.00"
 
     private let eventBus: GlobalEventBus
@@ -345,7 +345,7 @@ final class CheckoutViewModel {
                 self.isLoadingServices = false
                 Logger.checkout.error("CheckoutViewModel: Load failed - \(error.localizedDescription)")
                 self.appError = .database(
-                    String(format: NSLocalizedString("checkout.load_services_failed_fmt", value: "Failed to load services: %@", comment: ""), error.localizedDescription)
+                    String(format: AppLocalization.localized("checkout.load_services_failed_fmt", value: "Failed to load services: %@"), error.localizedDescription)
                 )
             }
         }
@@ -523,7 +523,7 @@ final class CheckoutViewModel {
             .sorted()
 
         selectedServicesSummary = sortedNames.isEmpty
-            ? NSLocalizedString("common.none", value: "None", comment: "")
+            ? AppLocalization.localized("common.none", value: "None")
             : sortedNames.joined(separator: ", ")
     }
 

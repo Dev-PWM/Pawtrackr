@@ -1991,3 +1991,4 @@
 "insights.payments_one" = "1 pago";
 "insights.payments_count_fmt" = "%d pagos";
 "insights.services_one" = "1 servicio";
+"loyalty.activity.visit_removed_fmt" = "Visita de %@ eliminada";

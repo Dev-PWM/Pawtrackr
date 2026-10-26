@@ -1978,3 +1978,4 @@
 "insights.payments_one" = "1 payment";
 "insights.payments_count_fmt" = "%d payments";
 "insights.services_one" = "1 service";
+"loyalty.activity.visit_removed_fmt" = "%@’s visit removed";

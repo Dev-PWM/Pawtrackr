@@ -49,19 +49,99 @@ final class VisitRepository: VisitRepositoryProtocol {
         try modelContext.save()
     }
     
+    /// Deletes a visit and takes back what it did to the owner's loyalty
+    /// balance in the same save: the points it earned come off and the points
+    /// spent on a reward there are refunded, recorded as one `.adjusted`
+    /// ledger row. The balance never goes below zero (the earned points may
+    /// already be spent). Runs under `LoyaltyMutationGate`, like checkout.
     func deleteVisit(_ visit: Visit) async throws {
+        let visitUUID = visit.uuid
+        let gateKey = visit.pet?.owner?.uuid ?? visitUUID
+        let container = modelContext.container
+
+        await LoyaltyMutationGate.shared.acquire(gateKey)
+        let outcome: VisitDeletionOutcome
+        do {
+            // A fresh background context: the cached UI models may hold an
+            // older balance than the store.
+            outcome = try await Task.detached(priority: .userInitiated) {
+                try Self.deleteReversingLoyalty(visitUUID: visitUUID, in: ModelContext(container))
+            }.value
+            await LoyaltyMutationGate.shared.release(gateKey)
+        } catch {
+            await LoyaltyMutationGate.shared.release(gateKey)
+            throw error
+        }
+
+        if outcome.balanceChange != 0, let clientUUID = outcome.clientUUID {
+            NotificationCenter.default.post(name: .loyaltyBalanceDidChange, object: clientUUID)
+        }
+        eventBus.publish(.refreshRequired)
+    }
+
+    private struct VisitDeletionOutcome: Sendable {
+        let clientUUID: UUID?
+        let balanceChange: Int
+    }
+
+    /// Deletes the visit and its loyalty effect in one save, then rebuilds the
+    /// derived summaries. The balance never goes below zero: the earned points
+    /// may already be spent.
+    nonisolated private static func deleteReversingLoyalty(visitUUID: UUID, in context: ModelContext) throws -> VisitDeletionOutcome {
+        var descriptor = FetchDescriptor<Visit>(predicate: #Predicate { $0.uuid == visitUUID })
+        descriptor.fetchLimit = 1
+        guard let visit = try context.fetch(descriptor).first else {
+            return VisitDeletionOutcome(clientUUID: nil, balanceChange: 0)
+        }
         let started = visit.startedAt
         let ended = visit.endedAt
-        modelContext.delete(visit)
-        try modelContext.save()
-        
-        let cal = Calendar.current
-        SummaryUpdater.rebuildDay(for: started, in: modelContext)
-        if let ended = ended, cal.startOfDay(for: ended) != cal.startOfDay(for: started) {
-            SummaryUpdater.rebuildDay(for: ended, in: modelContext)
+        let client = visit.pet?.owner
+
+        var change = 0
+        if let client {
+            let earned = max(0, visit.loyaltyPointsChange)
+            let refunded = max(0, visit.loyaltyRedeemedPoints)
+            let newBalance = max(0, client.loyaltyPoints - earned + refunded)
+            change = newBalance - client.loyaltyPoints
+            if change != 0 {
+                client.loyaltyPoints = newBalance
+                client.updatedAt = .now
+                client.lastModifiedBy = DeviceIdentity.currentID
+                context.insert(LoyaltyLedgerEntry(
+                    kind: .adjusted,
+                    points: change,
+                    clientUUID: client.uuid,
+                    visitUUID: visitUUID,
+                    balanceAfter: newBalance,
+                    reason: visit.pet?.name
+                ))
+            }
         }
-        
-        eventBus.publish(.refreshRequired)
+
+        context.delete(visit)
+        do {
+            try context.save()
+        } catch {
+            context.rollback()
+            throw error
+        }
+
+        // Derived caches: a failure is logged and the launch rebuild repairs it.
+        let cal = Calendar.current
+        SummaryUpdater.rebuildDay(for: started, in: context)
+        if let ended, cal.startOfDay(for: ended) != cal.startOfDay(for: started) {
+            SummaryUpdater.rebuildDay(for: ended, in: context)
+        }
+        // A day rebuild only refreshes clients who still have visits that day.
+        if let client {
+            do {
+                try SummaryUpdater.upsertClientInsightSummary(for: client, in: context)
+                if context.hasChanges { try context.save() }
+            } catch {
+                Logger.visits.error("VisitRepository: Client summary refresh after visit delete failed: \(error.localizedDescription)")
+            }
+        }
+        return VisitDeletionOutcome(clientUUID: client?.uuid, balanceChange: change)
     }
     
     func checkIn(pet: Pet, date: Date) async throws -> Visit {

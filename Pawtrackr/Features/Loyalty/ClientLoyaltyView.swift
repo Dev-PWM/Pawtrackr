@@ -162,7 +162,12 @@ private struct LoyaltyActivityRow: View {
             entry.reason.map { String(format: AppLocalization.localized("loyalty.activity.redeemed_fmt", value: "Redeemed %@"), $0) }
                 ?? AppLocalization.localized("loyalty.ledger.redeemed", value: "Reward redeemed")
         case .adjusted:
-            AppLocalization.localized("loyalty.activity.previous_adjustment", value: "Previous balance correction")
+            // A deleted visit's reversal carries that visit's UUID.
+            if entry.visitUUID != nil, let petName = entry.reason {
+                String(format: AppLocalization.localized("loyalty.activity.visit_removed_fmt", value: "%@’s visit removed"), petName)
+            } else {
+                AppLocalization.localized("loyalty.activity.previous_adjustment", value: "Previous balance correction")
+            }
         }
     }
 }
