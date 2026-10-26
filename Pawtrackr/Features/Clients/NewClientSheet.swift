@@ -329,7 +329,10 @@ struct NewClientSheet: View {
         }
         #else
         form
-        .scrollDismissesKeyboard(horizontalSizeClass == .compact ? .interactively : .automatic)
+        // Drop focus as soon as the form scrolls: the owner's first name is focused
+        // on open, and a menu or picker opened further down otherwise scrolls the
+        // form back up to that field.
+        .scrollDismissesKeyboard(horizontalSizeClass == .compact ? .immediately : .automatic)
         .navigationTitle(NSLocalizedString("new_client.new_client", comment: ""))
         .toolbar {
             ToolbarItem(placement: .cancellationAction) {

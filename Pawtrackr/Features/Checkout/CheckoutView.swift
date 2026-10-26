@@ -670,9 +670,13 @@ struct CheckoutView: View {
                     } label: {
                             Image(systemName: "chevron.left")
                                 .font(.headline)
+                                .foregroundStyle(.tint)
                                 .frame(width: primaryButtonHeight, height: primaryButtonHeight)
                                 .background(Circle().fill(Color.gray.opacity(0.1)))
+                                .contentShape(Circle())
                         }
+                        .pressScaleStyle()
+                        .accessibilityLabel(NSLocalizedString("common.back", value: "Back", comment: ""))
                         .accessibilityIdentifier("checkout.backButton")
                     }
                 
@@ -687,6 +691,7 @@ struct CheckoutView: View {
                         .foregroundStyle(.white)
                         .scaleEffect(viewModel.isAdvanceEnabled ? 1.0 : 0.97)
                 }
+                .pressScaleStyle()
                 .disabled(!viewModel.isAdvanceEnabled)
                 .accessibilityIdentifier("checkout.primaryButton")
                 .walkthroughTarget(.coConfirm)

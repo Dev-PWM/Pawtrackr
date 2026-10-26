@@ -56,7 +56,12 @@ struct PhotoWell: View {
             .frame(maxWidth: .infinity)
             .frame(height: 160)
             .clipShape(RoundedRectangle(cornerRadius: 12))
+            .contentShape(RoundedRectangle(cornerRadius: 12))
         }
+        // Without a style the Mac draws the well as a default push button: a
+        // dark gray bezel with the placeholder dimmed inside it.
+        .pressScaleStyle()
+        .accessibilityLabel(title)
         .contextMenu {
             if imageData != nil {
                 Button(role: .destructive) {

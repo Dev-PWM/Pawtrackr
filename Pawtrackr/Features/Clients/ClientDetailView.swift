@@ -725,7 +725,9 @@ struct ClientDetailView: View {
                                 // silently dropped by SwiftUI on macOS.
                                 sheetDestination = .communication(firstPet)
                             }
-                                .disabled((client.pets ?? []).isEmpty)
+                                // The sheet sends by SMS or WhatsApp, so it needs a
+                                // textable number as well as a pet for the template.
+                                .disabled((client.pets ?? []).isEmpty || PhoneUtils.smsURLString(client.phone ?? "") == nil)
                                 .accessibilityIdentifier("clientDetail.message")
                             ClientActionButton(
                                 systemImage: "pencil",
@@ -770,27 +772,15 @@ struct ClientDetailView: View {
                                 URLOpener.open(url)
                             }
                         } trailing: {
-                            HStack(spacing: 8) {
-                                if PhoneUtils.smsURLString(client.phone ?? "") != nil {
-                                    ClientActionButton(
-                                        systemImage: "message.fill",
-                                        tint: DS.ColorToken.success,
-                                        label: NSLocalizedString("client_detail.message", value: "Message", comment: "")
-                                    ) {
-                                        guard let firstPet = (client.pets ?? []).first else { return }
-                                        sheetDestination = .communication(firstPet)
-                                    }
-                                }
-                                if let tel = PhoneUtils.telURLString(client.phone ?? ""), let telURL = URL(string: tel) {
-                                    ClientActionButton(
-                                        systemImage: "phone.fill",
-                                        tint: DS.ColorToken.success,
-                                        isProminent: true,
-                                        label: NSLocalizedString("client_detail.call", value: "Call", comment: "")
-                                    ) {
-                                        viewModel?.recordAttentionOutreach(method: "call")
-                                        URLOpener.open(telURL)
-                                    }
+                            if let tel = PhoneUtils.telURLString(client.phone ?? ""), let telURL = URL(string: tel) {
+                                ClientActionButton(
+                                    systemImage: "phone.fill",
+                                    tint: DS.ColorToken.success,
+                                    isProminent: true,
+                                    label: NSLocalizedString("client_detail.call", value: "Call", comment: "")
+                                ) {
+                                    viewModel?.recordAttentionOutreach(method: "call")
+                                    URLOpener.open(telURL)
                                 }
                             }
                         }

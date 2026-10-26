@@ -57,7 +57,8 @@ struct EditPetSheet: View {
             }
             .background(DS.ColorToken.background.ignoresSafeArea())
 #if os(iOS)
-            .scrollDismissesKeyboard(.interactively)
+            // Drop focus on scroll, or the birthday menu scrolls back to the focused field.
+            .scrollDismissesKeyboard(.immediately)
 #endif
             .navigationTitle(AppLocalization.localized("pet.editor.title", value: "Edit Pet"))
             .toolbar {

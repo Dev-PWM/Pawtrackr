@@ -1,4 +1,9 @@
 import SwiftUI
+#if canImport(UIKit)
+import UIKit
+#elseif canImport(AppKit)
+import AppKit
+#endif
 
 /// The same compact profile fields for new clients, additional pets, and editing.
 struct PetProfileForm: View {
@@ -107,6 +112,11 @@ struct PetBirthdayFields: View {
     }
     @Binding var birthdate: Date?
     let registrationDate: Date
+    /// Fixed for the life of the form: rebuilding `...Date()` on every body
+    /// pass handed the picker a new range each redraw, which reset it mid-edit.
+    @State private var latestBirthdate = Date.now
+    @State private var isShowingCalendar = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     enum BirthdayOption: String, CaseIterable, Identifiable {
         case known
@@ -119,12 +129,67 @@ struct PetBirthdayFields: View {
             get: { birthdate != nil ? .known : .celebration },
             set: { newOption in
                 if newOption == .known {
-                    birthdate = birthdate ?? .now
+                    // Today is only a placeholder, so go straight to the calendar.
+                    if birthdate == nil { isShowingCalendar = true }
+                    birthdate = birthdate ?? latestBirthdate
                 } else {
                     birthdate = nil
                 }
             }
         )
+    }
+
+    private var birthdateSelection: Binding<Date> {
+        Binding(get: { birthdate ?? latestBirthdate }, set: { birthdate = $0 })
+    }
+
+    /// A date button that expands a graphical calendar in place, on every
+    /// platform. The compact picker's popup broke inside the New Client sheet:
+    /// tapping it scrolled the still-focused owner name field back into view,
+    /// and the calendar opened detached from the field that had moved away.
+    /// The Mac's compact style has no calendar at all, only a stepper field.
+    @ViewBuilder
+    private var birthdatePicker: some View {
+        let title = AppLocalization.localized("pet.birthday.date", value: "Date")
+        LabeledContent(title) {
+            Button {
+                Self.endTextEditing()
+                withAnimation(MotionSystem.resolved(MotionSystem.snappy, reduceMotion: reduceMotion)) {
+                    isShowingCalendar.toggle()
+                }
+            } label: {
+                // Text(_:format:) follows the app's language; .formatted() would use the system's.
+                Label {
+                    Text(birthdateSelection.wrappedValue, format: .dateTime.day().month(.abbreviated).year())
+                } icon: {
+                    Image(systemName: "calendar")
+                }
+                .foregroundStyle(isShowingCalendar ? AnyShapeStyle(.tint) : AnyShapeStyle(.primary))
+                .padding(.horizontal, 10)
+                .padding(.vertical, 6)
+                .background(DS.ColorToken.background.opacity(0.5), in: RoundedRectangle(cornerRadius: 8))
+                .contentShape(RoundedRectangle(cornerRadius: 8))
+            }
+            .pressScaleStyle()
+            .accessibilityLabel(title)
+            .accessibilityValue(Text(birthdateSelection.wrappedValue, format: .dateTime.day().month(.wide).year()))
+            .accessibilityIdentifier("petProfile.birthdate")
+        }
+        if isShowingCalendar {
+            DatePicker(title, selection: birthdateSelection, in: ...latestBirthdate, displayedComponents: .date)
+                .datePickerStyle(.graphical)
+                .labelsHidden()
+                .transition(.opacity)
+        }
+    }
+
+    /// Resigns the active text field so the form doesn't scroll back to it.
+    private static func endTextEditing() {
+        #if canImport(UIKit)
+        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+        #elseif canImport(AppKit)
+        NSApp.keyWindow?.makeFirstResponder(nil)
+        #endif
     }
 
     private var birthdayModePicker: some View {
@@ -150,12 +215,7 @@ struct PetBirthdayFields: View {
             .accessibilityIdentifier("petProfile.birthdayMode")
 
             if birthdate != nil {
-                DatePicker(AppLocalization.localized("pet.birthday.date", value: "Date"), selection: Binding(
-                    get: { birthdate ?? .now }, set: { birthdate = $0 }
-                ), in: ...Date(), displayedComponents: .date)
-                .datePickerStyle(.compact)
-                .accessibilityLabel(AppLocalization.localized("pet.birthday.date", value: "Date"))
-                .accessibilityIdentifier("petProfile.birthdate")
+                birthdatePicker
             } else {
                 LabeledContent(AppLocalization.localized("pet.birthday.registered", value: "Pet registered")) {
                     Text(registrationDate, format: .dateTime.month(.wide).day())
