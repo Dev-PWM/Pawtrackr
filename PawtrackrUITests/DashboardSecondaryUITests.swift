@@ -139,6 +139,7 @@ final class DashboardSecondaryUITests: XCTestCase {
 
         tapPrimaryButton(named: "Continue to Notes")
         tapPrimaryButton(named: "Continue to Payment")
+        enterVisitAmount()
         tapPrimaryButton(named: "Review Checkout")
 
         XCTAssertTrue(app.buttons["Confirm & Pay"].waitForHittable(timeout: 8))
@@ -187,6 +188,7 @@ final class DashboardSecondaryUITests: XCTestCase {
 
         tapPrimaryButton(named: "Continue to Notes")
         tapPrimaryButton(named: "Continue to Payment")
+        enterVisitAmount()
         tapPrimaryButton(named: "Review Checkout")
         XCTAssertTrue(app.buttons["Confirm & Pay"].waitForHittable(timeout: 8))
         tapPrimaryButton(named: "Confirm & Pay")
@@ -254,6 +256,7 @@ final class DashboardSecondaryUITests: XCTestCase {
         if bath.waitForHittable(timeout: 5) { bath.tap() }
         tapPrimaryButton(named: "Continue to Notes")
         tapPrimaryButton(named: "Continue to Payment")
+        enterVisitAmount()
         tapPrimaryButton(named: "Review Checkout")
         tapPrimaryButton(named: "Confirm & Pay")
         XCTAssertTrue(app.staticTexts["Checkout Complete!"].waitForExistence(timeout: 15))
@@ -270,6 +273,20 @@ final class DashboardSecondaryUITests: XCTestCase {
             !self.app.buttons["dashboard.activeSession.checkoutButton"].exists
         }
         XCTAssertTrue(stayedCheckedOut, "A completed client-detail checkout must not recreate an active session after navigating away.")
+    }
+
+    /// Service selection never prices a visit; the groomer types the amount,
+    /// and Review stays disabled until one is entered.
+    private func enterVisitAmount(_ text: String = "40") {
+        let amount = app.textFields["checkout.amountField"]
+        if !amount.waitForHittable(timeout: 3) {
+            for _ in 0..<4 where !amount.isHittable { app.swipeUp() }
+        }
+        XCTAssertTrue(amount.waitForHittable(timeout: 5), "Checkout amount field was not hittable.")
+        amount.tap()
+        amount.typeText(text)
+        let done = app.buttons["Done"]
+        if done.waitForHittable(timeout: 2) { done.tap() }
     }
 
     private func tapPrimaryButton(named title: String) {
@@ -303,6 +320,7 @@ final class DashboardSecondaryUITests: XCTestCase {
         if bath.waitForHittable(timeout: 5) { bath.tap() }
         tapPrimaryButton(named: "Continue to Notes")
         tapPrimaryButton(named: "Continue to Payment")
+        enterVisitAmount()
         tapPrimaryButton(named: "Review Checkout")
         tapPrimaryButton(named: "Confirm & Pay")
         XCTAssertTrue(app.staticTexts["Checkout Complete!"].waitForExistence(timeout: 15))
