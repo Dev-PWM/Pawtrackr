@@ -75,7 +75,7 @@ struct InsightsView: View {
                         .transition(.opacity)
                 case .error(let message):
                     ContentUnavailableView(
-                        NSLocalizedString("common.error", comment: ""),
+                        AppLocalization.localized("common.error"),
                         systemImage: "exclamationmark.triangle",
                         description: Text(message)
                     )
@@ -94,7 +94,7 @@ struct InsightsView: View {
             InsightsMeshBackground()
                 .allowsHitTesting(false)
         }
-        .navigationTitle(NSLocalizedString("insights.title", value: "Insights", comment: ""))
+        .navigationTitle(AppLocalization.localized("insights.title", value: "Insights"))
         // A prepared report holds the numbers from when it was made. Drop it
         // when they or the salon's name change, so Export makes a new one.
         .onChange(of: viewModel?.totalRevenue) { reportExports = nil }
@@ -273,7 +273,7 @@ struct InsightsView: View {
     private func kpiSummaryRow(_ vm: InsightsViewModel) -> some View {
         HStack(spacing: DS.Spacing.sm) {
             kpiTile(
-                title: NSLocalizedString("insights.revenue", comment: ""),
+                title: AppLocalization.localized("insights.revenue"),
                 value: vm.totalRevenue.moneyString,
                 icon: "dollarsign.circle.fill",
                 color: DS.ColorToken.primary,
@@ -287,7 +287,7 @@ struct InsightsView: View {
                 accessibilityIdentifier: "insights.kpi.avgVisit"
             )
             kpiTile(
-                title: NSLocalizedString("insights.retention", comment: ""),
+                title: AppLocalization.localized("insights.retention"),
                 value: retentionPercentText(vm),
                 icon: "person.2.fill",
                 color: DS.ColorToken.warning,
@@ -338,7 +338,7 @@ struct InsightsView: View {
             VStack(alignment: .leading, spacing: DS.Spacing.md) {
                 HStack(alignment: .top) {
                     VStack(alignment: .leading, spacing: 2) {
-                        Text(NSLocalizedString("insights.revenue", comment: ""))
+                        Text(AppLocalization.localized("insights.revenue"))
                             .font(.headline)
                         Text(String(format: localized("insights.window_days_fmt", value: "%d-day window"), vm.revenuePeriodDays))
                             .font(.caption)
@@ -369,7 +369,7 @@ struct InsightsView: View {
                     Chart(vm.revenueSeries) { data in
                         BarMark(
                             x: .value(localized("insights.chart.day", value: "Day"), data.date, unit: .day),
-                            y: .value(NSLocalizedString("insights.revenue", comment: ""), (data.amount as NSDecimalNumber).doubleValue)
+                            y: .value(AppLocalization.localized("insights.revenue"), (data.amount as NSDecimalNumber).doubleValue)
                         )
                         .foregroundStyle(DS.ColorToken.primary.gradient)
                         .cornerRadius(3)
@@ -504,7 +504,7 @@ struct InsightsView: View {
     private func serviceRevenueCard(_ vm: InsightsViewModel) -> some View {
         Card {
             VStack(alignment: .leading, spacing: DS.Spacing.md) {
-                lowerSectionAccessibilityAnchor(identifier: "insights.section.topServices", label: NSLocalizedString("insights.top_services", comment: ""))
+                lowerSectionAccessibilityAnchor(identifier: "insights.section.topServices", label: AppLocalization.localized("insights.top_services"))
                 Text(localized("insights.service_profitability", value: "Service Profitability")).font(.headline)
 
                 if vm.serviceProfitability.isEmpty && vm.serviceDistribution.isEmpty {
@@ -607,8 +607,8 @@ struct InsightsView: View {
     private func retentionCard(_ vm: InsightsViewModel) -> some View {
         Card {
             VStack(alignment: .leading, spacing: DS.Spacing.md) {
-                lowerSectionAccessibilityAnchor(identifier: "insights.section.retention", label: NSLocalizedString("insights.retention", comment: ""))
-                Text(NSLocalizedString("insights.retention", comment: "")).font(.headline)
+                lowerSectionAccessibilityAnchor(identifier: "insights.section.retention", label: AppLocalization.localized("insights.retention"))
+                Text(AppLocalization.localized("insights.retention")).font(.headline)
 
                 if vm.retentionSeries.isEmpty {
                     emptyState(icon: "person.2", message: localized("insights.retention.empty", value: "Not enough client data yet"))
@@ -625,8 +625,8 @@ struct InsightsView: View {
                         }
 
                         VStack(alignment: .leading, spacing: 10) {
-                            metricLabel(title: NSLocalizedString("insights.retention_rate", comment: ""), value: retentionPercentText(vm), color: DS.ColorToken.primary)
-                            metricLabel(title: NSLocalizedString("insights.churn_risk", comment: ""), value: String(format: localized("insights.clients_count_fmt", value: "%d clients"), vm.churnRiskCount), color: DS.ColorToken.warning)
+                            metricLabel(title: AppLocalization.localized("insights.retention_rate"), value: retentionPercentText(vm), color: DS.ColorToken.primary)
+                            metricLabel(title: AppLocalization.localized("insights.churn_risk"), value: String(format: localized("insights.clients_count_fmt", value: "%d clients"), vm.churnRiskCount), color: DS.ColorToken.warning)
                         }
                     }
                 }
@@ -715,7 +715,7 @@ struct InsightsView: View {
                         Label(localized("insights.export.csv_data", value: "Owner Insights CSV"), systemImage: "tablecells")
                     }
                 } label: {
-                    Label(NSLocalizedString("common.export", comment: ""), systemImage: "square.and.arrow.up")
+                    Label(AppLocalization.localized("common.export"), systemImage: "square.and.arrow.up")
                 }
                 .accessibilityLabel(localized("insights.export.share_report", value: "Share Report"))
                 .accessibilityIdentifier("insights.shareReport")
@@ -741,7 +741,7 @@ struct InsightsView: View {
                     }
                 }
  label: {
-                    if isPreparingReport { ProgressView() } else { Label(NSLocalizedString("common.export", comment: ""), systemImage: "doc.badge.arrow.up") }
+                    if isPreparingReport { ProgressView() } else { Label(AppLocalization.localized("common.export"), systemImage: "doc.badge.arrow.up") }
                 }
                 .disabled(isPreparingReport)
                 .accessibilityLabel(localized("insights.export.export_report", value: "Export Report"))
@@ -796,7 +796,7 @@ struct InsightsView: View {
             .navigationTitle(drilldown.title)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button(NSLocalizedString("common.done", comment: "")) { selectedDrilldown = nil }
+                    Button(AppLocalization.localized("common.done")) { selectedDrilldown = nil }
                 }
             }
         }
@@ -812,7 +812,7 @@ struct InsightsView: View {
     }
 
     private func localized(_ key: String, value: String) -> String {
-        NSLocalizedString(key, value: value, comment: "")
+        AppLocalization.localized(key, value: value)
     }
 
     // MARK: - Skeleton / Loading

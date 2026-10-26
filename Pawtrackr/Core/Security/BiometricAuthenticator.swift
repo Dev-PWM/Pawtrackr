@@ -59,7 +59,7 @@ final class BiometricAuthenticator {
             return
         }
 
-        let reason = NSLocalizedString("biometric.reason", comment: "Biometric authentication reason")
+        let reason = AppLocalization.localized("biometric.reason")
         context.evaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, localizedReason: reason) { success, authenticationError in
             DispatchQueue.main.async {
                 completion(success, authenticationError)

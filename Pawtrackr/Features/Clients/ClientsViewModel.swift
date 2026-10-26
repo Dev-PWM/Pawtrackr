@@ -28,13 +28,13 @@ final class ClientsViewModel {
         var displayName: String {
             switch self {
             case .all:
-                return NSLocalizedString("clients.filter.all", value: "All", comment: "")
+                return AppLocalization.localized("clients.filter.all", value: "All")
             case .active:
-                return NSLocalizedString("clients.filter.active", value: "Active", comment: "")
+                return AppLocalization.localized("clients.filter.active", value: "Active")
             case .overdue:
-                return NSLocalizedString("clients.filter.overdue", value: "Needs Attention", comment: "")
+                return AppLocalization.localized("clients.filter.overdue", value: "Needs Attention")
             case .missingInfo:
-                return NSLocalizedString("clients.filter.missing_info", value: "Missing Info", comment: "")
+                return AppLocalization.localized("clients.filter.missing_info", value: "Missing Info")
             }
         }
     }
@@ -49,15 +49,15 @@ final class ClientsViewModel {
         var displayName: String {
             switch self {
             case .lastName:
-                return NSLocalizedString("clients.sort.last_name", value: "Last Name", comment: "")
+                return AppLocalization.localized("clients.sort.last_name", value: "Last Name")
             case .firstName:
-                return NSLocalizedString("clients.sort.first_name", value: "First Name", comment: "")
+                return AppLocalization.localized("clients.sort.first_name", value: "First Name")
             case .petName:
-                return NSLocalizedString("clients.sort.pet_name", value: "Pet's Name", comment: "")
+                return AppLocalization.localized("clients.sort.pet_name", value: "Pet's Name")
             case .lastVisit:
-                return NSLocalizedString("clients.sort.last_visit", value: "Last Visit", comment: "")
+                return AppLocalization.localized("clients.sort.last_visit", value: "Last Visit")
             case .newest:
-                return NSLocalizedString("clients.sort.newest", value: "Newest", comment: "")
+                return AppLocalization.localized("clients.sort.newest", value: "Newest")
             }
         }
     }

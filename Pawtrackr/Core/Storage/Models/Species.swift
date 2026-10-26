@@ -17,9 +17,9 @@ public enum Species: String, CaseIterable, Codable, Identifiable, Sendable {
     public var displayName: String {
         switch self {
         case .dog:
-            return NSLocalizedString("species.dog", value: "Dog", comment: "")
+            return AppLocalization.localized("species.dog", value: "Dog")
         case .cat:
-            return NSLocalizedString("species.cat", value: "Cat", comment: "")
+            return AppLocalization.localized("species.cat", value: "Cat")
         }
     }
 

@@ -37,14 +37,14 @@ struct VisitTimelineRow: View {
             }
             Spacer()
             if visit.isPaid {
-                Text(NSLocalizedString("visit.paid", comment: ""))
+                Text(AppLocalization.localized("visit.paid"))
                     .font(.caption.weight(.bold))
                     .padding(.horizontal, 8)
                     .padding(.vertical, 4)
                     .background(Capsule().fill(Color.green))
                     .foregroundStyle(.white)
             } else if visit.isActive {
-                Text(NSLocalizedString("visit.processing", comment: ""))
+                Text(AppLocalization.localized("visit.processing"))
                     .font(.caption.weight(.bold))
                     .padding(.horizontal, 8)
                     .padding(.vertical, 4)
@@ -81,16 +81,16 @@ struct VisitTimelineRow: View {
     private var timingRow: some View {
         HStack {
             VStack(alignment: .leading, spacing: 2) {
-                Text(NSLocalizedString("visit.check_in_time", comment: "")).font(.caption).foregroundStyle(.secondary)
+                Text(AppLocalization.localized("visit.check_in_time")).font(.caption).foregroundStyle(.secondary)
                 Text(Formatters.timeOnly.string(from: visit.startedAt)).font(.subheadline.weight(.medium))
             }
             Spacer()
             VStack(alignment: .leading, spacing: 2) {
-                Text(NSLocalizedString("visit.check_out_time", comment: "")).font(.caption).foregroundStyle(.secondary)
+                Text(AppLocalization.localized("visit.check_out_time")).font(.caption).foregroundStyle(.secondary)
                 if let end = visit.endedAt {
                     Text(Formatters.timeOnly.string(from: end)).font(.subheadline.weight(.medium))
                 } else {
-                    Text(NSLocalizedString("visit.in_progress", comment: "")).font(.subheadline.weight(.medium)).foregroundStyle(.secondary)
+                    Text(AppLocalization.localized("visit.in_progress")).font(.subheadline.weight(.medium)).foregroundStyle(.secondary)
                 }
             }
         }

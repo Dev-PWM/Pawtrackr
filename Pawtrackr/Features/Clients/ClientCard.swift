@@ -105,11 +105,11 @@ struct ClientCard: View {
             // Aggressive state is shown by the prominent banner above; keep the
             // header chips for status only to avoid a redundant double-warning.
             if isInProgress {
-                Chip.success("In Session")
+                Chip.success(AppLocalization.localized("status.in_session", value: "In Session"))
             } else if needsAttention {
-                Chip.warning(NSLocalizedString("clients.needs_attention", value: "Needs Attention", comment: ""))
+                Chip.warning(AppLocalization.localized("clients.needs_attention", value: "Needs Attention"))
             } else if hasMissingInfo {
-                Chip.info(NSLocalizedString("clients.filter.missing_info", value: "Missing Info", comment: ""))
+                Chip.info(AppLocalization.localized("clients.filter.missing_info", value: "Missing Info"))
             }
         }
     }
@@ -122,7 +122,7 @@ struct ClientCard: View {
             Image(systemName: "exclamationmark.triangle.fill")
                 .font(.subheadline.weight(.bold))
                 .foregroundStyle(.white)
-            Text(NSLocalizedString("pet.safety.aggressive_badge", value: "Aggressive — handle with care", comment: ""))
+            Text(AppLocalization.localized("pet.safety.aggressive_badge", value: "Aggressive — handle with care"))
                 .font(.caption.weight(.bold))
                 .foregroundStyle(.white)
                 .lineLimit(1)
@@ -133,7 +133,7 @@ struct ClientCard: View {
         .padding(.horizontal, 10)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(DS.ColorToken.danger, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-        .accessibilityLabel(NSLocalizedString("pet.safety.aggressive_a11y", value: "Warning: this pet is marked aggressive. Handle with care.", comment: ""))
+        .accessibilityLabel(AppLocalization.localized("pet.safety.aggressive_a11y", value: "Warning: this pet is marked aggressive. Handle with care."))
     }
 
     @ViewBuilder
@@ -150,7 +150,7 @@ struct ClientCard: View {
 
         return HStack(alignment: .top, spacing: 0) {
             if pets.isEmpty {
-                Text(NSLocalizedString("clients.no_pets", value: "No pets", comment: ""))
+                Text(AppLocalization.localized("clients.no_pets", value: "No pets"))
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .padding(.top, 2)

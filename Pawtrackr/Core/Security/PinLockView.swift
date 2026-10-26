@@ -176,16 +176,16 @@ public struct PinLockView: View {
 
     private var titleSection: some View {
         VStack(spacing: 8) {
-            Text(NSLocalizedString("pin.enter", comment: "")).font(.title2).bold()
+            Text(AppLocalization.localized("pin.enter")).font(.title2).bold()
             if isLockedOut {
-                Text(String(format: NSLocalizedString("pin.lockout_fmt", value: "Too many incorrect attempts. Try again in %ds.", comment: ""), Int(lockoutCountdown.rounded(.up))))
+                Text(String(format: AppLocalization.localized("pin.lockout_fmt", value: "Too many incorrect attempts. Try again in %ds."), Int(lockoutCountdown.rounded(.up))))
                     .font(.subheadline)
                     .foregroundStyle(.red)
                     .multilineTextAlignment(.center)
                     .lineLimit(2)
                     .minimumScaleFactor(0.8)
             } else {
-                Text(NSLocalizedString("pin.requirement", comment: ""))
+                Text(AppLocalization.localized("pin.requirement"))
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
             }
@@ -229,7 +229,7 @@ public struct PinLockView: View {
             }
             KeyButton(label: "0") { tapDigit(0) }
             KeyButton(systemName: "delete.left.fill") { deleteDigit() }
-                .accessibilityLabel(NSLocalizedString("common.delete", comment: ""))
+                .accessibilityLabel(AppLocalization.localized("common.delete"))
         }
     }
 

@@ -50,7 +50,7 @@ struct CommunicationSheet: View {
             #endif
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button(NSLocalizedString("common.cancel", comment: "")) { dismiss() }
+                    Button(AppLocalization.localized("common.cancel")) { dismiss() }
                 }
             }
             .onAppear {

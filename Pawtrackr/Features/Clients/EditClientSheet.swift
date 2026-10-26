@@ -36,30 +36,30 @@ struct EditClientSheet: View {
     var body: some View {
         NavigationStack {
             Form {
-                Section(NSLocalizedString("new_client.owner_section", comment: "")) {
-                    TextField(NSLocalizedString("new_client.first_name", comment: ""), text: $firstName)
+                Section(AppLocalization.localized("new_client.owner_section")) {
+                    TextField(AppLocalization.localized("new_client.first_name"), text: $firstName)
                         .accessibilityIdentifier("editClient.firstName")
                         .textLengthLimit($firstName, to: TextInputLimits.name)
                     #if os(iOS)
                     .textContentType(.givenName)
                     .textInputAutocapitalization(.words)
                     #endif
-                    TextField(NSLocalizedString("new_client.last_name", comment: ""), text: $lastName)
+                    TextField(AppLocalization.localized("new_client.last_name"), text: $lastName)
                         .accessibilityIdentifier("editClient.lastName")
                         .textLengthLimit($lastName, to: TextInputLimits.name)
                     #if os(iOS)
                     .textContentType(.familyName)
                     .textInputAutocapitalization(.words)
                     #endif
-                    TextField(NSLocalizedString("new_client.phone", comment: ""), text: $phone)
+                    TextField(AppLocalization.localized("new_client.phone"), text: $phone)
                         .accessibilityIdentifier("editClient.phone")
                         .phoneFieldFormatting($phone)
                         .textLengthLimit($phone, to: TextInputLimits.phone)
-                    TextField(NSLocalizedString("new_client.email", comment: ""), text: $email)
+                    TextField(AppLocalization.localized("new_client.email"), text: $email)
                         .accessibilityIdentifier("editClient.email")
                         .textLengthLimit($email, to: TextInputLimits.email)
                         .emailFieldInput()
-                    TextField(NSLocalizedString("new_client.address", comment: ""), text: $address)
+                    TextField(AppLocalization.localized("new_client.address"), text: $address)
                         .accessibilityIdentifier("editClient.address")
                         .textLengthLimit($address, to: TextInputLimits.address)
                     #if os(iOS)
@@ -69,14 +69,14 @@ struct EditClientSheet: View {
 
                 // Notes intentionally omitted from client edit per requirements.
             }
-            .navigationTitle(NSLocalizedString("client_details.edit", comment: ""))
+            .navigationTitle(AppLocalization.localized("client_details.edit"))
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button(NSLocalizedString("common.cancel", comment: ""), role: .cancel) { dismiss() }
+                    Button(AppLocalization.localized("common.cancel"), role: .cancel) { dismiss() }
                         .accessibilityIdentifier("editClient.cancel")
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button(NSLocalizedString("common.save", comment: "")) {
+                    Button(AppLocalization.localized("common.save")) {
                         attemptedSubmit = true
                         save()
                     }
@@ -86,9 +86,9 @@ struct EditClientSheet: View {
             }
             .alert(item: $appError) { error in
                 Alert(
-                    title: Text(NSLocalizedString("common.error", comment: "")),
+                    title: Text(AppLocalization.localized("common.error")),
                     message: Text(error.localizedDescription),
-                    dismissButton: .default(Text(NSLocalizedString("common.ok", comment: "")))
+                    dismissButton: .default(Text(AppLocalization.localized("common.ok")))
                 )
             }
             .onAppear(perform: loadFromClient)
@@ -153,7 +153,7 @@ struct EditClientSheet: View {
     private func save(overwrite: Bool = false) {
         guard let baseline else { return }
         if !email.trimmed.isEmpty && !isValidEmail(email) {
-            appError = .validation(.custom(message: NSLocalizedString("new_client.error.email_invalid_long", comment: "")))
+            appError = .validation(.custom(message: AppLocalization.localized("new_client.error.email_invalid_long")))
             return
         }
 
@@ -177,7 +177,7 @@ struct EditClientSheet: View {
                 value: "This client is no longer on this device, so your changes weren't saved."
             ))
         case .failed(let message):
-            appError = .database(String(format: NSLocalizedString("common.save_failed", comment: ""), message))
+            appError = .database(String(format: AppLocalization.localized("common.save_failed"), message))
         }
     }
 

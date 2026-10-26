@@ -20,29 +20,29 @@ struct ChangePINSheet: View {
         NavigationStack {
             Form {
                 Section(isInitialSetup
-                        ? NSLocalizedString("settings.pin.set", value: "Set PIN", comment: "")
-                        : NSLocalizedString("settings.pin.change", value: "Change PIN", comment: "")) {
+                        ? AppLocalization.localized("settings.pin.set", value: "Set PIN")
+                        : AppLocalization.localized("settings.pin.change", value: "Change PIN")) {
                     if !isInitialSetup {
-                        SecureField(NSLocalizedString("settings.pin.current", value: "Current PIN", comment: ""), text: $currentPIN)
+                        SecureField(AppLocalization.localized("settings.pin.current", value: "Current PIN"), text: $currentPIN)
                             .accessibilityIdentifier("settings.pin.current")
                     }
-                    SecureField(NSLocalizedString("settings.pin.new", value: "New PIN", comment: ""), text: $newPIN)
+                    SecureField(AppLocalization.localized("settings.pin.new", value: "New PIN"), text: $newPIN)
                         .accessibilityIdentifier("settings.pin.new")
-                    SecureField(NSLocalizedString("settings.pin.confirm", value: "Confirm PIN", comment: ""), text: $confirmPIN)
+                    SecureField(AppLocalization.localized("settings.pin.confirm", value: "Confirm PIN"), text: $confirmPIN)
                         .accessibilityIdentifier("settings.pin.confirm")
                 }
             }
             .navigationTitle(isInitialSetup
-                             ? NSLocalizedString("settings.pin.set", value: "Set PIN", comment: "")
-                             : NSLocalizedString("settings.pin.change", value: "Change PIN", comment: ""))
+                             ? AppLocalization.localized("settings.pin.set", value: "Set PIN")
+                             : AppLocalization.localized("settings.pin.change", value: "Change PIN"))
             .toolbar {
-                Button(NSLocalizedString("common.save", value: "Save", comment: "")) { updatePIN() }
+                Button(AppLocalization.localized("common.save", value: "Save")) { updatePIN() }
                     .accessibilityIdentifier("settings.pin.save")
-                Button(NSLocalizedString("common.cancel", value: "Cancel", comment: "")) { isPresented = false }
+                Button(AppLocalization.localized("common.cancel", value: "Cancel")) { isPresented = false }
                     .accessibilityIdentifier("settings.pin.cancel")
             }
-            .alert(NSLocalizedString("common.error", value: "Error", comment: ""), isPresented: Binding(get: { errorMessage != nil }, set: { if !$0 { errorMessage = nil } })) {
-                Button(NSLocalizedString("common.ok", value: "OK", comment: "")) { }
+            .alert(AppLocalization.localized("common.error", value: "Error"), isPresented: Binding(get: { errorMessage != nil }, set: { if !$0 { errorMessage = nil } })) {
+                Button(AppLocalization.localized("common.ok", value: "OK")) { }
             } message: { Text(errorMessage ?? "") }
         }
     }
@@ -50,16 +50,16 @@ struct ChangePINSheet: View {
     private func updatePIN() {
         if !isInitialSetup {
             guard appSettings.validatePIN(currentPIN) else {
-                errorMessage = NSLocalizedString("settings.pin.incorrect", value: "Incorrect PIN", comment: "")
+                errorMessage = AppLocalization.localized("settings.pin.incorrect", value: "Incorrect PIN")
                 return
             }
         }
         guard newPIN == confirmPIN else {
-            errorMessage = NSLocalizedString("settings.pin.mismatch", value: "PINs do not match", comment: "")
+            errorMessage = AppLocalization.localized("settings.pin.mismatch", value: "PINs do not match")
             return
         }
         guard appSettings.changePIN(to: newPIN) else {
-            errorMessage = NSLocalizedString("settings.pin.invalid", value: "Enter a 4-digit PIN", comment: "")
+            errorMessage = AppLocalization.localized("settings.pin.invalid", value: "Enter a 4-digit PIN")
             return
         }
         isPresented = false

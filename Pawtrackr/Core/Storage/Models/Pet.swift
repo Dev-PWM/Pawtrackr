@@ -574,15 +574,15 @@ extension Pet {
         var displayName: String {
             switch self {
             case .weekly:
-                return NSLocalizedString("pet.grooming_frequency.weekly", value: "Weekly", comment: "")
+                return AppLocalization.localized("pet.grooming_frequency.weekly", value: "Weekly")
             case .biWeekly:
-                return NSLocalizedString("pet.grooming_frequency.bi_weekly", value: "Every 2 Weeks", comment: "")
+                return AppLocalization.localized("pet.grooming_frequency.bi_weekly", value: "Every 2 Weeks")
             case .monthly:
-                return NSLocalizedString("pet.grooming_frequency.monthly", value: "Monthly", comment: "")
+                return AppLocalization.localized("pet.grooming_frequency.monthly", value: "Monthly")
             case .quarterly:
-                return NSLocalizedString("pet.grooming_frequency.quarterly", value: "Every 3 Months", comment: "")
+                return AppLocalization.localized("pet.grooming_frequency.quarterly", value: "Every 3 Months")
             case .asNeeded:
-                return NSLocalizedString("pet.grooming_frequency.as_needed", value: "As Needed", comment: "")
+                return AppLocalization.localized("pet.grooming_frequency.as_needed", value: "As Needed")
             }
         }
     }
@@ -595,17 +595,17 @@ extension Pet {
         var displayName: String {
             switch self {
             case .calm:
-                return NSLocalizedString("pet.behavior.calm", value: "Calm", comment: "")
+                return AppLocalization.localized("pet.behavior.calm", value: "Calm")
             case .cooperative:
-                return NSLocalizedString("pet.behavior.cooperative", value: "Cooperative", comment: "")
+                return AppLocalization.localized("pet.behavior.cooperative", value: "Cooperative")
             case .anxious:
-                return NSLocalizedString("pet.behavior.anxious", value: "Anxious", comment: "")
+                return AppLocalization.localized("pet.behavior.anxious", value: "Anxious")
             case .nervous:
-                return NSLocalizedString("pet.behavior.nervous", value: "Nervous", comment: "")
+                return AppLocalization.localized("pet.behavior.nervous", value: "Nervous")
             case .aggressive:
-                return NSLocalizedString("pet.behavior.aggressive", value: "Aggressive", comment: "")
+                return AppLocalization.localized("pet.behavior.aggressive", value: "Aggressive")
             case .specialNeeds:
-                return NSLocalizedString("pet.behavior.special_needs", value: "Special Needs", comment: "")
+                return AppLocalization.localized("pet.behavior.special_needs", value: "Special Needs")
             }
         }
     }

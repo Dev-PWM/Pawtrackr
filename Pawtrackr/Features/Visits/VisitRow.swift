@@ -96,7 +96,7 @@ struct VisitRow: View {
                 || visit.afterPhotoData != nil
                 || visit.beforeThumbnailData != nil
                 || visit.afterThumbnailData != nil {
-                Label(NSLocalizedString("visit.photos", comment: ""), systemImage: "photo.on.rectangle")
+                Label(AppLocalization.localized("visit.photos"), systemImage: "photo.on.rectangle")
             }
             Spacer()
             // import, telling groomers visits were backed up when they weren't.

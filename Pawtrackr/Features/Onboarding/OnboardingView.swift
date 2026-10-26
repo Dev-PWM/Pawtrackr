@@ -118,11 +118,11 @@ struct OnboardingView: View {
         .sheet(isPresented: $showStoreRestore) {
             StoreRestoreView(currentClientCount: 0)
         }
-        .alert(NSLocalizedString("onboarding.error.setup_title", value: "Setup Error", comment: ""), isPresented: Binding(
+        .alert(AppLocalization.localized("onboarding.error.setup_title", value: "Setup Error"), isPresented: Binding(
             get: { viewModel.saveError != nil },
             set: { if !$0 { viewModel.saveError = nil } }
         )) {
-            Button(NSLocalizedString("common.ok", comment: "")) { viewModel.saveError = nil }
+            Button(AppLocalization.localized("common.ok")) { viewModel.saveError = nil }
         } message: {
             if let error = viewModel.saveError {
                 Text(error)
@@ -204,13 +204,13 @@ struct OnboardingView: View {
 
     private func subtitle(for step: OnboardingViewModel.Step) -> String {
         switch step {
-        case .welcome: return NSLocalizedString("onboarding.subtitle.welcome", value: "Let's configure your workspace.", comment: "")
-        case .businessProfile: return NSLocalizedString("onboarding.subtitle.business_profile", value: "Tell us about your grooming business.", comment: "")
-        case .regional: return NSLocalizedString("onboarding.subtitle.regional", value: "Set your local currency and contact details.", comment: "")
-        case .security: return NSLocalizedString("onboarding.subtitle.security", value: "Secure your business data with a PIN.", comment: "")
-        case .permissions: return NSLocalizedString("onboarding.subtitle.permissions", value: "Set your app preferences and unlock method.", comment: "")
-        case .loyalty: return NSLocalizedString("onboarding.subtitle.loyalty", value: "Points build automatically after each completed, paid visit.", comment: "")
-        case .warmStart: return NSLocalizedString("onboarding.subtitle.finish", value: "You are all set to start grooming!", comment: "")
+        case .welcome: return AppLocalization.localized("onboarding.subtitle.welcome", value: "Let's configure your workspace.")
+        case .businessProfile: return AppLocalization.localized("onboarding.subtitle.business_profile", value: "Tell us about your grooming business.")
+        case .regional: return AppLocalization.localized("onboarding.subtitle.regional", value: "Set your local currency and contact details.")
+        case .security: return AppLocalization.localized("onboarding.subtitle.security", value: "Secure your business data with a PIN.")
+        case .permissions: return AppLocalization.localized("onboarding.subtitle.permissions", value: "Set your app preferences and unlock method.")
+        case .loyalty: return AppLocalization.localized("onboarding.subtitle.loyalty", value: "Points build automatically after each completed, paid visit.")
+        case .warmStart: return AppLocalization.localized("onboarding.subtitle.finish", value: "You are all set to start grooming!")
         }
     }
 
@@ -222,10 +222,10 @@ struct OnboardingView: View {
                     .foregroundStyle(DS.ColorToken.primary)
                     .symbolEffect(.bounce, value: viewModel.currentStep)
                 
-                Text(NSLocalizedString("onboarding.permissions.title", value: "Choose Your Defaults", comment: ""))
+                Text(AppLocalization.localized("onboarding.permissions.title", value: "Choose Your Defaults"))
                     .font(.title2.bold())
                 
-                Text(NSLocalizedString("onboarding.permissions.message", value: "These preferences can be changed later in Settings, but getting them right now makes the first session smoother.", comment: ""))
+                Text(AppLocalization.localized("onboarding.permissions.message", value: "These preferences can be changed later in Settings, but getting them right now makes the first session smoother."))
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, DS.Spacing.xl)
@@ -233,15 +233,15 @@ struct OnboardingView: View {
             
             VStack(spacing: DS.Spacing.lg) {
                 permissionToggle(
-                    title: NSLocalizedString("onboarding.permissions.lock_background.title", value: "Lock When App Closes", comment: ""),
-                    subtitle: NSLocalizedString("onboarding.permissions.lock_background.subtitle", value: "Require your PIN again whenever Pawtrackr leaves the foreground.", comment: ""),
+                    title: AppLocalization.localized("onboarding.permissions.lock_background.title", value: "Lock When App Closes"),
+                    subtitle: AppLocalization.localized("onboarding.permissions.lock_background.subtitle", value: "Require your PIN again whenever Pawtrackr leaves the foreground."),
                     icon: "lock.fill",
                     isOn: $viewModel.lockOnBackgroundEnabled
                 )
 
                 permissionToggle(
-                    title: NSLocalizedString("onboarding.permissions.auto_lock.title", value: "Lock After Inactivity", comment: ""),
-                    subtitle: NSLocalizedString("onboarding.permissions.auto_lock.subtitle", value: "Automatically relock the app after a few idle minutes.", comment: ""),
+                    title: AppLocalization.localized("onboarding.permissions.auto_lock.title", value: "Lock After Inactivity"),
+                    subtitle: AppLocalization.localized("onboarding.permissions.auto_lock.subtitle", value: "Automatically relock the app after a few idle minutes."),
                     icon: "timer",
                     isOn: $viewModel.autoLockAfterInactivityEnabled
                 )
@@ -305,7 +305,7 @@ struct OnboardingView: View {
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(viewModel.biometricTitle).font(.headline)
-                Text(NSLocalizedString("onboarding.permissions.biometric_unavailable", value: "Turn on Face ID or Touch ID in your device Settings to speed up checkout unlocks. Your PIN keeps working in the meantime.", comment: ""))
+                Text(AppLocalization.localized("onboarding.permissions.biometric_unavailable", value: "Turn on Face ID or Touch ID in your device Settings to speed up checkout unlocks. Your PIN keeps working in the meantime."))
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -340,7 +340,7 @@ struct OnboardingView: View {
                 }
                 
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(viewModel.name.trimmed.isEmpty ? NSLocalizedString("onboarding.business.preview_name", value: "Your Business Name", comment: "") : viewModel.name)
+                    Text(viewModel.name.trimmed.isEmpty ? AppLocalization.localized("onboarding.business.preview_name", value: "Your Business Name") : viewModel.name)
                         .font(.headline)
                         .foregroundStyle(viewModel.name.isEmpty ? .secondary : .primary)
                     
@@ -384,19 +384,19 @@ struct OnboardingView: View {
 
                 VStack(spacing: DS.Spacing.sm) {
                     if !appVersion.isEmpty {
-                        Text(String(format: NSLocalizedString("onboarding.welcome.version_fmt", value: "Version %@", comment: ""), appVersion))
+                        Text(String(format: AppLocalization.localized("onboarding.welcome.version_fmt", value: "Version %@"), appVersion))
                             .font(.caption.weight(.semibold))
                             .foregroundStyle(DS.ColorToken.primary)
                             .padding(.horizontal, DS.Spacing.md)
                             .padding(.vertical, DS.Spacing.xxs)
                             .glassSurface(cornerRadius: DS.Radius.pill, tint: DS.ColorToken.primary.opacity(0.12))
                     }
-                    Text(NSLocalizedString("onboarding.welcome.title", value: "Welcome to Pawtrackr", comment: ""))
+                    Text(AppLocalization.localized("onboarding.welcome.title", value: "Welcome to Pawtrackr"))
                         .font(.largeTitle.bold())
                         .multilineTextAlignment(.center)
                         .lineLimit(2)
                         .fixedSize(horizontal: false, vertical: true)
-                    Text(NSLocalizedString("onboarding.welcome.message", value: "Clients, pets, visits and checkout in one calm workspace.\nSet up your salon in a few minutes.", comment: ""))
+                    Text(AppLocalization.localized("onboarding.welcome.message", value: "Clients, pets, visits and checkout in one calm workspace.\nSet up your salon in a few minutes."))
                         .multilineTextAlignment(.center)
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
@@ -419,7 +419,7 @@ struct OnboardingView: View {
                 .padding(.horizontal, DS.Spacing.xxl)
 
                 Label(
-                    NSLocalizedString("onboarding.welcome.trust", value: "No account needed · Works offline", comment: ""),
+                    AppLocalization.localized("onboarding.welcome.trust", value: "No account needed · Works offline"),
                     systemImage: "checkmark.seal.fill"
                 )
                 .font(.footnote.weight(.medium))
@@ -531,16 +531,12 @@ struct OnboardingView: View {
     private func restoreFoundCard(_ offer: StoreBackupRestore.Offer) -> some View {
         VStack(alignment: .leading, spacing: DS.Spacing.sm) {
             Label(
-                NSLocalizedString("onboarding.restore.title", value: "Your clients are still on this device", comment: ""),
+                AppLocalization.localized("onboarding.restore.title", value: "Your clients are still on this device"),
                 systemImage: "clock.arrow.circlepath"
             )
             .font(.headline)
             Text(String(
-                format: NSLocalizedString(
-                    "onboarding.restore.message_fmt",
-                    value: "A backup here has %d clients. Restore them instead of starting over.",
-                    comment: ""
-                ),
+                format: AppLocalization.localized("onboarding.restore.message_fmt", value: "A backup here has %d clients. Restore them instead of starting over."),
                 offer.missingClientCount
             ))
             .font(.subheadline)
@@ -549,7 +545,7 @@ struct OnboardingView: View {
             Button {
                 showStoreRestore = true
             } label: {
-                Text(NSLocalizedString("onboarding.restore.action", value: "Restore Clients", comment: ""))
+                Text(AppLocalization.localized("onboarding.restore.action", value: "Restore Clients"))
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(.borderedProminent)
@@ -569,15 +565,15 @@ struct OnboardingView: View {
                     ImagePicker(imageData: $viewModel.logoData) {
                         HStack {
                             Image(systemName: "photo.badge.plus")
-                            Text(viewModel.logoData == nil ? NSLocalizedString("onboarding.business.upload_logo", value: "Upload Business Logo", comment: "") : NSLocalizedString("onboarding.business.change_logo", value: "Change Logo", comment: ""))
+                            Text(viewModel.logoData == nil ? AppLocalization.localized("onboarding.business.upload_logo", value: "Upload Business Logo") : AppLocalization.localized("onboarding.business.change_logo", value: "Change Logo"))
                         }
                     }
                     .buttonStyle(.bordered)
                 }
                 
                 VStack(alignment: .leading, spacing: DS.Spacing.sm) {
-                    Text(NSLocalizedString("onboarding.business.name", value: "Business Name", comment: "")).font(.headline)
-                    TextField(NSLocalizedString("onboarding.business.name_placeholder", value: "e.g. Bark & Bathe Grooming", comment: ""), text: $viewModel.name)
+                    Text(AppLocalization.localized("onboarding.business.name", value: "Business Name")).font(.headline)
+                    TextField(AppLocalization.localized("onboarding.business.name_placeholder", value: "e.g. Bark & Bathe Grooming"), text: $viewModel.name)
                         .textFieldStyle(.roundedBorder)
                         .font(.title3)
                         .accessibilityIdentifier("onboarding.businessName")
@@ -588,7 +584,7 @@ struct OnboardingView: View {
                 }
                 .padding(.horizontal, DS.Spacing.xxl)
                 
-                Text(NSLocalizedString("onboarding.business.info_message", value: "This information will be used to brand your receipts and reports.", comment: ""))
+                Text(AppLocalization.localized("onboarding.business.info_message", value: "This information will be used to brand your receipts and reports."))
                     .font(.footnote)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
@@ -604,7 +600,7 @@ struct OnboardingView: View {
             VStack(spacing: DS.Spacing.xl) {
                 businessCardPreview
                 
-                Text(NSLocalizedString("onboarding.regional.contact_message", value: "Contact details are optional. Add them now if you want them on receipts and exports.", comment: ""))
+                Text(AppLocalization.localized("onboarding.regional.contact_message", value: "Contact details are optional. Add them now if you want them on receipts and exports."))
                     .font(.footnote)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
@@ -613,14 +609,14 @@ struct OnboardingView: View {
                 Card {
                     VStack(spacing: DS.Spacing.md) {
                         onboardingTextField(
-                            title: NSLocalizedString("onboarding.regional.email", value: "Contact Email", comment: ""),
+                            title: AppLocalization.localized("onboarding.regional.email", value: "Contact Email"),
                             text: $viewModel.email,
                             icon: "envelope",
                             contentType: .emailAddress,
                             maxLength: TextInputLimits.email
                         )
                         onboardingTextField(
-                            title: NSLocalizedString("onboarding.regional.phone", value: "Phone Number", comment: ""),
+                            title: AppLocalization.localized("onboarding.regional.phone", value: "Phone Number"),
                             text: $viewModel.phone,
                             icon: "phone",
                             contentType: .telephoneNumber,
@@ -628,7 +624,7 @@ struct OnboardingView: View {
                         )
                             .phoneFieldFormatting($viewModel.phone)
                         onboardingTextField(
-                            title: NSLocalizedString("onboarding.regional.address", value: "Business Address", comment: ""),
+                            title: AppLocalization.localized("onboarding.regional.address", value: "Business Address"),
                             text: $viewModel.address,
                             icon: "mappin.and.ellipse",
                             axis: .vertical,
@@ -702,7 +698,7 @@ struct OnboardingView: View {
 
             HStack {
                 if viewModel.currentStep != .welcome {
-                    Button(NSLocalizedString("common.back", value: "Back", comment: "")) {
+                    Button(AppLocalization.localized("common.back", value: "Back")) {
                         viewModel.previousStep()
                     }
                     .buttonStyle(.plain)
@@ -750,16 +746,16 @@ struct OnboardingView: View {
                     .font(.system(size: 60))
                     .foregroundStyle(DS.ColorToken.primary)
                 
-                Text(NSLocalizedString("onboarding.security.title", value: "Set Your App PIN", comment: ""))
+                Text(AppLocalization.localized("onboarding.security.title", value: "Set Your App PIN"))
                     .font(.title2.bold())
                 
-                Text(NSLocalizedString("onboarding.security.message", value: "This 4-digit code will protect your client data.", comment: ""))
+                Text(AppLocalization.localized("onboarding.security.message", value: "This 4-digit code will protect your client data."))
                     .foregroundStyle(.secondary)
             }
             
             VStack(spacing: DS.Spacing.xl) {
-                pinEntryView(title: NSLocalizedString("onboarding.security.enter_pin", value: "Enter PIN", comment: ""), text: $viewModel.pin, field: .pin)
-                pinEntryView(title: NSLocalizedString("onboarding.security.confirm_pin", value: "Confirm PIN", comment: ""), text: $viewModel.confirmPin, field: .confirmPin)
+                pinEntryView(title: AppLocalization.localized("onboarding.security.enter_pin", value: "Enter PIN"), text: $viewModel.pin, field: .pin)
+                pinEntryView(title: AppLocalization.localized("onboarding.security.confirm_pin", value: "Confirm PIN"), text: $viewModel.confirmPin, field: .confirmPin)
                 // Validation messages render in the shared footer to avoid duplicates.
             }
 
@@ -768,7 +764,7 @@ struct OnboardingView: View {
                 focusedField = nil
                 viewModel.skipPIN()
             } label: {
-                Text(NSLocalizedString("onboarding.security.skip", value: "Skip for now — use without a PIN", comment: ""))
+                Text(AppLocalization.localized("onboarding.security.skip", value: "Skip for now — use without a PIN"))
                     .font(.subheadline.weight(.medium))
                     .foregroundStyle(DS.ColorToken.primary)
                     .padding(.vertical, 8)
@@ -799,10 +795,10 @@ struct OnboardingView: View {
                     .symbolEffect(.pulse, value: viewModel.currentStep)
 
                 VStack(spacing: DS.Spacing.sm) {
-                    Text(NSLocalizedString("onboarding.loyalty.title", value: "Rewards without extra math", comment: ""))
+                    Text(AppLocalization.localized("onboarding.loyalty.title", value: "Rewards without extra math"))
                         .font(.title2.bold())
                         .multilineTextAlignment(.center)
-                    Text(NSLocalizedString("onboarding.loyalty.message", value: "Care for the pet. Complete the visit. Pawtrackr takes care of the points.", comment: ""))
+                    Text(AppLocalization.localized("onboarding.loyalty.message", value: "Care for the pet. Complete the visit. Pawtrackr takes care of the points."))
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
@@ -881,24 +877,24 @@ struct OnboardingView: View {
                     .foregroundStyle(DS.ColorToken.primary)
                     .symbolEffect(.bounce, value: viewModel.currentStep)
 
-                Text(NSLocalizedString("onboarding.finish.title", value: "You're all set!", comment: ""))
+                Text(AppLocalization.localized("onboarding.finish.title", value: "You're all set!"))
                     .font(.title2.bold())
 
-                Text(NSLocalizedString("onboarding.finish.message", value: "Choose how you'd like to start.", comment: ""))
+                Text(AppLocalization.localized("onboarding.finish.message", value: "Choose how you'd like to start."))
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, DS.Spacing.xl)
             }
 
             VStack(alignment: .leading, spacing: 10) {
-                Text(NSLocalizedString("onboarding.summary.title", value: "Workspace Summary", comment: ""))
+                Text(AppLocalization.localized("onboarding.summary.title", value: "Workspace Summary"))
                     .font(.headline)
-                Label(viewModel.name.trimmed.isEmpty ? NSLocalizedString("onboarding.summary.business_pending", value: "Business name will be added in setup", comment: "") : viewModel.name.trimmed, systemImage: "building.2")
-                Label(String(format: NSLocalizedString("onboarding.summary.currency_fmt", value: "Currency: %@", comment: ""), viewModel.currencySymbol), systemImage: "dollarsign.circle")
+                Label(viewModel.name.trimmed.isEmpty ? AppLocalization.localized("onboarding.summary.business_pending", value: "Business name will be added in setup") : viewModel.name.trimmed, systemImage: "building.2")
+                Label(String(format: AppLocalization.localized("onboarding.summary.currency_fmt", value: "Currency: %@"), viewModel.currencySymbol), systemImage: "dollarsign.circle")
                 if viewModel.pinSkipped {
-                    Label(NSLocalizedString("onboarding.summary.pin_disabled", value: "No PIN — open access", comment: ""), systemImage: "lock.open")
+                    Label(AppLocalization.localized("onboarding.summary.pin_disabled", value: "No PIN — open access"), systemImage: "lock.open")
                 } else {
-                    Label(NSLocalizedString("onboarding.summary.pin_enabled", value: "PIN protection enabled", comment: ""), systemImage: "lock.shield")
+                    Label(AppLocalization.localized("onboarding.summary.pin_enabled", value: "PIN protection enabled"), systemImage: "lock.shield")
                 }
             }
             .font(.subheadline)
@@ -914,8 +910,8 @@ struct OnboardingView: View {
             // they may be added live in SampleDataSeedPolicy.
             VStack(spacing: DS.Spacing.md) {
                 startChoiceButton(
-                    title: NSLocalizedString("onboarding.finish.sample.title", value: "Explore with sample clients", comment: ""),
-                    subtitle: NSLocalizedString("onboarding.finish.sample.subtitle", value: "Adds 2 practice clients with pets and visits, and example prices for services that have none, so the tour can show check-in and checkout. Remove them anytime in Settings.", comment: ""),
+                    title: AppLocalization.localized("onboarding.finish.sample.title", value: "Explore with sample clients"),
+                    subtitle: AppLocalization.localized("onboarding.finish.sample.subtitle", value: "Adds 2 practice clients with pets and visits, and example prices for services that have none, so the tour can show check-in and checkout. Remove them anytime in Settings."),
                     systemImage: "wand.and.stars",
                     isProminent: viewModel.sampleDataAvailability == .seed,
                     identifier: "onboarding.explore"
@@ -935,8 +931,8 @@ struct OnboardingView: View {
                 }
 
                 startChoiceButton(
-                    title: NSLocalizedString("onboarding.finish.real.title", value: "Start with my real business", comment: ""),
-                    subtitle: NSLocalizedString("onboarding.finish.real.subtitle", value: "Begin with an empty client list. You can load sample clients later in Settings.", comment: ""),
+                    title: AppLocalization.localized("onboarding.finish.real.title", value: "Start with my real business"),
+                    subtitle: AppLocalization.localized("onboarding.finish.real.subtitle", value: "Begin with an empty client list. You can load sample clients later in Settings."),
                     systemImage: "building.2",
                     isProminent: viewModel.sampleDataAvailability != .seed,
                     identifier: "onboarding.startReal"
@@ -948,7 +944,7 @@ struct OnboardingView: View {
             .padding(.horizontal, DS.Spacing.xxl)
 
             if viewModel.isSaving {
-                ProgressView(NSLocalizedString("onboarding.saving", value: "Setting up your workspace...", comment: ""))
+                ProgressView(AppLocalization.localized("onboarding.saving", value: "Setting up your workspace..."))
                     #if os(iOS)
                     .controlSize(.large)
                     #endif
@@ -966,9 +962,9 @@ struct OnboardingView: View {
         case .seed, .skip(.notChosen):
             return nil
         case .skip(.salonHasData):
-            return NSLocalizedString("onboarding.finish.sample.unavailable_salon", value: "Your salon already has data, so sample clients won't be added.", comment: "")
+            return AppLocalization.localized("onboarding.finish.sample.unavailable_salon", value: "Your salon already has data, so sample clients won't be added.")
         case .skip(.backupFound):
-            return NSLocalizedString("onboarding.finish.sample.unavailable_backup", value: "This device has a backup of your clients. Restore it instead of adding sample clients.", comment: "")
+            return AppLocalization.localized("onboarding.finish.sample.unavailable_backup", value: "This device has a backup of your clients. Restore it instead of adding sample clients.")
         }
     }
 
@@ -1072,33 +1068,33 @@ private struct WelcomeFeature: Identifiable {
         [
             WelcomeFeature(
                 id: "pets", icon: "pawprint.fill", tint: DS.ColorToken.primary,
-                title: NSLocalizedString("onboarding.feature.pets.title", value: "Every Pet, One Profile", comment: ""),
-                detail: NSLocalizedString("onboarding.feature.pets.subtitle", value: "Photos, behavior notes, safety alerts and visit history for each pet.", comment: "")
+                title: AppLocalization.localized("onboarding.feature.pets.title", value: "Every Pet, One Profile"),
+                detail: AppLocalization.localized("onboarding.feature.pets.subtitle", value: "Photos, behavior notes, safety alerts and visit history for each pet.")
             ),
             WelcomeFeature(
                 id: "checkout", icon: "creditcard.fill", tint: DS.ColorToken.success,
-                title: NSLocalizedString("onboarding.feature.checkout.title", value: "Checkout in Seconds", comment: ""),
-                detail: NSLocalizedString("onboarding.feature.checkout.subtitle", value: "Enter what you charge and share a PDF receipt by AirDrop, Messages or Mail.", comment: "")
+                title: AppLocalization.localized("onboarding.feature.checkout.title", value: "Checkout in Seconds"),
+                detail: AppLocalization.localized("onboarding.feature.checkout.subtitle", value: "Enter what you charge and share a PDF receipt by AirDrop, Messages or Mail.")
             ),
             WelcomeFeature(
                 id: "loyalty", icon: "gift.fill", tint: DS.ColorToken.warning,
-                title: NSLocalizedString("onboarding.feature.loyalty.title", value: "Loyalty That Runs Itself", comment: ""),
-                detail: NSLocalizedString("onboarding.feature.loyalty.subtitle", value: "Points are added after every paid visit. Clients choose rewards at checkout.", comment: "")
+                title: AppLocalization.localized("onboarding.feature.loyalty.title", value: "Loyalty That Runs Itself"),
+                detail: AppLocalization.localized("onboarding.feature.loyalty.subtitle", value: "Points are added after every paid visit. Clients choose rewards at checkout.")
             ),
             WelcomeFeature(
                 id: "celebrations", icon: "birthday.cake.fill", tint: DS.ColorToken.genderFemale,
-                title: NSLocalizedString("onboarding.feature.celebrations.title", value: "Birthdays & Anniversaries", comment: ""),
-                detail: NSLocalizedString("onboarding.feature.celebrations.subtitle", value: "Pet birthdays and salon anniversaries are flagged so you can celebrate them.", comment: "")
+                title: AppLocalization.localized("onboarding.feature.celebrations.title", value: "Birthdays & Anniversaries"),
+                detail: AppLocalization.localized("onboarding.feature.celebrations.subtitle", value: "Pet birthdays and salon anniversaries are flagged so you can celebrate them.")
             ),
             WelcomeFeature(
                 id: "insights", icon: "chart.bar.fill", tint: DS.ColorToken.info,
-                title: NSLocalizedString("onboarding.feature.insights.title", value: "Business Insights", comment: ""),
-                detail: NSLocalizedString("onboarding.feature.insights.subtitle", value: "Revenue, trends and reports you can open in Excel and Numbers.", comment: "")
+                title: AppLocalization.localized("onboarding.feature.insights.title", value: "Business Insights"),
+                detail: AppLocalization.localized("onboarding.feature.insights.subtitle", value: "Revenue, trends and reports you can open in Excel and Numbers.")
             ),
             WelcomeFeature(
                 id: "privacy", icon: "lock.shield.fill", tint: DS.ColorToken.primary,
-                title: NSLocalizedString("onboarding.feature.privacy.title", value: "Privacy First", comment: ""),
-                detail: NSLocalizedString("onboarding.feature.privacy.subtitle_device", value: "Your clients are saved on your device. You can lock the app with a PIN and Face ID or Touch ID.", comment: "")
+                title: AppLocalization.localized("onboarding.feature.privacy.title", value: "Privacy First"),
+                detail: AppLocalization.localized("onboarding.feature.privacy.subtitle_device", value: "Your clients are saved on your device. You can lock the app with a PIN and Face ID or Touch ID.")
             )
         ]
     }

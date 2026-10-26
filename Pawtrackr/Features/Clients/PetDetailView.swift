@@ -283,14 +283,14 @@ struct PetDetailView: View {
                 // "already in session" notice never appeared — the user saw a
                 // blue tile that responded to nothing.
                 .alert(
-                    Text(NSLocalizedString("common.error", comment: "")),
+                    Text(AppLocalization.localized("common.error")),
                     isPresented: Binding(
                         get: { bvm.appError != nil },
                         set: { if !$0 { bvm.appError = nil } }
                     ),
                     presenting: bvm.appError
                 ) { _ in
-                    Button(NSLocalizedString("common.ok", comment: ""), role: .cancel) {}
+                    Button(AppLocalization.localized("common.ok"), role: .cancel) {}
                 } message: { error in
                     Text(error.localizedDescription)
                 }
@@ -369,7 +369,7 @@ struct PetDetailView: View {
                         VStack(alignment: .leading, spacing: 4) {
                             Text(vm.pet.name).font(.title2.weight(.semibold))
                             Text(vm.pet.shortDescriptor).font(.subheadline).foregroundStyle(.secondary)
-                            if let age = vm.pet.ageString { Text(String(format: NSLocalizedString("pet.age_fmt", comment: ""), age)).font(.footnote).foregroundStyle(.secondary) }
+                            if let age = vm.pet.ageString { Text(String(format: AppLocalization.localized("pet.age_fmt"), age)).font(.footnote).foregroundStyle(.secondary) }
                             ownerInfo(vm)
                         }
                         Spacer()
@@ -403,13 +403,13 @@ struct PetDetailView: View {
             VStack(alignment: .leading, spacing: 4) {
                 if status.isProbationary {
                     Text(String(
-                        format: NSLocalizedString("pet.safety_alert.probation_title_fmt", value: "Caution: Aggressive Behavior (%d/3 Visits Without Aggression)", comment: ""),
+                        format: AppLocalization.localized("pet.safety_alert.probation_title_fmt", value: "Caution: Aggressive Behavior (%d/3 Visits Without Aggression)"),
                         status.calmStreak
                     ))
                     .font(.subheadline.weight(.bold))
                     .foregroundStyle(.white)
                     Text(String(
-                        format: NSLocalizedString("pet.safety_alert.probation_message_fmt", value: "This pet is on behavior probation (%d more visit(s) without aggression needed to clear safety warning). Alert the team and handle with care.", comment: ""),
+                        format: AppLocalization.localized("pet.safety_alert.probation_message_fmt", value: "This pet is on behavior probation (%d more visit(s) without aggression needed to clear safety warning). Alert the team and handle with care."),
                         status.remainingVisits
                     ))
                     .font(.caption)
@@ -425,10 +425,10 @@ struct PetDetailView: View {
                     }
                     .padding(.top, 2)
                 } else {
-                    Text(NSLocalizedString("pet.safety_alert.title", value: "Caution: Aggressive Behavior", comment: ""))
+                    Text(AppLocalization.localized("pet.safety_alert.title", value: "Caution: Aggressive Behavior"))
                         .font(.subheadline.weight(.bold))
                         .foregroundStyle(.white)
-                    Text(NSLocalizedString("pet.safety_alert.message", value: "This pet is flagged as aggressive. Alert the team and handle with care. (Requires 3 consecutive visits without aggression to clear).", comment: ""))
+                    Text(AppLocalization.localized("pet.safety_alert.message", value: "This pet is flagged as aggressive. Alert the team and handle with care. (Requires 3 consecutive visits without aggression to clear)."))
                         .font(.caption)
                         .foregroundStyle(.white.opacity(0.95))
                         .fixedSize(horizontal: false, vertical: true)
@@ -447,7 +447,7 @@ struct PetDetailView: View {
             Group {
                 if let owner = vm.pet.owner {
                     VStack(alignment: .leading, spacing: 4) {
-                        Text(NSLocalizedString("pet.owner", comment: "")).font(.caption).foregroundStyle(.secondary)
+                        Text(AppLocalization.localized("pet.owner")).font(.caption).foregroundStyle(.secondary)
                         HStack(spacing: 8) {
                             Image(systemName: "person.fill").foregroundStyle(.secondary)
                             Text(owner.fullName).font(.footnote.weight(.medium))
@@ -467,7 +467,7 @@ struct PetDetailView: View {
 
     private func sessionStatus(_ vm: PetDetailViewModel) -> some View {
             HStack(spacing: 10) {
-                Label(NSLocalizedString("status.in_session", comment: ""), systemImage: "checkmark.circle.fill")
+                Label(AppLocalization.localized("status.in_session"), systemImage: "checkmark.circle.fill")
                     .font(.footnote.weight(.semibold))
                     .foregroundStyle(DS.ColorToken.success)
                     .padding(.vertical, 6)
@@ -498,8 +498,8 @@ struct PetDetailView: View {
     private func actionRow(_ vm: PetDetailViewModel) -> some View {
             HStack(spacing: 12) {
                 actionTile(title: AppLocalization.localized("client_detail.message", value: "Message"), systemImage: "message.fill", tint: .indigo) { showCommunication = true }
-                actionTile(title: NSLocalizedString("pet.view_history", comment: ""), systemImage: "clock.arrow.circlepath", tint: .primary) { vm.showHistory() }
-                actionTile(title: NSLocalizedString("pet.check_in", comment: ""), systemImage: "play.fill", tint: .blue, disabled: vm.activeVisit != nil || vm.isCheckingIn) {
+                actionTile(title: AppLocalization.localized("pet.view_history"), systemImage: "clock.arrow.circlepath", tint: .primary) { vm.showHistory() }
+                actionTile(title: AppLocalization.localized("pet.check_in"), systemImage: "play.fill", tint: .blue, disabled: vm.activeVisit != nil || vm.isCheckingIn) {
                     if vm.activeVisit != nil {
                         vm.appError = .validation(.custom(message: String(
                             format: AppLocalization.localized("pet.already_in_session", value: "%@ is already in session."),
@@ -511,7 +511,7 @@ struct PetDetailView: View {
                     vm.checkIn()
                 }
                 .opacity(vm.activeVisit == nil && !vm.isCheckingIn ? 1.0 : 0.55)
-                actionTile(title: NSLocalizedString("pet.check_out", comment: ""), systemImage: "checkmark.seal.fill", tint: .green, disabled: vm.activeVisit == nil) { vm.showCheckout() }
+                actionTile(title: AppLocalization.localized("pet.check_out"), systemImage: "checkmark.seal.fill", tint: .green, disabled: vm.activeVisit == nil) { vm.showCheckout() }
             }
             .padding(.horizontal)
         }
@@ -544,14 +544,14 @@ struct PetDetailView: View {
         Card {
             VStack(alignment: .leading, spacing: 14) {
                 HStack {
-                    Text(NSLocalizedString("insights.professional_insights", comment: "")).font(.subheadline.weight(.bold))
+                    Text(AppLocalization.localized("insights.professional_insights")).font(.subheadline.weight(.bold))
                     Spacer()
                     Image(systemName: "chart.line.uptrend.xyaxis").foregroundStyle(.blue)
                 }
                 
                 HStack(spacing: 20) {
                     VStack(alignment: .leading, spacing: 4) {
-                        Text(NSLocalizedString("insights.engagement", comment: "")).font(.caption).foregroundStyle(.secondary)
+                        Text(AppLocalization.localized("insights.engagement")).font(.caption).foregroundStyle(.secondary)
                         HStack(spacing: 6) {
                             Text("\(NSDecimalNumber(decimal: vm.pet.engagementScore * 100).intValue)%").font(.title3.weight(.bold))
                             EngagementIndicator(score: NSDecimalNumber(decimal: vm.pet.engagementScore).doubleValue)
@@ -561,7 +561,7 @@ struct PetDetailView: View {
                     Divider().frame(height: 30)
                     
                     VStack(alignment: .leading, spacing: 4) {
-                        Text(NSLocalizedString("insights.lifetime_value", comment: "")).font(.caption).foregroundStyle(.secondary)
+                        Text(AppLocalization.localized("insights.lifetime_value")).font(.caption).foregroundStyle(.secondary)
                         Text(vm.pet.lifetimeValue.moneyString).font(.title3.weight(.bold)).foregroundStyle(.green)
                     }
                     
@@ -569,7 +569,7 @@ struct PetDetailView: View {
                 }
                 
                 if let firstVisit = vm.pet.firstVisitDate {
-                    Text(String(format: NSLocalizedString("insights.client_since_fmt", comment: ""), firstVisit.formatted(date: .abbreviated, time: .omitted)))
+                    Text(String(format: AppLocalization.localized("insights.client_since_fmt"), firstVisit.formatted(date: .abbreviated, time: .omitted)))
                         .font(.caption2)
                         .foregroundStyle(.secondary)
                 }
@@ -581,11 +581,11 @@ struct PetDetailView: View {
     private func quickStats(_ vm: PetDetailViewModel) -> some View {
             Card {
                 VStack(alignment: .leading, spacing: 10) {
-                    Text(NSLocalizedString("pet.quick_stats", comment: "")).font(.subheadline.weight(.semibold))
+                    Text(AppLocalization.localized("pet.quick_stats")).font(.subheadline.weight(.semibold))
                     HStack(spacing: 12) {
-                        statTile(label: NSLocalizedString("pet.total_visits", comment: ""), value: "\(vm.totalVisits)", tint: .blue)
-                        statTile(label: NSLocalizedString("pet.total_spent", comment: ""), value: vm.totalSpentString, tint: .green)
-                        statTile(label: NSLocalizedString("pet.avg_duration", comment: ""), value: vm.averageDurationString, tint: .purple)
+                        statTile(label: AppLocalization.localized("pet.total_visits"), value: "\(vm.totalVisits)", tint: .blue)
+                        statTile(label: AppLocalization.localized("pet.total_spent"), value: vm.totalSpentString, tint: .green)
+                        statTile(label: AppLocalization.localized("pet.avg_duration"), value: vm.averageDurationString, tint: .purple)
                     }
                 }
             }
@@ -615,7 +615,7 @@ struct PetDetailView: View {
             VStack(alignment: .leading, spacing: 12) {
                 // Section header
                 HStack {
-                    Text(NSLocalizedString("pet.recent_visits", comment: "")).font(.headline)
+                    Text(AppLocalization.localized("pet.recent_visits")).font(.headline)
                     Spacer()
                     Text("\(vm.sortedVisits.count)")
                         .font(.caption.monospacedDigit())
@@ -629,7 +629,7 @@ struct PetDetailView: View {
 
                 // Empty state
                 if vm.sortedVisits.isEmpty {
-                    ContentUnavailableView(NSLocalizedString("pet.no_visits_yet", comment: ""), systemImage: "calendar.badge.plus")
+                    ContentUnavailableView(AppLocalization.localized("pet.no_visits_yet"), systemImage: "calendar.badge.plus")
                 } else {
                     VStack(spacing: 12) {
                         // Highlight current visit (if any)
@@ -695,7 +695,7 @@ struct PetDetailView: View {
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                         } else {
-                            Label(NSLocalizedString("visit.payment_pending", comment: ""), systemImage: "creditcard")
+                            Label(AppLocalization.localized("visit.payment_pending"), systemImage: "creditcard")
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                         }

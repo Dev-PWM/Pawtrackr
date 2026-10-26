@@ -48,9 +48,9 @@ enum BehaviorTagIcons {
         let key = raw.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
         switch key {
         case "senior":
-            return ("🧓", NSLocalizedString("pet.behavior.senior", value: "Senior", comment: ""))
+            return ("🧓", AppLocalization.localized("pet.behavior.senior", value: "Senior"))
         case "puppy", "puppy / young", "young":
-            return ("🐶", NSLocalizedString("pet.behavior.puppy_young", value: "Puppy / Young", comment: ""))
+            return ("🐶", AppLocalization.localized("pet.behavior.puppy_young", value: "Puppy / Young"))
         default:
             // Title-case fallback label
             let label = key.split(separator: " ").map { $0.capitalized }.joined(separator: " ")

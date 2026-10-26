@@ -20,19 +20,19 @@ final class OnboardingViewModel {
         var title: String {
             switch self {
             case .welcome:
-                return NSLocalizedString("onboarding.step.welcome", value: "Welcome", comment: "")
+                return AppLocalization.localized("onboarding.step.welcome", value: "Welcome")
             case .businessProfile:
-                return NSLocalizedString("onboarding.step.business_profile", value: "Business Profile", comment: "")
+                return AppLocalization.localized("onboarding.step.business_profile", value: "Business Profile")
             case .regional:
-                return NSLocalizedString("onboarding.step.regional", value: "Regional Info", comment: "")
+                return AppLocalization.localized("onboarding.step.regional", value: "Regional Info")
             case .security:
-                return NSLocalizedString("onboarding.step.security", value: "Security", comment: "")
+                return AppLocalization.localized("onboarding.step.security", value: "Security")
             case .permissions:
-                return NSLocalizedString("onboarding.step.permissions", value: "Permissions", comment: "")
+                return AppLocalization.localized("onboarding.step.permissions", value: "Permissions")
             case .loyalty:
-                return NSLocalizedString("onboarding.step.loyalty", value: "Loyalty Points", comment: "")
+                return AppLocalization.localized("onboarding.step.loyalty", value: "Loyalty Points")
             case .warmStart:
-                return NSLocalizedString("onboarding.step.finish", value: "Finish", comment: "")
+                return AppLocalization.localized("onboarding.step.finish", value: "Finish")
             }
         }
     }
@@ -308,11 +308,11 @@ final class OnboardingViewModel {
     var primaryActionTitle: String {
         switch currentStep {
         case .welcome:
-            return NSLocalizedString("onboarding.action.get_started", value: "Get Started", comment: "")
+            return AppLocalization.localized("onboarding.action.get_started", value: "Get Started")
         case .loyalty:
-            return NSLocalizedString("onboarding.action.review_setup", value: "Review Setup", comment: "")
+            return AppLocalization.localized("onboarding.action.review_setup", value: "Review Setup")
         default:
-            return NSLocalizedString("common.continue", value: "Continue", comment: "")
+            return AppLocalization.localized("common.continue", value: "Continue")
         }
     }
 
@@ -331,7 +331,7 @@ final class OnboardingViewModel {
 
     var businessNameValidationMessage: String? {
         name.trimmed.isEmpty
-            ? NSLocalizedString("onboarding.validation.business_name", value: "Add your business name to continue.", comment: "")
+            ? AppLocalization.localized("onboarding.validation.business_name", value: "Add your business name to continue.")
             : nil
     }
 
@@ -343,7 +343,7 @@ final class OnboardingViewModel {
         let emailPred = NSPredicate(format:"SELF MATCHES %@", emailRegEx)
         return emailPred.evaluate(with: trimmedEmail)
             ? nil
-            : NSLocalizedString("onboarding.validation.email", value: "Enter a valid email address (e.g., hello@business.com).", comment: "")
+            : AppLocalization.localized("onboarding.validation.email", value: "Enter a valid email address (e.g., hello@business.com).")
     }
 
     var securityValidationMessage: String? {
@@ -351,16 +351,16 @@ final class OnboardingViewModel {
         let normalizedConfirm = confirmPin.filter(\.isNumber)
 
         if (!pin.isEmpty && normalizedPIN != pin) || (!confirmPin.isEmpty && normalizedConfirm != confirmPin) {
-            return NSLocalizedString("onboarding.validation.pin_numbers_only", value: "PIN must use numbers only.", comment: "")
+            return AppLocalization.localized("onboarding.validation.pin_numbers_only", value: "PIN must use numbers only.")
         }
         if !pin.isEmpty && normalizedPIN.count < 4 {
-            return NSLocalizedString("onboarding.validation.pin_four_digits", value: "PIN must be 4 digits.", comment: "")
+            return AppLocalization.localized("onboarding.validation.pin_four_digits", value: "PIN must be 4 digits.")
         }
         if !confirmPin.isEmpty && normalizedConfirm.count < 4 {
-            return NSLocalizedString("onboarding.validation.confirm_pin", value: "Confirm your 4-digit PIN.", comment: "")
+            return AppLocalization.localized("onboarding.validation.confirm_pin", value: "Confirm your 4-digit PIN.")
         }
         if normalizedPIN.count == 4 && normalizedConfirm.count == 4 && normalizedPIN != normalizedConfirm {
-            return NSLocalizedString("onboarding.validation.pin_mismatch", value: "PINs do not match.", comment: "")
+            return AppLocalization.localized("onboarding.validation.pin_mismatch", value: "PINs do not match.")
         }
         return nil
     }
@@ -377,24 +377,24 @@ final class OnboardingViewModel {
     var biometricTitle: String {
         switch biometrics.biometricType() {
         case .faceID:
-            return NSLocalizedString("onboarding.biometric.face_id_title", value: "Face ID Unlock", comment: "")
+            return AppLocalization.localized("onboarding.biometric.face_id_title", value: "Face ID Unlock")
         case .touchID:
-            return NSLocalizedString("onboarding.biometric.touch_id_title", value: "Touch ID Unlock", comment: "")
+            return AppLocalization.localized("onboarding.biometric.touch_id_title", value: "Touch ID Unlock")
         case .unavailable:
-            return NSLocalizedString("onboarding.biometric.unavailable_title", value: "Biometric Unlock (currently unavailable)", comment: "")
+            return AppLocalization.localized("onboarding.biometric.unavailable_title", value: "Biometric Unlock (currently unavailable)")
         case .none:
-            return NSLocalizedString("onboarding.biometric.default_title", value: "Biometric Unlock", comment: "")
+            return AppLocalization.localized("onboarding.biometric.default_title", value: "Biometric Unlock")
         }
     }
 
     var biometricSubtitle: String {
         switch biometrics.biometricType() {
         case .faceID, .touchID:
-            return NSLocalizedString("onboarding.biometric.available_subtitle", value: "Use biometrics alongside your PIN for faster unlock.", comment: "")
+            return AppLocalization.localized("onboarding.biometric.available_subtitle", value: "Use biometrics alongside your PIN for faster unlock.")
         case .unavailable:
-            return NSLocalizedString("onboarding.biometric.unavailable_subtitle", value: "Biometrics are temporarily unavailable on this device. Sign in with your PIN.", comment: "")
+            return AppLocalization.localized("onboarding.biometric.unavailable_subtitle", value: "Biometrics are temporarily unavailable on this device. Sign in with your PIN.")
         case .none:
-            return NSLocalizedString("onboarding.biometric.none_subtitle", value: "This device does not have biometric unlock available right now.", comment: "")
+            return AppLocalization.localized("onboarding.biometric.none_subtitle", value: "This device does not have biometric unlock available right now.")
         }
     }
     
@@ -414,13 +414,13 @@ final class OnboardingViewModel {
 
         guard let context = modelContext else {
             logger.error("Finish failed: modelContext is nil")
-            saveError = NSLocalizedString("onboarding.error.internal_context", value: "Internal Error: Database context not found.", comment: "")
+            saveError = AppLocalization.localized("onboarding.error.internal_context", value: "Internal Error: Database context not found.")
             return nil
         }
 
         guard let settings = appSettings else {
             logger.error("Finish failed: appSettings is nil")
-            saveError = NSLocalizedString("onboarding.error.internal_settings", value: "Internal Error: App settings not found.", comment: "")
+            saveError = AppLocalization.localized("onboarding.error.internal_settings", value: "Internal Error: App settings not found.")
             return nil
         }
 
@@ -442,7 +442,7 @@ final class OnboardingViewModel {
         }
         let pinMatches = AppSettings.isValidPIN(currentPIN) && currentPIN == confirmPin.filter(\.isNumber)
         guard pinSkipped || pinMatches else {
-            saveError = NSLocalizedString("onboarding.validation.pin_incomplete", value: "Your PIN is incomplete. Enter the same 4 digits in both fields.", comment: "")
+            saveError = AppLocalization.localized("onboarding.validation.pin_incomplete", value: "Your PIN is incomplete. Enter the same 4 digits in both fields.")
             return nil
         }
 
@@ -496,7 +496,7 @@ final class OnboardingViewModel {
 
             if !pinSkipped {
                 guard settings.changePIN(to: currentPIN) else {
-                    throw ValidationError.custom(message: NSLocalizedString("onboarding.error.pin_save_failed", value: "The selected PIN could not be saved.", comment: ""))
+                    throw ValidationError.custom(message: AppLocalization.localized("onboarding.error.pin_save_failed", value: "The selected PIN could not be saved."))
                 }
             }
             // Note: when pinSkipped, lock is disabled above so the stored PIN is
@@ -551,7 +551,7 @@ final class OnboardingViewModel {
             return backgroundTask
         } catch {
             logger.error("Failed to complete onboarding: \(error.localizedDescription, privacy: .public)")
-            saveError = NSLocalizedString("onboarding.error.save_failed", value: "Setup could not be saved. Please try again.", comment: "")
+            saveError = AppLocalization.localized("onboarding.error.save_failed", value: "Setup could not be saved. Please try again.")
             return nil
         }
     }

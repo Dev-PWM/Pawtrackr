@@ -150,17 +150,17 @@ struct PawtrackrApp: App {
         .defaultLaunchBehavior(.presented)
         .commands {
             CommandGroup(after: .newItem) {
-                Button(NSLocalizedString("menu_bar.new_client", value: "New Client…", comment: "")) {
+                Button(AppLocalization.localized("menu_bar.new_client", value: "New Client…")) {
                     requestNewClientFromCommand()
                 }
                 .keyboardShortcut("n", modifiers: .command)
 
-                Button(NSLocalizedString("mac.command.show_insights", value: "Show Insights", comment: "")) {
+                Button(AppLocalization.localized("mac.command.show_insights", value: "Show Insights")) {
                     requestNavigationFromCommand(.insights)
                 }
                 .keyboardShortcut("i", modifiers: .command)
 
-                Button(NSLocalizedString("mac.command.find_clients", value: "Find Clients", comment: "")) {
+                Button(AppLocalization.localized("mac.command.find_clients", value: "Find Clients")) {
                     requestFindClientsFromCommand()
                 }
                 .keyboardShortcut("f", modifiers: .command)

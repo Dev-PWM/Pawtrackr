@@ -183,16 +183,16 @@ final class NewClientViewModel {
     private func validate() throws {
         fieldErrors.removeAll()
         if first.trimmed.isEmpty {
-            fieldErrors[.first] = NSLocalizedString("new_client.validation.first_required", value: "First name is required.", comment: "")
+            fieldErrors[.first] = AppLocalization.localized("new_client.validation.first_required", value: "First name is required.")
         }
         if last.trimmed.isEmpty {
-            fieldErrors[.last] = NSLocalizedString("new_client.validation.last_required", value: "Last name is required.", comment: "")
+            fieldErrors[.last] = AppLocalization.localized("new_client.validation.last_required", value: "Last name is required.")
         }
         if !phone.trimmed.isEmpty && PhoneUtils.toE164(phone) == nil {
-            fieldErrors[.phone] = NSLocalizedString("new_client.validation.phone_invalid", value: "Please enter a valid phone number.", comment: "")
+            fieldErrors[.phone] = AppLocalization.localized("new_client.validation.phone_invalid", value: "Please enter a valid phone number.")
         }
         if !email.trimmed.isEmpty && !isValidEmail(email) {
-            fieldErrors[.email] = NSLocalizedString("new_client.validation.email_invalid", value: "Please enter a valid email address.", comment: "")
+            fieldErrors[.email] = AppLocalization.localized("new_client.validation.email_invalid", value: "Please enter a valid email address.")
         }
 
         contactFieldErrors.removeAll()

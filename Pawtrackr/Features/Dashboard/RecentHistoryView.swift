@@ -28,7 +28,7 @@ struct RecentHistoryView: View {
 
     var body: some View {
         recentHistoryContent
-            .navigationTitle(NSLocalizedString("history.title", value: "Recent History", comment: ""))
+            .navigationTitle(AppLocalization.localized("history.title", value: "Recent History"))
             .toolbar { if let viewModel { toolbarContent(viewModel) } }
             .refreshable { viewModel?.fetchVisits() }
             .task {
@@ -67,9 +67,9 @@ struct RecentHistoryView: View {
             set: { viewModel.appError = $0 }
         )) { error in
             Alert(
-                title: Text(NSLocalizedString("history.error_title", value: "History Error", comment: "")),
+                title: Text(AppLocalization.localized("history.error_title", value: "History Error")),
                 message: Text(error.localizedDescription),
-                dismissButton: .default(Text(NSLocalizedString("common.ok", comment: "")))
+                dismissButton: .default(Text(AppLocalization.localized("common.ok")))
             )
         }
     }
@@ -115,7 +115,7 @@ struct RecentHistoryView: View {
     private func summaryChips(_ viewModel: RecentHistoryViewModel) -> some View {
         HStack(spacing: 8) {
             let count = viewModel.summaryVisitCount
-            let visitsText = String.localizedStringWithFormat(NSLocalizedString("visits.count", comment: "visit count"), count)
+            let visitsText = String.localizedStringWithFormat(AppLocalization.localized("visits.count"), count)
             Chip.info(visitsText)
             Chip.info(viewModel.summaryRevenueString)
         }
@@ -143,8 +143,8 @@ struct RecentHistoryView: View {
             .padding(.top, 20)
             .accessibilityIdentifier("recentHistory.loading")
         } else if viewModel.sortedDays.isEmpty {
-            let message = viewModel.query.isEmpty ? NSLocalizedString("history.empty_desc", comment: "") : NSLocalizedString("history.no_results_desc", comment: "")
-            ContentUnavailableView(viewModel.query.isEmpty ? NSLocalizedString("history.empty_title", comment: "") : NSLocalizedString("history.no_results_title", comment: ""), systemImage: "clock.badge.questionmark", description: Text(message))
+            let message = viewModel.query.isEmpty ? AppLocalization.localized("history.empty_desc") : AppLocalization.localized("history.no_results_desc")
+            ContentUnavailableView(viewModel.query.isEmpty ? AppLocalization.localized("history.empty_title") : AppLocalization.localized("history.no_results_title"), systemImage: "clock.badge.questionmark", description: Text(message))
                 .padding(.top, 40)
                 .accessibilityIdentifier("recentHistory.empty")
         } else {
@@ -160,7 +160,7 @@ struct RecentHistoryView: View {
                                 .swipeActions(edge: .trailing, allowsFullSwipe: true) {
                                     Button(role: .destructive) {
                                         deleteVisit(visit)
-                                    } label: { Label(NSLocalizedString("common.delete", comment: ""), systemImage: "trash") }
+                                    } label: { Label(AppLocalization.localized("common.delete"), systemImage: "trash") }
                                 }
                             }
                         }
@@ -182,7 +182,7 @@ struct RecentHistoryView: View {
                 item: CSVDoc(data: Data(csv.utf8), filename: "Pawtrackr_History.csv"),
                 preview: SharePreview("Pawtrackr_History.csv")
             ) {
-                Label(NSLocalizedString("common.export", comment: ""), systemImage: "square.and.arrow.up")
+                Label(AppLocalization.localized("common.export"), systemImage: "square.and.arrow.up")
             }
             .disabled(csv.isEmpty)
         }

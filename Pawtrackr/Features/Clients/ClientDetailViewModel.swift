@@ -405,12 +405,12 @@ final class ClientDetailViewModel {
         var title: String {
             switch self {
             case .all:
-                return NSLocalizedString("client_detail.all", comment: "")
+                return AppLocalization.localized("client_detail.all")
             case .lastNDays(90):
-                return NSLocalizedString("client_detail.last_90d", comment: "")
+                return AppLocalization.localized("client_detail.last_90d")
             case .lastNDays(let days):
                 return String.localizedStringWithFormat(
-                    NSLocalizedString("client_detail.last_n_days_fmt", value: "Last %d Days", comment: ""),
+                    AppLocalization.localized("client_detail.last_n_days_fmt", value: "Last %d Days"),
                     days
                 )
             }

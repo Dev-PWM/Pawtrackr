@@ -85,7 +85,7 @@ struct VisitDetailView: View {
 
     var body: some View {
         visitContent
-            .navigationTitle(NSLocalizedString("visit.title", comment: ""))
+            .navigationTitle(AppLocalization.localized("visit.title"))
 #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar(.hidden, for: .tabBar)
@@ -132,7 +132,7 @@ struct VisitDetailView: View {
         HStack {
             Spacer()
             VStack(alignment: .trailing, spacing: 2) {
-                Text(String(format: NSLocalizedString("common.updated_fmt", value: "Updated %@", comment: ""), visit.lastModifiedAt.formatted(date: .abbreviated, time: .shortened)))
+                Text(String(format: AppLocalization.localized("common.updated_fmt", value: "Updated %@"), visit.lastModifiedAt.formatted(date: .abbreviated, time: .shortened)))
             }
             .font(.caption2)
             .foregroundStyle(.tertiary)
@@ -187,10 +187,10 @@ struct VisitDetailView: View {
             item: CSVDoc(data: Data(csv.utf8), filename: "Pawtrackr_Visit.csv"),
             preview: SharePreview("Pawtrackr_Visit.csv")
         ) {
-            Label(NSLocalizedString("common.export", comment: ""), systemImage: "square.and.arrow.up")
+            Label(AppLocalization.localized("common.export"), systemImage: "square.and.arrow.up")
         }
         .disabled(csv.isEmpty)
-        .accessibilityHint(csv.isEmpty ? NSLocalizedString("sharelink.accessibility.hint.no_data_to_export", comment: "") : NSLocalizedString("sharelink.accessibility.hint.export_visit", comment: ""))
+        .accessibilityHint(csv.isEmpty ? AppLocalization.localized("sharelink.accessibility.hint.no_data_to_export") : AppLocalization.localized("sharelink.accessibility.hint.export_visit"))
     }
 
     @ToolbarContentBuilder
@@ -216,13 +216,13 @@ struct VisitDetailView: View {
             } label: {
                 HStack {
                     Image(systemName: "checkmark.circle.fill")
-                    Text(visit.endedAt == nil ? NSLocalizedString("visit.check_out", comment: "") : NSLocalizedString("visit.resume_checkout", comment: ""))
+                    Text(visit.endedAt == nil ? AppLocalization.localized("visit.check_out") : AppLocalization.localized("visit.resume_checkout"))
                         .fontWeight(.semibold)
                 }
             }
             .buttonStyle(.borderedProminent)
             .tint(.green)
-            .accessibilityLabel(NSLocalizedString("visit.checkout_a11y", value: "Open checkout to complete payment", comment: ""))
+            .accessibilityLabel(AppLocalization.localized("visit.checkout_a11y", value: "Open checkout to complete payment"))
         }
     }
 
@@ -276,7 +276,7 @@ struct VisitDetailView: View {
 
     private var headerText: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text(visit.pet?.name ?? NSLocalizedString("common.unknown_pet", comment: ""))
+            Text(visit.pet?.name ?? AppLocalization.localized("common.unknown_pet"))
                 .font(.title3.weight(.semibold))
                 .lineLimit(1)
                 .minimumScaleFactor(0.7)
@@ -294,7 +294,7 @@ struct VisitDetailView: View {
             statusBadge
             if let total = amountText {
                 Chip(total, style: .tinted, size: .sm, tint: Color.accentColor)
-                    .accessibilityLabel(String(format: NSLocalizedString("visit.total_a11y_fmt", value: "Total %@", comment: ""), total))
+                    .accessibilityLabel(String(format: AppLocalization.localized("visit.total_a11y_fmt", value: "Total %@"), total))
             }
         }
         .layoutPriority(1)
@@ -310,11 +310,11 @@ struct VisitDetailView: View {
 
     private var statusBadgeTitle: String {
         if visit.isPaid {
-            return NSLocalizedString("status.paid", comment: "")
+            return AppLocalization.localized("status.paid")
         } else if visit.isCompleted {
-            return NSLocalizedString("status.completed", comment: "")
+            return AppLocalization.localized("status.completed")
         } else {
-            return NSLocalizedString("status.in_session", comment: "")
+            return AppLocalization.localized("status.in_session")
         }
     }
 
@@ -340,7 +340,7 @@ struct VisitDetailView: View {
             .pet(
                 species: visit.pet?.species,
                 gender: visit.pet?.gender,
-                name: visit.pet?.name ?? NSLocalizedString("common.unknown_pet", comment: ""),
+                name: visit.pet?.name ?? AppLocalization.localized("common.unknown_pet"),
                 imageData: visit.pet?.photoData,
                 thumbnailData: visit.pet?.thumbnailData
             ),
@@ -367,21 +367,21 @@ struct VisitDetailView: View {
     private var timelineCard: some View {
         Card {
             VStack(alignment: .leading, spacing: 12) {
-                Label(NSLocalizedString("visit.when", comment: ""), systemImage: "calendar")
+                Label(AppLocalization.localized("visit.when"), systemImage: "calendar")
                     .font(.subheadline.weight(.semibold))
 
                 Divider().opacity(0.08)
 
                 detailRow(
                     icon: "arrow.down.circle.fill",
-                    title: NSLocalizedString("visit.check_in_time", comment: ""),
+                    title: AppLocalization.localized("visit.check_in_time"),
                     value: visit.startedAt.formatted(date: .abbreviated, time: .shortened)
                 )
 
                 detailRow(
                     icon: "arrow.up.circle.fill",
-                    title: NSLocalizedString("visit.check_out_time", comment: ""),
-                    value: visit.endedAt?.formatted(date: .abbreviated, time: .shortened) ?? NSLocalizedString("visit.in_progress", comment: "")
+                    title: AppLocalization.localized("visit.check_out_time"),
+                    value: visit.endedAt?.formatted(date: .abbreviated, time: .shortened) ?? AppLocalization.localized("visit.in_progress")
                 )
 
                 durationRow
@@ -397,14 +397,14 @@ struct VisitDetailView: View {
             TimelineView(.periodic(from: .now, by: 1)) { _ in
                 detailRow(
                     icon: "clock.fill",
-                    title: NSLocalizedString("visit.duration", comment: ""),
+                    title: AppLocalization.localized("visit.duration"),
                     value: visit.durationString
                 )
             }
         } else {
             detailRow(
                 icon: "clock.fill",
-                title: NSLocalizedString("visit.duration", comment: ""),
+                title: AppLocalization.localized("visit.duration"),
                 value: visit.durationString
             )
         }
@@ -413,7 +413,7 @@ struct VisitDetailView: View {
     private var paymentCard: some View {
         Card {
             VStack(alignment: .leading, spacing: 12) {
-                Label(NSLocalizedString("visit.payment", comment: ""), systemImage: visit.payment?.method.systemImage ?? "creditcard")
+                Label(AppLocalization.localized("visit.payment"), systemImage: visit.payment?.method.systemImage ?? "creditcard")
                     .font(.subheadline.weight(.semibold))
 
                 Divider().opacity(0.08)
@@ -426,20 +426,20 @@ struct VisitDetailView: View {
                     )
 
                     if let ref = payment.externalReference, !ref.isEmpty {
-                        Text(String(format: NSLocalizedString("visit.ref_fmt", comment: ""), ref))
+                        Text(String(format: AppLocalization.localized("visit.ref_fmt"), ref))
                             .font(.caption)
                             .foregroundStyle(.secondary)
                             .lineLimit(2)
                     }
                 } else {
-                    Label(NSLocalizedString("visit.payment_pending", comment: ""), systemImage: "exclamationmark.circle")
+                    Label(AppLocalization.localized("visit.payment_pending"), systemImage: "exclamationmark.circle")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                 }
 
                 if let total = amountText {
                     HStack(alignment: .firstTextBaseline) {
-                        Text(NSLocalizedString("visit.total", comment: ""))
+                        Text(AppLocalization.localized("visit.total"))
                             .font(.subheadline.weight(.semibold))
                         Spacer(minLength: 12)
                         Text(total)
@@ -450,7 +450,7 @@ struct VisitDetailView: View {
                     }
                     .padding(.top, 2)
                     .accessibilityElement(children: .combine)
-                    .accessibilityLabel(String(format: NSLocalizedString("visit.total_amount_a11y_fmt", value: "Total amount %@", comment: ""), total))
+                    .accessibilityLabel(String(format: AppLocalization.localized("visit.total_amount_a11y_fmt", value: "Total amount %@"), total))
                 }
 
                 if visit.payment == nil && usesTabletLayout {
@@ -515,19 +515,19 @@ struct VisitDetailView: View {
             HStack {
                 Image(systemName: "checklist")
                     .foregroundStyle(.secondary)
-                Text(NSLocalizedString("visit.no_services", comment: ""))
+                Text(AppLocalization.localized("visit.no_services"))
                     .foregroundStyle(.secondary)
                 Spacer()
             }
             .accessibilityElement(children: .combine)
-            .accessibilityLabel(NSLocalizedString("visit.no_services_a11y", value: "No services recorded for this visit", comment: ""))
+            .accessibilityLabel(AppLocalization.localized("visit.no_services_a11y", value: "No services recorded for this visit"))
         }
     }
     
     private var servicesContentCard: some View {
         Card {
             VStack(alignment: .leading, spacing: 12) {
-                Text(NSLocalizedString("visit.services_performed", comment: ""))
+                Text(AppLocalization.localized("visit.services_performed"))
                     .font(.subheadline.weight(.semibold))
 
                 // A visual ledger of WHAT was performed — names only. Per-service
@@ -538,7 +538,7 @@ struct VisitDetailView: View {
                 servicesChips
 
                 if !addOnItems.isEmpty {
-                    Text(NSLocalizedString("visit.add_ons", value: "Add-ons", comment: ""))
+                    Text(AppLocalization.localized("visit.add_ons", value: "Add-ons"))
                         .font(.caption.weight(.semibold))
                         .foregroundStyle(.secondary)
                         .padding(.top, 2)
@@ -546,7 +546,7 @@ struct VisitDetailView: View {
                 }
             }
         }
-        .accessibilityHint(NSLocalizedString("visit.services_hint", value: "Services performed.", comment: ""))
+        .accessibilityHint(AppLocalization.localized("visit.services_hint", value: "Services performed."))
     }
 
     /// Catalog add-ons snapshot their category as `Service.Category.addOn.rawValue`.
@@ -564,7 +564,7 @@ struct VisitDetailView: View {
         FlowLayout(spacing: 8, rowSpacing: 8) {
             ForEach(mainItems, id: \.uuid) { (item: VisitItem) in
                 Chip(item.displayName, style: .tinted, size: .sm, tint: .blue)
-                    .accessibilityLabel(String(format: NSLocalizedString("visit.service_a11y_fmt", value: "Service %@", comment: ""), item.displayName))
+                    .accessibilityLabel(String(format: AppLocalization.localized("visit.service_a11y_fmt", value: "Service %@"), item.displayName))
                     .allowsHitTesting(false)
             }
         }
@@ -574,7 +574,7 @@ struct VisitDetailView: View {
         FlowLayout(spacing: 8, rowSpacing: 8) {
             ForEach(addOnItems, id: \.uuid) { (item: VisitItem) in
                 Chip(item.displayName, style: .tinted, size: .sm, tint: .purple)
-                    .accessibilityLabel(String(format: NSLocalizedString("visit.add_on_a11y_fmt", value: "Add-on %@", comment: ""), item.displayName))
+                    .accessibilityLabel(String(format: AppLocalization.localized("visit.add_on_a11y_fmt", value: "Add-on %@"), item.displayName))
                     .allowsHitTesting(false)
             }
         }
@@ -620,14 +620,14 @@ struct VisitDetailView: View {
                 Card {
                     VStack(alignment: .leading, spacing: 12) {
                         HStack {
-                            Text(NSLocalizedString("visit.photos", comment: ""))
+                            Text(AppLocalization.localized("visit.photos"))
                                 .font(.subheadline.weight(.semibold))
                             Spacer()
                             if beforePreviewPhoto != nil && afterPreviewPhoto != nil {
                                 Button {
                                     showTransformation = true
                                 } label: {
-                                    Label(NSLocalizedString("transformation.title_short", value: "Transformation", comment: ""), systemImage: "sparkles.tv")
+                                    Label(AppLocalization.localized("transformation.title_short", value: "Transformation"), systemImage: "sparkles.tv")
                                         .font(.caption.bold())
                                 }
                                 .buttonStyle(.bordered)
@@ -645,7 +645,7 @@ struct VisitDetailView: View {
             TransformationView(
                 beforeData: beforePreviewPhoto,
                 afterData: afterPreviewPhoto,
-                petName: visit.pet?.name ?? NSLocalizedString("common.unknown_pet", comment: "")
+                petName: visit.pet?.name ?? AppLocalization.localized("common.unknown_pet")
             )
         }
     }
@@ -656,12 +656,12 @@ struct VisitDetailView: View {
             ViewThatFits(in: .horizontal) {
                 HStack(spacing: 12) {
                     photoBox(
-                        title: NSLocalizedString("photobox.before", comment: ""),
+                        title: AppLocalization.localized("photobox.before"),
                         displayData: beforeDisplayPhoto,
                         previewData: beforePreviewPhoto
                     )
                     photoBox(
-                        title: NSLocalizedString("photobox.after", comment: ""),
+                        title: AppLocalization.localized("photobox.after"),
                         displayData: afterDisplayPhoto,
                         previewData: afterPreviewPhoto
                     )
@@ -686,12 +686,12 @@ struct VisitDetailView: View {
             spacing: 10
         ) {
             photoBox(
-                title: NSLocalizedString("photobox.before", comment: ""),
+                title: AppLocalization.localized("photobox.before"),
                 displayData: beforeDisplayPhoto,
                 previewData: beforePreviewPhoto
             )
             photoBox(
-                title: NSLocalizedString("photobox.after", comment: ""),
+                title: AppLocalization.localized("photobox.after"),
                 displayData: afterDisplayPhoto,
                 previewData: afterPreviewPhoto
             )
@@ -699,12 +699,12 @@ struct VisitDetailView: View {
         #else
         VStack(spacing: 12) {
             photoBox(
-                title: NSLocalizedString("photobox.before", comment: ""),
+                title: AppLocalization.localized("photobox.before"),
                 displayData: beforeDisplayPhoto,
                 previewData: beforePreviewPhoto
             )
             photoBox(
-                title: NSLocalizedString("photobox.after", comment: ""),
+                title: AppLocalization.localized("photobox.after"),
                 displayData: afterDisplayPhoto,
                 previewData: afterPreviewPhoto
             )
@@ -743,8 +743,8 @@ struct VisitDetailView: View {
                 }
                 .frame(maxWidth: photoBoxMaxWidth ?? .infinity)
                 .aspectRatio(photoBoxAspectRatio, contentMode: .fit)
-                .accessibilityLabel(Text(String(format: NSLocalizedString("visit.photo_a11y_label_fmt", comment: ""), title)))
-                .accessibilityHint(Text(NSLocalizedString("visit.photo_a11y_hint", comment: "")))
+                .accessibilityLabel(Text(String(format: AppLocalization.localized("visit.photo_a11y_label_fmt"), title)))
+                .accessibilityHint(Text(AppLocalization.localized("visit.photo_a11y_hint")))
             }
             .disabled(previewData == nil)
             .buttonStyle(.plain)
@@ -754,7 +754,7 @@ struct VisitDetailView: View {
         private var placeholder: some View {
             VStack(spacing: 6) {
                 Image(systemName: "photo")
-                Text(NSLocalizedString("visit.no_photo", comment: ""))
+                Text(AppLocalization.localized("visit.no_photo"))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -768,7 +768,7 @@ struct VisitDetailView: View {
                 if trimmed.isEmpty {
                     Card {
                         HStack {
-                            Text(NSLocalizedString("visit.no_notes", comment: ""))
+                            Text(AppLocalization.localized("visit.no_notes"))
                                 .foregroundStyle(.secondary)
                             Spacer()
                         }
@@ -776,14 +776,14 @@ struct VisitDetailView: View {
                 } else {
                     Card {
                         VStack(alignment: .leading, spacing: 6) {
-                            Text(NSLocalizedString("visit.notes", comment: ""))
+                            Text(AppLocalization.localized("visit.notes"))
                                 .font(.subheadline.weight(.semibold))
                             let attr = (try? AttributedString(markdown: trimmed)) ?? AttributedString(trimmed)
                             Text(attr)
                                 .font(.body)
                                 .textSelection(.enabled)
                                 .lineSpacing(2)
-                                .accessibilityLabel(String(format: NSLocalizedString("visit.notes_a11y_fmt", value: "Notes, %@", comment: ""), trimmed))
+                                .accessibilityLabel(String(format: AppLocalization.localized("visit.notes_a11y_fmt", value: "Notes, %@"), trimmed))
                         }
                     }
                 }
@@ -795,7 +795,7 @@ struct VisitDetailView: View {
             if !visit.behaviorTags.isEmpty {
                 Card {
                     VStack(alignment: .leading, spacing: 10) {
-                        Text(NSLocalizedString("visit.behavior_tags", comment: ""))
+                        Text(AppLocalization.localized("visit.behavior_tags"))
                             .font(.subheadline.weight(.semibold))
                         VisitBehaviorTags(tags: visit.behaviorTags)
                     }
@@ -806,7 +806,7 @@ struct VisitDetailView: View {
         // MARK: - Export (CSV)
         
         private func exportCSVForVisit() -> String {
-            let header = NSLocalizedString("visit.csv.header", value: "startedAt,endedAt,pet,owner,services,amount,payment,notes", comment: "")
+            let header = AppLocalization.localized("visit.csv.header", value: "startedAt,endedAt,pet,owner,services,amount,payment,notes")
 
             func escape(_ text: String) -> String {
                 let escaped = text.replacingOccurrences(of: "\"", with: "\"\"")
@@ -815,7 +815,7 @@ struct VisitDetailView: View {
 
             let started = visit.startedAt.ISO8601Format()
             let ended = visit.endedAt?.ISO8601Format() ?? ""
-            let petName = visit.pet?.name ?? NSLocalizedString("common.unknown_pet", comment: "")
+            let petName = visit.pet?.name ?? AppLocalization.localized("common.unknown_pet")
             let ownerName = visit.pet?.owner.map { "\($0.firstName) \($0.lastName)" } ?? ""
             let services = (visit.items ?? []).map { $0.displayName }.joined(separator: "; ")
             let amount = visit.totalCurrencyString

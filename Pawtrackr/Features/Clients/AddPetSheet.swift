@@ -57,7 +57,7 @@ struct AddPetSheet: View {
             // Drop focus on scroll, or the birthday menu scrolls back to the focused field.
             .scrollDismissesKeyboard(.immediately)
 #endif
-            .navigationTitle(NSLocalizedString("add_pet.title", comment: ""))
+            .navigationTitle(AppLocalization.localized("add_pet.title"))
 #if os(iOS)
             .navigationBarTitleDisplayMode(horizontalSizeClass == .compact ? .inline : .automatic)
 #endif
@@ -68,10 +68,10 @@ struct AddPetSheet: View {
                         if horizontalSizeClass == .compact {
                             Image(systemName: "xmark")
                         } else {
-                            Text(NSLocalizedString("common.cancel", comment: ""))
+                            Text(AppLocalization.localized("common.cancel"))
                         }
                         #else
-                        Text(NSLocalizedString("common.cancel", comment: ""))
+                        Text(AppLocalization.localized("common.cancel"))
                         #endif
                     }
                         .accessibilityIdentifier("addPet.cancel")
@@ -79,7 +79,7 @@ struct AddPetSheet: View {
                         .accessibilityLabel(AppLocalization.localized("common.cancel", value: "Cancel"))
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button(NSLocalizedString("common.save", comment: "")) { Task { await savePet() } }
+                    Button(AppLocalization.localized("common.save")) { Task { await savePet() } }
                         .disabled(isSaving || petName.trimmed.isEmpty || selectedSpecies == nil)
                         .accessibilityHint(petName.trimmed.isEmpty ? "Enter a pet name to enable save" : "Saves this pet to the client")
                         .accessibilityIdentifier("addPet.save")
@@ -91,9 +91,9 @@ struct AddPetSheet: View {
             .interactiveDismissDisabled(isSaving)
             .alert(item: $appError) { error in
                 Alert(
-                    title: Text(NSLocalizedString("add_pet.unable_to_save", comment: "")),
+                    title: Text(AppLocalization.localized("add_pet.unable_to_save")),
                     message: Text(error.localizedDescription),
-                    dismissButton: .default(Text(NSLocalizedString("common.ok", comment: "")))
+                    dismissButton: .default(Text(AppLocalization.localized("common.ok")))
                 )
             }
         }
@@ -111,12 +111,12 @@ struct AddPetSheet: View {
         isSaving = true
         defer { isSaving = false }
         guard let species = selectedSpecies else {
-            appError = .validation(.custom(message: NSLocalizedString("add_pet.select_species", comment: "")))
+            appError = .validation(.custom(message: AppLocalization.localized("add_pet.select_species")))
             return
         }
         let trimmedName = TextInputLimits.clamped(canonicalPetName(petName), to: TextInputLimits.name)
         guard !trimmedName.isEmpty else {
-            appError = .validation(.custom(message: NSLocalizedString("add_pet.name_empty", comment: "")))
+            appError = .validation(.custom(message: AppLocalization.localized("add_pet.name_empty")))
             return
         }
 

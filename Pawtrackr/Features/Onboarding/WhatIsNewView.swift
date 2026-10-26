@@ -34,7 +34,7 @@ struct WhatIsNewView: View {
                 VStack(spacing: 30) {
                     VStack(spacing: 10) {
                         if !appVersion.isEmpty {
-                            Text(String(format: NSLocalizedString("onboarding.welcome.version_fmt", value: "Version %@", comment: ""), appVersion))
+                            Text(String(format: AppLocalization.localized("onboarding.welcome.version_fmt", value: "Version %@"), appVersion))
                                 .font(.caption.weight(.semibold))
                                 .foregroundStyle(DS.ColorToken.primary)
                                 .padding(.horizontal, 12)

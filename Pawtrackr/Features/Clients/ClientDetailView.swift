@@ -277,7 +277,7 @@ struct ClientDetailView: View {
     private var macAddPetToolbarItem: some ToolbarContent {
         ToolbarItem(placement: .primaryAction) {
             Button { sheetDestination = .addPet } label: {
-                Label(NSLocalizedString("a11y.add_new_pet", comment: ""), systemImage: "pawprint.fill")
+                Label(AppLocalization.localized("a11y.add_new_pet"), systemImage: "pawprint.fill")
             }
         }
     }
@@ -303,7 +303,7 @@ struct ClientDetailView: View {
     private var addPetFab: some View {
         let fab = FAB(
             systemImage: "pawprint.fill",
-            accessibilityLabel: NSLocalizedString("a11y.add_new_pet", comment: ""),
+            accessibilityLabel: AppLocalization.localized("a11y.add_new_pet"),
             tint: DS.ColorToken.primary
         ) {
             sheetDestination = .addPet
@@ -355,17 +355,17 @@ struct ClientDetailView: View {
     private var contactEditorSheet: some View {
         NavigationStack {
             Form {
-                Section(editingContact == nil ? NSLocalizedString("client_detail.new_emergency_contact", comment: "") : NSLocalizedString("client_detail.edit_emergency_contact", comment: "")) {
-                    TextField(NSLocalizedString("form.name", comment: ""), text: $newContactName)
+                Section(editingContact == nil ? AppLocalization.localized("client_detail.new_emergency_contact") : AppLocalization.localized("client_detail.edit_emergency_contact")) {
+                    TextField(AppLocalization.localized("form.name"), text: $newContactName)
                         .focused($contactNameFocused)
                         .textLengthLimit($newContactName, to: TextInputLimits.name)
                         .accessibilityIdentifier("contactEditor.name")
                     if let contactNameError {
                         contactFieldError(contactNameError, identifier: "contactEditor.name.error")
                     }
-                    TextField(NSLocalizedString("form.relation", comment: ""), text: $newContactRelation)
+                    TextField(AppLocalization.localized("form.relation"), text: $newContactRelation)
                         .textLengthLimit($newContactRelation, to: TextInputLimits.shortText)
-                    TextField(NSLocalizedString("form.phone", comment: ""), text: $newContactPhone)
+                    TextField(AppLocalization.localized("form.phone"), text: $newContactPhone)
                         .phoneFieldFormatting($newContactPhone)
                         .textLengthLimit($newContactPhone, to: TextInputLimits.phone)
                         .accessibilityIdentifier("contactEditor.phone")
@@ -376,18 +376,18 @@ struct ClientDetailView: View {
                 .onChange(of: newContactName) { _, _ in clearContactFieldErrors() }
                 .onChange(of: newContactPhone) { _, _ in clearContactFieldErrors() }
             }
-            .navigationTitle(editingContact == nil ? NSLocalizedString("client_detail.add_contact", comment: "") : NSLocalizedString("client_detail.edit_contact", comment: ""))
+            .navigationTitle(editingContact == nil ? AppLocalization.localized("client_detail.add_contact") : AppLocalization.localized("client_detail.edit_contact"))
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button(NSLocalizedString("common.cancel", comment: "")) {
+                    Button(AppLocalization.localized("common.cancel")) {
                         clearContactFieldErrors()
                         showContactEditor = false
                     }
                 }
-                ToolbarItem(placement: .confirmationAction) { Button(NSLocalizedString("common.save", comment: "")) { addOrUpdateContact() } }
+                ToolbarItem(placement: .confirmationAction) { Button(AppLocalization.localized("common.save")) { addOrUpdateContact() } }
             }
             .alert(AppLocalization.localized("common.error", value: "Error"), isPresented: Binding(get: { validationError != nil }, set: { if !$0 { validationError = nil } })) {
-                Button(NSLocalizedString("common.ok", comment: "")) { validationError = nil }
+                Button(AppLocalization.localized("common.ok")) { validationError = nil }
             } message: {
                 if let error = validationError {
                     Text(error)
@@ -413,13 +413,13 @@ struct ClientDetailView: View {
     private func alertTitleText(for destination: AlertDestination?, vm: ClientDetailViewModel) -> Text {
         switch destination {
         case .checkIn(let pet):
-            return Text(String(format: NSLocalizedString("client_details.checkin_confirm_title_fmt", comment: ""), pet.name))
+            return Text(String(format: AppLocalization.localized("client_details.checkin_confirm_title_fmt"), pet.name))
         case .deleteClient:
-            return Text(String(format: NSLocalizedString("clients.delete_confirm_title_fmt", comment: ""), vm.client.fullName))
+            return Text(String(format: AppLocalization.localized("clients.delete_confirm_title_fmt"), vm.client.fullName))
         case .deleteError:
-            return Text(NSLocalizedString("clients.delete_failed", comment: ""))
+            return Text(AppLocalization.localized("clients.delete_failed"))
         case .deleteContact:
-            return Text(NSLocalizedString("client_detail.delete_contact_title", comment: ""))
+            return Text(AppLocalization.localized("client_detail.delete_contact_title"))
         case .inlineEditConflict:
             return Text(AppLocalization.localized("client_edit.conflict.title", value: "Changed on Another Device"))
         case .inlineEditFailed:
@@ -433,29 +433,25 @@ struct ClientDetailView: View {
     private func alertActions(for destination: AlertDestination, vm: ClientDetailViewModel) -> some View {
         switch destination {
         case .checkIn(let pet):
-            Button(NSLocalizedString("common.yes", comment: "")) {
+            Button(AppLocalization.localized("common.yes")) {
                 vm.checkIn(pet: pet)
                 // Replace any earlier "already in session" text before showing.
-                sessionStartedToastText = NSLocalizedString(
-                    "client_detail.session_started",
-                    value: "Session started for \(pet.name)",
-                    comment: ""
-                )
+                sessionStartedToastText = AppLocalization.localized("client_detail.session_started", value: "Session started for \(pet.name)")
                 flashSessionToast()
             }
-            Button(NSLocalizedString("common.no", comment: ""), role: .cancel) {}
+            Button(AppLocalization.localized("common.no"), role: .cancel) {}
         case .deleteClient:
-            Button(NSLocalizedString("common.yes", comment: ""), role: .destructive) {
+            Button(AppLocalization.localized("common.yes"), role: .destructive) {
                 deleteClient(vm: vm)
             }
-            Button(NSLocalizedString("common.no", comment: ""), role: .cancel) {}
+            Button(AppLocalization.localized("common.no"), role: .cancel) {}
         case .deleteError:
-            Button(NSLocalizedString("common.ok", comment: ""), role: .cancel) {}
+            Button(AppLocalization.localized("common.ok"), role: .cancel) {}
         case .deleteContact(let contact):
-            Button(NSLocalizedString("common.delete", comment: ""), role: .destructive) {
+            Button(AppLocalization.localized("common.delete"), role: .destructive) {
                 confirmDeleteContact(contact)
             }
-            Button(NSLocalizedString("common.cancel", value: "Cancel", comment: ""), role: .cancel) {}
+            Button(AppLocalization.localized("common.cancel", value: "Cancel"), role: .cancel) {}
         case .inlineEditConflict:
             Button(AppLocalization.localized("client_edit.conflict.save_mine", value: "Save My Changes")) {
                 saveInlineEdit(vm.client, overwrite: true)
@@ -464,7 +460,7 @@ struct ClientDetailView: View {
                 cancelInlineEdit(vm.client)
             }
         case .inlineEditFailed:
-            Button(NSLocalizedString("common.ok", comment: ""), role: .cancel) {}
+            Button(AppLocalization.localized("common.ok"), role: .cancel) {}
         }
     }
 
@@ -472,13 +468,13 @@ struct ClientDetailView: View {
     private func alertMessage(for destination: AlertDestination) -> some View {
         switch destination {
         case .checkIn:
-            Text(NSLocalizedString("client_details.checkin_confirm_message", comment: ""))
+            Text(AppLocalization.localized("client_details.checkin_confirm_message"))
         case .deleteClient:
-            Text(NSLocalizedString("clients.delete_confirm_message", comment: ""))
+            Text(AppLocalization.localized("clients.delete_confirm_message"))
         case .deleteError(let message):
             Text(message)
         case .deleteContact:
-            Text(NSLocalizedString("client_detail.delete_contact_message", comment: ""))
+            Text(AppLocalization.localized("client_detail.delete_contact_message"))
         case .inlineEditConflict(let name):
             Text(String(
                 format: AppLocalization.localized(
@@ -666,7 +662,7 @@ struct ClientDetailView: View {
         HStack {
             Spacer()
             VStack(alignment: .trailing, spacing: 2) {
-                Text(String(format: NSLocalizedString("common.updated_fmt", value: "Updated %@", comment: ""), client.updatedAt.formatted(date: .abbreviated, time: .shortened)))
+                Text(String(format: AppLocalization.localized("common.updated_fmt", value: "Updated %@"), client.updatedAt.formatted(date: .abbreviated, time: .shortened)))
             }
             .font(.caption2)
             .foregroundStyle(.tertiary)
@@ -684,7 +680,7 @@ struct ClientDetailView: View {
                         Text(client.fullName)
                             .font(.title3.weight(.semibold))
                             .matchedGeometryEffect(id: "name-\(client.id)", in: namespace)
-                        Text(String(format: NSLocalizedString("client_detail.client_since_fmt", comment: ""), Formatters.monthYear.string(from: client.createdAt)))
+                        Text(String(format: AppLocalization.localized("client_detail.client_since_fmt"), Formatters.monthYear.string(from: client.createdAt)))
                             .font(.footnote)
                             .foregroundStyle(.secondary)
                     }
@@ -694,14 +690,14 @@ struct ClientDetailView: View {
                             ClientActionButton(
                                 systemImage: "xmark",
                                 tint: .secondary,
-                                label: NSLocalizedString("common.cancel", comment: "")
+                                label: AppLocalization.localized("common.cancel")
                             ) { cancelInlineEdit(client) }
                                 .accessibilityIdentifier("clientDetail.inlineEdit.cancel")
                             ClientActionButton(
                                 systemImage: "checkmark",
                                 tint: DS.ColorToken.primary,
                                 isProminent: true,
-                                label: NSLocalizedString("common.save", comment: "")
+                                label: AppLocalization.localized("common.save")
                             ) { saveInlineEdit(client) }
                                 .disabled(
                                     editFirst.trimmed.isEmpty ||
@@ -715,7 +711,7 @@ struct ClientDetailView: View {
                             ClientActionButton(
                                 systemImage: "message.fill",
                                 tint: DS.ColorToken.calmBlue,
-                                label: NSLocalizedString("client_detail.message", value: "Message", comment: "")
+                                label: AppLocalization.localized("client_detail.message", value: "Message")
                             ) {
                                 guard let firstPet = (client.pets ?? []).first else { return }
                                 viewModel?.recordAttentionOutreach(method: "message")
@@ -732,7 +728,7 @@ struct ClientDetailView: View {
                             ClientActionButton(
                                 systemImage: "pencil",
                                 tint: DS.ColorToken.textSecondary,
-                                label: NSLocalizedString("common.edit", value: "Edit", comment: "")
+                                label: AppLocalization.localized("common.edit", value: "Edit")
                             ) { beginInlineEdit(client) }
                                 .accessibilityIdentifier("clientDetail.editInline")
                         }
@@ -742,19 +738,19 @@ struct ClientDetailView: View {
                 if isEditingClientInline {
                     VStack(alignment: .leading, spacing: 6) {
                         HStack {
-                            TextField(NSLocalizedString("new_client.first_name", comment: ""), text: $editFirst)
+                            TextField(AppLocalization.localized("new_client.first_name"), text: $editFirst)
                                 .textFieldStyle(.roundedBorder)
                                 .textLengthLimit($editFirst, to: TextInputLimits.name)
-                            TextField(NSLocalizedString("new_client.last_name", comment: ""), text: $editLast)
+                            TextField(AppLocalization.localized("new_client.last_name"), text: $editLast)
                                 .textFieldStyle(.roundedBorder)
                                 .textLengthLimit($editLast, to: TextInputLimits.name)
                         }
                         HStack {
-                            TextField(NSLocalizedString("new_client.phone", comment: ""), text: $editPhone)
+                            TextField(AppLocalization.localized("new_client.phone"), text: $editPhone)
                                 .textFieldStyle(.roundedBorder)
                                 .phoneFieldFormatting($editPhone)
                                 .textLengthLimit($editPhone, to: TextInputLimits.phone)
-                            TextField(NSLocalizedString("new_client.email", comment: ""), text: $editEmail)
+                            TextField(AppLocalization.localized("new_client.email"), text: $editEmail)
                                 .textFieldStyle(.roundedBorder)
                                 .textLengthLimit($editEmail, to: TextInputLimits.email)
                                 .emailFieldInput()
@@ -777,7 +773,7 @@ struct ClientDetailView: View {
                                     systemImage: "phone.fill",
                                     tint: DS.ColorToken.success,
                                     isProminent: true,
-                                    label: NSLocalizedString("client_detail.call", value: "Call", comment: "")
+                                    label: AppLocalization.localized("client_detail.call", value: "Call")
                                 ) {
                                     viewModel?.recordAttentionOutreach(method: "call")
                                     URLOpener.open(telURL)
@@ -791,7 +787,7 @@ struct ClientDetailView: View {
                                 ClientActionButton(
                                     systemImage: "envelope.fill",
                                     tint: DS.ColorToken.calmBlue,
-                                    label: NSLocalizedString("client_detail.email", value: "Email", comment: "")
+                                    label: AppLocalization.localized("client_detail.email", value: "Email")
                                 ) { URLOpener.open(url) }
                             }
                         }
@@ -804,7 +800,7 @@ struct ClientDetailView: View {
                                 ClientActionButton(
                                     systemImage: "map.fill",
                                     tint: DS.ColorToken.warning,
-                                    label: NSLocalizedString("client_detail.directions", value: "Directions", comment: "")
+                                    label: AppLocalization.localized("client_detail.directions", value: "Directions")
                                 ) { URLOpener.open(url) }
                             }
                         }
@@ -860,7 +856,7 @@ struct ClientDetailView: View {
             HStack(alignment: .top, spacing: 10) {
                 Image(systemName: "note.text").foregroundStyle(.yellow)
                 VStack(alignment: .leading, spacing: 6) {
-                    Text(NSLocalizedString("client_detail.notes", comment: "")).font(.headline)
+                    Text(AppLocalization.localized("client_detail.notes")).font(.headline)
                     Text(notes.trimmingCharacters(in: .whitespacesAndNewlines)).font(.subheadline).foregroundStyle(.secondary)
                 }
                 Spacer()
@@ -966,7 +962,7 @@ struct ClientDetailView: View {
                     .font(.title3)
                     .foregroundStyle(.white)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(NSLocalizedString("client_detail.safety_alert.title", value: "Caution: Aggressive Behavior", comment: ""))
+                    Text(AppLocalization.localized("client_detail.safety_alert.title", value: "Caution: Aggressive Behavior"))
                         .font(.subheadline.weight(.bold))
                         .foregroundStyle(.white)
                     Text(safetyBannerMessage(for: aggressivePets))
@@ -1011,31 +1007,19 @@ struct ClientDetailView: View {
             let status = pet.aggressionClearanceStatus
             if status.isProbationary {
                 return String(
-                    format: NSLocalizedString(
-                        "client_detail.safety_alert.probation_fmt",
-                        value: "%@ is flagged aggressive (%d/3 visits without aggression completed). Alert the team and handle with care.",
-                        comment: ""
-                    ),
+                    format: AppLocalization.localized("client_detail.safety_alert.probation_fmt", value: "%@ is flagged aggressive (%d/3 visits without aggression completed). Alert the team and handle with care."),
                     pet.name,
                     status.calmStreak
                 )
             } else {
                 return String(
-                    format: NSLocalizedString(
-                        "client_detail.safety_alert.message_fmt",
-                        value: "%@ is flagged as aggressive. Alert the team and handle with care.",
-                        comment: ""
-                    ),
+                    format: AppLocalization.localized("client_detail.safety_alert.message_fmt", value: "%@ is flagged as aggressive. Alert the team and handle with care."),
                     pet.name
                 )
             }
         } else {
             return String(
-                format: NSLocalizedString(
-                    "client_detail.safety_alert.message_fmt",
-                    value: "%@ is flagged as aggressive. Alert the team and handle with care.",
-                    comment: ""
-                ),
+                format: AppLocalization.localized("client_detail.safety_alert.message_fmt", value: "%@ is flagged as aggressive. Alert the team and handle with care."),
                 aggressivePets.map(\.name).joined(separator: ", ")
             )
         }
@@ -1049,7 +1033,7 @@ struct ClientDetailView: View {
             Image(systemName: "exclamationmark.triangle.fill")
             if status.isProbationary {
                 Text(String(
-                    format: NSLocalizedString("pet.safety.probation_badge_fmt", value: "Aggressive — %d/3 visits without aggression to clear", comment: ""),
+                    format: AppLocalization.localized("pet.safety.probation_badge_fmt", value: "Aggressive — %d/3 visits without aggression to clear"),
                     status.calmStreak
                 ))
                 .font(.caption2.weight(.bold))
@@ -1061,7 +1045,7 @@ struct ClientDetailView: View {
                     }
                 }
             } else {
-                Text(NSLocalizedString("pet.safety.aggressive_badge", value: "Aggressive — handle with care", comment: ""))
+                Text(AppLocalization.localized("pet.safety.aggressive_badge", value: "Aggressive — handle with care"))
                     .font(.caption2.weight(.bold))
             }
         }
@@ -1072,8 +1056,8 @@ struct ClientDetailView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .accessibilityLabel(
             status.isProbationary
-                ? String(format: NSLocalizedString("pet.safety.probation_a11y_fmt", value: "Warning: this pet is marked aggressive, %d of 3 visits without aggression to clear.", comment: ""), status.calmStreak)
-                : NSLocalizedString("pet.safety.aggressive_a11y", value: "Warning: this pet is marked aggressive. Handle with care.", comment: "")
+                ? String(format: AppLocalization.localized("pet.safety.probation_a11y_fmt", value: "Warning: this pet is marked aggressive, %d of 3 visits without aggression to clear."), status.calmStreak)
+                : AppLocalization.localized("pet.safety.aggressive_a11y", value: "Warning: this pet is marked aggressive. Handle with care.")
         )
         .accessibilityIdentifier("pet.aggression.priorityBadge")
     }
@@ -1081,14 +1065,14 @@ struct ClientDetailView: View {
     private func petsSection(vm: ClientDetailViewModel) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(spacing: 12) {
-                Text(String(format: NSLocalizedString("client_detail.pets_count_fmt", comment: ""), vm.pets.count))
+                Text(String(format: AppLocalization.localized("client_detail.pets_count_fmt"), vm.pets.count))
                     .font(.headline)
                 Spacer(minLength: 12)
                 if showsInlineAddPetAction {
                     Button {
                         sheetDestination = .addPet
                     } label: {
-                        Label(NSLocalizedString("client_detail.add_pet", value: "Add Pet", comment: ""), systemImage: "pawprint.fill")
+                        Label(AppLocalization.localized("client_detail.add_pet", value: "Add Pet"), systemImage: "pawprint.fill")
                     }
                     .buttonStyle(.bordered)
                     .controlSize(.small)
@@ -1126,7 +1110,7 @@ struct ClientDetailView: View {
                                 PetMilestoneView(pet: pet)
                                 PetGroomingSignals(pet: pet)
                                 HStack(spacing: 8) {
-                                    actionButton(title: NSLocalizedString("client_detail.check_in", comment: ""), systemImage: "play.fill", tint: .blue) {
+                                    actionButton(title: AppLocalization.localized("client_detail.check_in"), systemImage: "play.fill", tint: .blue) {
                                         if activeVisit != nil {
                                             sessionStartedToastText = String(
                                                 format: AppLocalization.localized("client_detail.pet_already_in_session", value: "%@ is already in session"),
@@ -1137,11 +1121,7 @@ struct ClientDetailView: View {
                                             return
                                         }
                                         vm.checkIn(pet: pet)
-                                        sessionStartedToastText = NSLocalizedString(
-                                            "client_detail.session_started",
-                                            value: "Session started for \(pet.name)",
-                                            comment: ""
-                                        )
+                                        sessionStartedToastText = AppLocalization.localized("client_detail.session_started", value: "Session started for \(pet.name)")
                                         flashSessionToast()
                                     }
                                     .opacity(activeVisit == nil && !isCheckingIn ? 1.0 : 0.55)
@@ -1150,7 +1130,7 @@ struct ClientDetailView: View {
                                     .accessibilityIdentifier("clientDetail.pet.\(pet.name).checkIn")
                                     .walkthroughTarget(.cdCheckIn, isActive: pet.persistentModelID == tourPets.checkIn)
 
-                                    actionButton(title: NSLocalizedString("client_detail.check_out", comment: ""), systemImage: "stop.fill", tint: .blue) {
+                                    actionButton(title: AppLocalization.localized("client_detail.check_out"), systemImage: "stop.fill", tint: .blue) {
                                         if let visit = vm.activeVisit(for: pet) {
                                             checkoutRoute = ClientCheckoutRoute(pet: pet, visit: visit)
                                             advanceWalkthroughIntoCheckoutIfNeeded()
@@ -1166,7 +1146,7 @@ struct ClientDetailView: View {
                                     .accessibilityIdentifier("clientDetail.pet.\(pet.name).checkOut")
                                     .walkthroughTarget(.cdCheckOut, isActive: pet.persistentModelID == tourPets.featured)
 
-                                    actionButton(title: NSLocalizedString("client_detail.history", comment: ""), systemImage: "clock.arrow.circlepath", borderOnly: true) {
+                                    actionButton(title: AppLocalization.localized("client_detail.history"), systemImage: "clock.arrow.circlepath", borderOnly: true) {
                                         sheetDestination = .history(pet)
                                     }
                                     .id("clientDetail.pet.\(pet.uuid.uuidString).history")
@@ -1215,9 +1195,9 @@ struct ClientDetailView: View {
     private func recentHistorySection(vm: ClientDetailViewModel) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text(NSLocalizedString("client_details.recent_history", comment: "")).font(.headline)
+                Text(AppLocalization.localized("client_details.recent_history")).font(.headline)
                 Spacer()
-                Picker(NSLocalizedString("client_detail.history_range", value: "History range", comment: ""), selection: Binding(
+                Picker(AppLocalization.localized("client_detail.history_range", value: "History range"), selection: Binding(
                     get: { vm.historyRange },
                     set: {
                         vm.historyRange = $0
@@ -1239,7 +1219,7 @@ struct ClientDetailView: View {
             .walkthroughTarget(.cdHistory)
 
             if vm.recentVisits.isEmpty {
-                ContentUnavailableView(NSLocalizedString("client_detail.no_history_yet", comment: ""), systemImage: "clock.badge.questionmark")
+                ContentUnavailableView(AppLocalization.localized("client_detail.no_history_yet"), systemImage: "clock.badge.questionmark")
                     .padding(.vertical, 20)
             } else {
                 // Group by day to mirror the sample design
@@ -1254,7 +1234,7 @@ struct ClientDetailView: View {
                         let visits = (grouped[day] ?? []).sorted(by: { $0.sortKeyDate > $1.sortKeyDate })
                         HStack(spacing: 6) {
                             Text(Formatters.dateOnly.string(from: day)).font(.subheadline.weight(.semibold))
-                            Text(String(format: NSLocalizedString("client_detail.visits_count_fmt", comment: ""), visits.count))
+                            Text(String(format: AppLocalization.localized("client_detail.visits_count_fmt"), visits.count))
                                 .font(.caption.weight(.bold))
                                 .padding(.vertical, 2)
                                 .padding(.horizontal, 6)
@@ -1279,7 +1259,7 @@ struct ClientDetailView: View {
                         } label: {
                             HStack(spacing: 8) {
                                 ProgressView().controlSize(.small)
-                                Text(NSLocalizedString("common.load_more", comment: "Load More"))
+                                Text(AppLocalization.localized("common.load_more"))
                                     .font(.footnote.weight(.semibold))
                             }
                             .frame(maxWidth: .infinity)
@@ -1313,7 +1293,7 @@ struct ClientDetailView: View {
                 }
             }
             .disabled(isDeleting)
-            .accessibilityLabel(NSLocalizedString("client_details.delete", comment: ""))
+            .accessibilityLabel(AppLocalization.localized("client_details.delete"))
             .accessibilityIdentifier("clientDetail.toolbar.delete")
             .tint(.red)
         }
@@ -1564,12 +1544,12 @@ struct ClientDetailView: View {
 
     private var sessionToastMessage: String {
         sessionStartedToastText.isEmpty
-            ? NSLocalizedString("client_detail.session_started", comment: "")
+            ? AppLocalization.localized("client_detail.session_started")
             : sessionStartedToastText
     }
 
     private var savedToastMessage: String {
-        NSLocalizedString("client_detail.saved_successfully", comment: "")
+        AppLocalization.localized("client_detail.saved_successfully")
     }
 
     private func flashSavedToast() {
@@ -1776,7 +1756,7 @@ private struct ClientActionButton: View {
         .background(RoundedRectangle(cornerRadius: 10).fill(Color.blue.opacity(0.12)))
         .foregroundStyle(.blue)
     } else {
-        Text(NSLocalizedString("client_detail.available", comment: ""))
+        Text(AppLocalization.localized("client_detail.available"))
             .font(.caption.weight(.bold))
             .padding(.vertical, 4)
             .padding(.horizontal, 8)

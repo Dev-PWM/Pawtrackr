@@ -128,7 +128,7 @@ public struct FAB: View {
         .accessibilityLabel(Text(accessibilityLabel))
         .accessibilityValue(Text(accessibilityValueText))
         .accessibilityAddTraits(.isButton)
-        .accessibilityHint(Text(NSLocalizedString("a11y.primary_action", comment: "")))
+        .accessibilityHint(Text(AppLocalization.localized("a11y.primary_action")))
         .keyboardShortcut(.defaultAction)
         .opacity(isDisabled ? 0.6 : 1.0)
         .buttonStyle(PressedScaleStyle())

@@ -116,9 +116,9 @@ struct NewClientSheet: View {
                 // Owner Info Card
                 Card {
                     VStack(alignment: .leading, spacing: 12) {
-                        Text(NSLocalizedString("new_client.owner", comment: "")).font(.subheadline.weight(.semibold))
+                        Text(AppLocalization.localized("new_client.owner")).font(.subheadline.weight(.semibold))
                         inputField(
-                            NSLocalizedString("new_client.first_name", comment: ""),
+                            AppLocalization.localized("new_client.first_name"),
                             text: $viewModel.first,
                             accessibilityIdentifier: "newClient.firstName",
                             validationError: viewModel.validationError(for: .first),
@@ -135,7 +135,7 @@ struct NewClientSheet: View {
                         }
 
                         inputField(
-                            NSLocalizedString("new_client.last_name", comment: ""),
+                            AppLocalization.localized("new_client.last_name"),
                             text: $viewModel.last,
                             accessibilityIdentifier: "newClient.lastName",
                             validationError: viewModel.validationError(for: .last),
@@ -145,7 +145,7 @@ struct NewClientSheet: View {
                         .onChange(of: viewModel.last) { _, _ in viewModel.clearValidationError(for: .last) }
 
                         inputField(
-                            NSLocalizedString("new_client.phone", comment: ""),
+                            AppLocalization.localized("new_client.phone"),
                             text: $viewModel.phone,
                             accessibilityIdentifier: "newClient.phone",
                             validationError: viewModel.validationError(for: .phone),
@@ -157,7 +157,7 @@ struct NewClientSheet: View {
                             .onChange(of: viewModel.phone) { _, _ in viewModel.clearValidationError(for: .phone) }
 
                         inputField(
-                            NSLocalizedString("new_client.email", comment: ""),
+                            AppLocalization.localized("new_client.email"),
                             text: $viewModel.email,
                             accessibilityIdentifier: "newClient.email",
                             validationError: viewModel.validationError(for: .email),
@@ -169,7 +169,7 @@ struct NewClientSheet: View {
                         .onChange(of: viewModel.email) { _, _ in viewModel.clearValidationError(for: .email) }
 
                         inputField(
-                            NSLocalizedString("new_client.address", comment: ""),
+                            AppLocalization.localized("new_client.address"),
                             text: $viewModel.address,
                             accessibilityIdentifier: "newClient.address",
                             focus: .address,
@@ -185,13 +185,13 @@ struct NewClientSheet: View {
                 Card {
                     VStack(alignment: .leading, spacing: 12) {
                         HStack {
-                            Text(NSLocalizedString("new_client.emergency_contacts", comment: "")).font(.subheadline.weight(.semibold))
+                            Text(AppLocalization.localized("new_client.emergency_contacts")).font(.subheadline.weight(.semibold))
                             Spacer()
                             Button {
                                 viewModel.addContact()
                                 HapticManager.selectionChanged()
                             } label: {
-                                Label(NSLocalizedString("new_client.add", comment: ""), systemImage: "plus.circle")
+                                Label(AppLocalization.localized("new_client.add"), systemImage: "plus.circle")
                             }
                             .buttonStyle(.bordered)
                             .tint(DS.ColorToken.primary)
@@ -204,7 +204,7 @@ struct NewClientSheet: View {
                             .accessibilityIdentifier("newClient.addContact")
                         }
                         if viewModel.contacts.isEmpty {
-                            Text(NSLocalizedString("new_client.add_contact_hint", comment: ""))
+                            Text(AppLocalization.localized("new_client.add_contact_hint"))
                                 .font(.footnote)
                                 .foregroundStyle(.secondary)
                         } else {
@@ -223,7 +223,7 @@ struct NewClientSheet: View {
                                         .accessibilityLabel(AppLocalization.localized("common.delete", value: "Delete"))
                                     }
                                     inputField(
-                                        NSLocalizedString("new_client.contact_name", comment: ""),
+                                        AppLocalization.localized("new_client.contact_name"),
                                         text: $contact.name,
                                         accessibilityIdentifier: "newClient.contactName",
                                         validationError: viewModel.contactValidationError(for: contact.id, field: .name),
@@ -232,7 +232,7 @@ struct NewClientSheet: View {
                                     )
                                     .onChange(of: contact.name) { _, _ in viewModel.clearContactValidationErrors(for: contact.id) }
                                     inputField(
-                                        NSLocalizedString("new_client.contact_phone", comment: ""),
+                                        AppLocalization.localized("new_client.contact_phone"),
                                         text: $contact.phone,
                                         accessibilityIdentifier: "newClient.contactPhone",
                                         validationError: viewModel.contactValidationError(for: contact.id, field: .phone),
@@ -255,13 +255,13 @@ struct NewClientSheet: View {
                 Card {
                     VStack(alignment: .leading, spacing: 12) {
                         HStack {
-                            Text(NSLocalizedString("new_client.pets", comment: "")).font(.subheadline.weight(.semibold))
+                            Text(AppLocalization.localized("new_client.pets")).font(.subheadline.weight(.semibold))
                             Spacer()
                             Button {
                                 viewModel.addPet()
                                 HapticManager.selectionChanged()
                             } label: {
-                                Label(NSLocalizedString("new_client.add_pet", comment: ""), systemImage: "plus.circle")
+                                Label(AppLocalization.localized("new_client.add_pet"), systemImage: "plus.circle")
                             }
                             .buttonStyle(.bordered)
                             .tint(DS.ColorToken.primary)
@@ -269,7 +269,7 @@ struct NewClientSheet: View {
                             .accessibilityIdentifier("newClient.addPet")
                         }
                         if viewModel.pets.isEmpty {
-                            Text(NSLocalizedString("new_client.add_pet_hint", comment: ""))
+                            Text(AppLocalization.localized("new_client.add_pet_hint"))
                                 .font(.footnote)
                                 .foregroundStyle(.secondary)
                         }
@@ -281,12 +281,12 @@ struct NewClientSheet: View {
                                         Button(role: .destructive) {
                                             viewModel.removePet(id: pet.id)
                                         } label: {
-                                            Label(NSLocalizedString("new_client.remove_pet", comment: ""), systemImage: "trash")
+                                            Label(AppLocalization.localized("new_client.remove_pet"), systemImage: "trash")
                                                 .font(.caption)
                                         }
                                         .buttonStyle(.borderless)
                                         .tint(.red)
-                                        .accessibilityLabel(NSLocalizedString("new_client.remove_pet", comment: ""))
+                                        .accessibilityLabel(AppLocalization.localized("new_client.remove_pet"))
                                     }
                                 }
                                 PetProfileForm(
@@ -314,16 +314,16 @@ struct NewClientSheet: View {
             Divider()
             macOSFooterActions(viewModel)
         }
-        .navigationTitle(NSLocalizedString("new_client.new_client", comment: ""))
+        .navigationTitle(AppLocalization.localized("new_client.new_client"))
         .alert(
-            Text(NSLocalizedString("common.error", comment: "")),
+            Text(AppLocalization.localized("common.error")),
             isPresented: Binding(
                 get: { viewModel.appError != nil },
                 set: { if !$0 { viewModel.appError = nil } }
             ),
             presenting: viewModel.appError
         ) { _ in
-            Button(NSLocalizedString("common.ok", comment: ""), role: .cancel) {}
+            Button(AppLocalization.localized("common.ok"), role: .cancel) {}
         } message: { error in
             Text(error.localizedDescription)
         }
@@ -333,10 +333,10 @@ struct NewClientSheet: View {
         // on open, and a menu or picker opened further down otherwise scrolls the
         // form back up to that field.
         .scrollDismissesKeyboard(horizontalSizeClass == .compact ? .immediately : .automatic)
-        .navigationTitle(NSLocalizedString("new_client.new_client", comment: ""))
+        .navigationTitle(AppLocalization.localized("new_client.new_client"))
         .toolbar {
             ToolbarItem(placement: .cancellationAction) {
-                Button(NSLocalizedString("common.cancel", comment: ""), role: .cancel) { dismiss() }
+                Button(AppLocalization.localized("common.cancel"), role: .cancel) { dismiss() }
                     .accessibilityIdentifier("newClient.cancel")
             }
             ToolbarItem(placement: .confirmationAction) {
@@ -344,14 +344,14 @@ struct NewClientSheet: View {
             }
         }
         .alert(
-            Text(NSLocalizedString("common.error", comment: "")),
+            Text(AppLocalization.localized("common.error")),
             isPresented: Binding(
                 get: { viewModel.appError != nil },
                 set: { if !$0 { viewModel.appError = nil } }
             ),
             presenting: viewModel.appError
         ) { _ in
-            Button(NSLocalizedString("common.ok", comment: ""), role: .cancel) {}
+            Button(AppLocalization.localized("common.ok"), role: .cancel) {}
         } message: { error in
             Text(error.localizedDescription)
         }
@@ -376,7 +376,7 @@ struct NewClientSheet: View {
             if viewModel.isSaving {
                 ProgressView()
             } else {
-                Label(NSLocalizedString("common.create", comment: ""), systemImage: "checkmark.circle.fill")
+                Label(AppLocalization.localized("common.create"), systemImage: "checkmark.circle.fill")
             }
         }
         .disabled(viewModel.isSaving)
@@ -388,7 +388,7 @@ struct NewClientSheet: View {
         HStack(spacing: 10) {
             Spacer()
 
-            Button(NSLocalizedString("common.cancel", comment: ""), role: .cancel) { dismiss() }
+            Button(AppLocalization.localized("common.cancel"), role: .cancel) { dismiss() }
                 .keyboardShortcut(.cancelAction)
                 .accessibilityIdentifier("newClient.cancel")
 

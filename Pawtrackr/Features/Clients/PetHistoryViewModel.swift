@@ -35,10 +35,10 @@ final class PetHistoryViewModel {
         /// don't break, but UI now goes through this accessor.
         var displayName: String {
             switch self {
-            case .all:       return NSLocalizedString("pet_history.scope.all",        value: "All",        comment: "")
-            case .today:     return NSLocalizedString("pet_history.scope.today",      value: "Today",      comment: "")
-            case .thisWeek:  return NSLocalizedString("pet_history.scope.this_week",  value: "This Week",  comment: "")
-            case .thisMonth: return NSLocalizedString("pet_history.scope.this_month", value: "This Month", comment: "")
+            case .all:       return AppLocalization.localized("pet_history.scope.all", value: "All")
+            case .today:     return AppLocalization.localized("pet_history.scope.today", value: "Today")
+            case .thisWeek:  return AppLocalization.localized("pet_history.scope.this_week", value: "This Week")
+            case .thisMonth: return AppLocalization.localized("pet_history.scope.this_month", value: "This Month")
             }
         }
     }

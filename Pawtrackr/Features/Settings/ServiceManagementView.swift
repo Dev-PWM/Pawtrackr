@@ -31,7 +31,7 @@ struct ServiceManagementView: View {
                         }
                         Spacer()
                         if !service.isEnabled {
-                            Text(NSLocalizedString("service.disabled", comment: ""))
+                            Text(AppLocalization.localized("service.disabled"))
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                                 .padding(.horizontal, 8)
@@ -44,7 +44,7 @@ struct ServiceManagementView: View {
             }
             .onDelete(perform: deleteService)
         }
-        .navigationTitle(NSLocalizedString("service.management_title", comment: ""))
+        .navigationTitle(AppLocalization.localized("service.management_title"))
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Button(action: { showingAddService = true }) {
@@ -60,9 +60,9 @@ struct ServiceManagementView: View {
         }
         .alert(item: $viewModel.appError) { error in
             Alert(
-                title: Text(NSLocalizedString("common.error", comment: "")),
+                title: Text(AppLocalization.localized("common.error")),
                 message: Text(error.localizedDescription),
-                dismissButton: .default(Text(NSLocalizedString("common.ok", comment: "")))
+                dismissButton: .default(Text(AppLocalization.localized("common.ok")))
             )
         }
     }
@@ -99,56 +99,56 @@ struct EditServiceView: View {
 
     private var editContent: some View {
         Form {
-            Section(NSLocalizedString("service.details", comment: "")) {
-                TextField(NSLocalizedString("service.name", comment: ""), text: $viewModel.name)
+            Section(AppLocalization.localized("service.details")) {
+                TextField(AppLocalization.localized("service.name"), text: $viewModel.name)
                     .textLengthLimit($viewModel.name, to: TextInputLimits.name)
-                Picker(NSLocalizedString("service.category", comment: ""), selection: $viewModel.category) {
+                Picker(AppLocalization.localized("service.category"), selection: $viewModel.category) {
                     ForEach(Service.Category.allCases) { category in
                         Text(category.localizedName).tag(category)
                     }
                 }
                 HStack {
-                    Text(NSLocalizedString("service.icon", comment: ""))
+                    Text(AppLocalization.localized("service.icon"))
                     Spacer()
                     Image(systemName: viewModel.systemIcon)
                 }
             }
 
-            Section(NSLocalizedString("service.pricing_duration", comment: "")) {
-                TextField(NSLocalizedString("service.price", comment: ""), value: $viewModel.price, format: .currency(code: "USD"))
+            Section(AppLocalization.localized("service.pricing_duration")) {
+                TextField(AppLocalization.localized("service.price"), value: $viewModel.price, format: .currency(code: "USD"))
                     #if os(iOS)
                     .keyboardType(.decimalPad)
                     #endif
 
                 Stepper(
-                    String(format: NSLocalizedString("service.duration_minutes_fmt", comment: ""), viewModel.duration),
+                    String(format: AppLocalization.localized("service.duration_minutes_fmt"), viewModel.duration),
                     value: $viewModel.duration,
                     in: 5...480,
                     step: 5
                 )
             }
 
-            Section(NSLocalizedString("service.status", comment: "")) {
-                Toggle(NSLocalizedString("service.enabled_in_app", comment: ""), isOn: $viewModel.isEnabled)
-                Toggle(NSLocalizedString("service.is_package", comment: ""), isOn: $viewModel.isPackage)
+            Section(AppLocalization.localized("service.status")) {
+                Toggle(AppLocalization.localized("service.enabled_in_app"), isOn: $viewModel.isEnabled)
+                Toggle(AppLocalization.localized("service.is_package"), isOn: $viewModel.isPackage)
             }
         }
-        .navigationTitle(viewModel.service == nil ? NSLocalizedString("service.add_service", comment: "") : NSLocalizedString("service.edit_service", comment: ""))
+        .navigationTitle(viewModel.service == nil ? AppLocalization.localized("service.add_service") : AppLocalization.localized("service.edit_service"))
         .toolbar {
             if wrapsInNavigationStack {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button(NSLocalizedString("common.cancel", comment: "")) { dismiss() }
+                    Button(AppLocalization.localized("common.cancel")) { dismiss() }
                 }
             }
             ToolbarItem(placement: .confirmationAction) {
-                Button(NSLocalizedString("common.save", comment: "")) { saveService() }
+                Button(AppLocalization.localized("common.save")) { saveService() }
             }
         }
         .alert(item: $viewModel.appError) { error in
             Alert(
-                title: Text(NSLocalizedString("common.error", comment: "")),
+                title: Text(AppLocalization.localized("common.error")),
                 message: Text(error.localizedDescription),
-                dismissButton: .default(Text(NSLocalizedString("common.ok", comment: "")))
+                dismissButton: .default(Text(AppLocalization.localized("common.ok")))
             )
         }
     }

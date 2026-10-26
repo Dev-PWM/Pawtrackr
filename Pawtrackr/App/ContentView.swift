@@ -777,7 +777,7 @@ struct ContentView: View {
                         destinationView(for: destination)
                     }
             }
-            .tabItem { Label(NSLocalizedString("dashboard.title", value: "Dashboard", comment: ""), systemImage: "square.grid.2x2.fill") }
+            .tabItem { Label(AppLocalization.localized("dashboard.title", value: "Dashboard"), systemImage: "square.grid.2x2.fill") }
             .tag(NavigationItem.dashboard)
 
             NavigationStack(path: $router.clientsPath) {
@@ -786,7 +786,7 @@ struct ContentView: View {
                         destinationView(for: destination)
                     }
             }
-            .tabItem { Label(NSLocalizedString("clients.tab", value: "Clients", comment: ""), systemImage: "person.3.fill") }
+            .tabItem { Label(AppLocalization.localized("clients.tab", value: "Clients"), systemImage: "person.3.fill") }
             .tag(NavigationItem.clients)
 
             NavigationStack(path: $router.insightsPath) {
@@ -796,7 +796,7 @@ struct ContentView: View {
                     }
             }
             .accessibilityIdentifier("tab.content.insights")
-            .tabItem { Label(NSLocalizedString("insights.tab", value: "Insights", comment: ""), systemImage: "chart.bar.fill") }
+            .tabItem { Label(AppLocalization.localized("insights.tab", value: "Insights"), systemImage: "chart.bar.fill") }
             .tag(NavigationItem.insights)
 
             NavigationStack(path: $router.settingsPath) {
@@ -805,7 +805,7 @@ struct ContentView: View {
                         destinationView(for: destination)
                     }
             }
-            .tabItem { Label(NSLocalizedString("settings.tab", value: "Settings", comment: ""), systemImage: "gear") }
+            .tabItem { Label(AppLocalization.localized("settings.tab", value: "Settings"), systemImage: "gear") }
             .tag(NavigationItem.settings)
         }
         .tint(DS.ColorToken.primary)
@@ -915,7 +915,7 @@ struct ContentView: View {
                     }
             }
         case .none:
-            Text(NSLocalizedString("content.select_item", value: "Select an item", comment: ""))
+            Text(AppLocalization.localized("content.select_item", value: "Select an item"))
         }
     }
 
@@ -979,25 +979,17 @@ struct ContentView: View {
 
     private var noActiveSessionView: some View {
         ContentUnavailableView(
-            NSLocalizedString("checkout.no_active_session_title", value: "No Active Session", comment: ""),
+            AppLocalization.localized("checkout.no_active_session_title", value: "No Active Session"),
             systemImage: "clock.badge.xmark",
-            description: Text(NSLocalizedString(
-                "checkout.no_active_session_message",
-                value: "This pet is not checked in right now. Start a visit before opening checkout.",
-                comment: ""
-            ))
+            description: Text(AppLocalization.localized("checkout.no_active_session_message", value: "This pet is not checked in right now. Start a visit before opening checkout."))
         )
     }
 
     private var missingDestinationView: some View {
         ContentUnavailableView(
-            NSLocalizedString("content.missing_record_title", value: "Record Unavailable", comment: ""),
+            AppLocalization.localized("content.missing_record_title", value: "Record Unavailable"),
             systemImage: "exclamationmark.triangle.fill",
-            description: Text(NSLocalizedString(
-                "content.missing_record_message",
-                value: "This record may have been deleted. Return to the list and try again.",
-                comment: ""
-            ))
+            description: Text(AppLocalization.localized("content.missing_record_message", value: "This record may have been deleted. Return to the list and try again."))
         )
     }
 }

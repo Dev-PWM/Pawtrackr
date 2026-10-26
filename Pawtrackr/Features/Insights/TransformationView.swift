@@ -21,21 +21,21 @@ struct TransformationView: View {
                     comparisonLayout(before: beforeData, after: afterData)
                 } else {
                     ContentUnavailableView(
-                        NSLocalizedString("transformation.missing_photos.title", value: "Missing Photos", comment: ""),
+                        AppLocalization.localized("transformation.missing_photos.title", value: "Missing Photos"),
                         systemImage: "photo.on.rectangle",
-                        description: Text(NSLocalizedString("transformation.missing_photos.message", value: "Both Before and After photos are required for a transformation view.", comment: ""))
+                        description: Text(AppLocalization.localized("transformation.missing_photos.message", value: "Both Before and After photos are required for a transformation view."))
                     )
                 }
             }
             .padding()
-            .navigationTitle(String(format: NSLocalizedString("transformation.navigation_title_fmt", value: "%@'s Transformation", comment: ""), petName))
+            .navigationTitle(String(format: AppLocalization.localized("transformation.navigation_title_fmt", value: "%@'s Transformation"), petName))
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button(NSLocalizedString("common.close", comment: "")) { dismiss() }
+                    Button(AppLocalization.localized("common.close")) { dismiss() }
                 }
                 ToolbarItem(placement: .primaryAction) {
-                    ShareLink(item: String(format: NSLocalizedString("transformation.share_message_fmt", value: "Check out %@'s grooming transformation at Pawtrackr!", comment: ""), petName)) {
-                        Label(NSLocalizedString("common.share", value: "Share", comment: ""), systemImage: "square.and.arrow.up")
+                    ShareLink(item: String(format: AppLocalization.localized("transformation.share_message_fmt", value: "Check out %@'s grooming transformation at Pawtrackr!"), petName)) {
+                        Label(AppLocalization.localized("common.share", value: "Share"), systemImage: "square.and.arrow.up")
                     }
                 }
             }
@@ -46,7 +46,7 @@ struct TransformationView: View {
         VStack(spacing: 0) {
             ZStack(alignment: .bottomLeading) {
                 photoFrame(data: before)
-                Text(NSLocalizedString("transformation.before", value: "BEFORE", comment: ""))
+                Text(AppLocalization.localized("transformation.before", value: "BEFORE"))
                     .font(.caption.bold())
                     .padding(6)
                     .background(.black.opacity(0.6))
@@ -59,7 +59,7 @@ struct TransformationView: View {
             
             ZStack(alignment: .bottomLeading) {
                 photoFrame(data: after)
-                Text(NSLocalizedString("transformation.after", value: "AFTER", comment: ""))
+                Text(AppLocalization.localized("transformation.after", value: "AFTER"))
                     .font(.caption.bold())
                     .padding(6)
                     .background(.blue)

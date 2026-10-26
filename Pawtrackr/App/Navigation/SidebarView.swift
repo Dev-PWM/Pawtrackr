@@ -11,13 +11,13 @@ enum NavigationItem: String, CaseIterable, Identifiable, Hashable {
     var label: String {
         switch self {
         case .dashboard:
-            return NSLocalizedString("dashboard.title", value: "Dashboard", comment: "")
+            return AppLocalization.localized("dashboard.title", value: "Dashboard")
         case .clients:
-            return NSLocalizedString("clients.tab", value: "Clients", comment: "")
+            return AppLocalization.localized("clients.tab", value: "Clients")
         case .insights:
-            return NSLocalizedString("insights.tab", value: "Insights", comment: "")
+            return AppLocalization.localized("insights.tab", value: "Insights")
         case .settings:
-            return NSLocalizedString("settings.tab", value: "Settings", comment: "")
+            return AppLocalization.localized("settings.tab", value: "Settings")
         }
     }
 
@@ -47,16 +47,16 @@ struct SidebarView: View {
 
     var body: some View {
         List {
-            Section(NSLocalizedString("sidebar.section.business", value: "Business", comment: "")) {
+            Section(AppLocalization.localized("sidebar.section.business", value: "Business")) {
                 SidebarRow(item: .dashboard, selection: $selection, onSelect: onSelect)
                 SidebarRow(item: .clients, selection: $selection, onSelect: onSelect)
             }
 
-            Section(NSLocalizedString("sidebar.section.analysis", value: "Analysis", comment: "")) {
+            Section(AppLocalization.localized("sidebar.section.analysis", value: "Analysis")) {
                 SidebarRow(item: .insights, selection: $selection, onSelect: onSelect)
             }
 
-            Section(NSLocalizedString("sidebar.section.system", value: "System", comment: "")) {
+            Section(AppLocalization.localized("sidebar.section.system", value: "System")) {
                 SidebarRow(item: .settings, selection: $selection, onSelect: onSelect)
             }
         }

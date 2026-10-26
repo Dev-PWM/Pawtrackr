@@ -79,16 +79,16 @@ struct PetHistoryView: View {
                     historyRowsSkeleton
                 } else if vm.visits.isEmpty {
                     ContentUnavailableView(
-                        NSLocalizedString("pet_history.empty_title", comment: ""),
+                        AppLocalization.localized("pet_history.empty_title"),
                         systemImage: "clock.arrow.circlepath",
-                        description: Text(String(format: NSLocalizedString("pet_history.empty_desc_fmt", comment: ""), vm.pet.name))
+                        description: Text(String(format: AppLocalization.localized("pet_history.empty_desc_fmt"), vm.pet.name))
                     )
                     .padding(.top, 40)
                 } else if vm.filtered.isEmpty {
                     ContentUnavailableView(
-                        NSLocalizedString("pet_history.no_matches_title", value: "No Matching Visits", comment: ""),
+                        AppLocalization.localized("pet_history.no_matches_title", value: "No Matching Visits"),
                         systemImage: "magnifyingglass",
-                        description: Text(NSLocalizedString("pet_history.no_matches_desc", value: "Try a different service, note, or reference.", comment: ""))
+                        description: Text(AppLocalization.localized("pet_history.no_matches_desc", value: "Try a different service, note, or reference."))
                     )
                     .padding(.top, 40)
                 } else {
@@ -107,9 +107,9 @@ struct PetHistoryView: View {
             set: { vm.appError = $0 }
         )) { error in
             Alert(
-                title: Text(NSLocalizedString("pet_history.error_title", value: "History Error", comment: "")),
+                title: Text(AppLocalization.localized("pet_history.error_title", value: "History Error")),
                 message: Text(error.localizedDescription),
-                dismissButton: .default(Text(NSLocalizedString("common.ok", comment: "")))
+                dismissButton: .default(Text(AppLocalization.localized("common.ok")))
             )
         }
         .task { await vm.refresh() }
@@ -149,7 +149,7 @@ struct PetHistoryView: View {
                         if vm.isLoading {
                             ProgressView().controlSize(.small)
                         }
-                        Text(NSLocalizedString("common.load_more", comment: "Load More"))
+                        Text(AppLocalization.localized("common.load_more"))
                             .font(.footnote.weight(.semibold))
                     }
                     .frame(maxWidth: .infinity)
@@ -168,7 +168,7 @@ struct PetHistoryView: View {
         @Bindable var vm = vm
         return VStack(spacing: 10) {
             SearchField(text: $vm.searchText, accessibilityIdentifier: "petHistory.search")
-            Picker(NSLocalizedString("pet_history.range", value: "History Range", comment: ""), selection: $vm.scope) {
+            Picker(AppLocalization.localized("pet_history.range", value: "History Range"), selection: $vm.scope) {
                 ForEach(PetHistoryViewModel.Scope.allCases) { scope in
                     Text(scope.displayName).tag(scope)
                 }
@@ -189,10 +189,10 @@ struct PetHistoryView: View {
 
                     FlowLayout(spacing: 8) {
                         let visits = vm.totalVisits
-                        let visitsText = String.localizedStringWithFormat(NSLocalizedString("visits.count", comment: "visit count"), visits)
+                        let visitsText = String.localizedStringWithFormat(AppLocalization.localized("visits.count"), visits)
                         Chip.info(visitsText)
                         Chip.info(String(format: "%@ %@",
-                                         NSLocalizedString("visits.avg_duration", comment: "avg duration short"), vm.averageDurationString))
+                                         AppLocalization.localized("visits.avg_duration"), vm.averageDurationString))
                     }
                     .padding(.top, 4)
                 }
@@ -205,7 +205,7 @@ struct PetHistoryView: View {
     private func toolbarContent(_ vm: PetHistoryViewModel) -> some ToolbarContent {
         if wrapsInNavigationStack {
             ToolbarItem(placement: .cancellationAction) {
-                Button(NSLocalizedString("common.done", comment: "")) { dismiss() }
+                Button(AppLocalization.localized("common.done")) { dismiss() }
             }
         }
         ToolbarItem(placement: .primaryAction) {

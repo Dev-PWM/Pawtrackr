@@ -67,14 +67,14 @@ struct ClientsView: View {
             .clientsSearchable(
                 text: searchTextBinding,
                 isPresented: $isSearchPresented,
-                prompt: NSLocalizedString("clients.search_placeholder", comment: "")
+                prompt: AppLocalization.localized("clients.search_placeholder")
             )
             .background(DS.ColorToken.background)
             .alert(item: errorBinding) { error in
                 Alert(
-                    title: Text(NSLocalizedString("common.error", comment: "")),
+                    title: Text(AppLocalization.localized("common.error")),
                     message: Text(error.localizedDescription),
-                    dismissButton: .default(Text(NSLocalizedString("common.ok", comment: "")))
+                    dismissButton: .default(Text(AppLocalization.localized("common.ok")))
                 )
             }
             .alert(
@@ -86,7 +86,7 @@ struct ClientsView: View {
             )
             .fabOverlay(padding: EdgeInsets(top: 0, leading: 0, bottom: 88, trailing: 24)) {
                 #if os(iOS)
-                FAB(systemImage: "person.fill.badge.plus", accessibilityLabel: NSLocalizedString("clients.add_client", comment: "")) {
+                FAB(systemImage: "person.fill.badge.plus", accessibilityLabel: AppLocalization.localized("clients.add_client")) {
                     showingNewClientSheet = true
                 }
                 .accessibilityIdentifier("clients.fab.addClient")
@@ -100,7 +100,7 @@ struct ClientsView: View {
                     Button {
                         showingNewClientSheet = true
                     } label: {
-                        Label(NSLocalizedString("clients.add_client", comment: ""), systemImage: "person.fill.badge.plus")
+                        Label(AppLocalization.localized("clients.add_client"), systemImage: "person.fill.badge.plus")
                     }
                     .keyboardShortcut("n", modifiers: .command)
                     .accessibilityIdentifier("clients.toolbar.addClient")
@@ -111,7 +111,7 @@ struct ClientsView: View {
                 ToolbarItem(placement: .automatic) {
                     MacToolbarSearchField(
                         text: searchTextBinding,
-                        prompt: NSLocalizedString("clients.search_placeholder", comment: ""),
+                        prompt: AppLocalization.localized("clients.search_placeholder"),
                         focusRequest: searchFocusRequest
                     )
                     .frame(minWidth: 260, idealWidth: 340, maxWidth: 380)
@@ -128,7 +128,7 @@ struct ClientsView: View {
                 viewModel?.fetchClients()
                 await viewModel?.waitForPendingFetch()
             }
-            .navigationTitle(NSLocalizedString("clients.title", value: "Client Center", comment: ""))
+            .navigationTitle(AppLocalization.localized("clients.title", value: "Client Center"))
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
             #endif
@@ -289,7 +289,7 @@ struct ClientsView: View {
                         .tag(option)
                 }
             } label: {
-                Text(NSLocalizedString("clients.sort_by", value: "Sort By", comment: ""))
+                Text(AppLocalization.localized("clients.sort_by", value: "Sort By"))
             }
             .pickerStyle(.inline)
         } label: {
@@ -333,18 +333,18 @@ struct ClientsView: View {
         // The tour's client-list stop points at the first card on screen.
         let hasInProgress = !viewModel.inProgressClients.isEmpty
         if hasInProgress {
-            sectionHeader(NSLocalizedString("clients.in_progress", comment: ""), count: viewModel.inProgressCount, topPadding: 0)
+            sectionHeader(AppLocalization.localized("clients.in_progress"), count: viewModel.inProgressCount, topPadding: 0)
             clientList(for: viewModel.inProgressClients, isInProgress: true, anchorsFirstCard: true)
         }
 
-        sectionHeader(NSLocalizedString("clients.all_clients", comment: ""), count: viewModel.otherClients.count, topPadding: 16, showsSort: true)
+        sectionHeader(AppLocalization.localized("clients.all_clients"), count: viewModel.otherClients.count, topPadding: 16, showsSort: true)
         VStack(spacing: 10) {
             clientList(for: viewModel.otherClients, isInProgress: false, enableInfiniteScroll: true, anchorsFirstCard: !hasInProgress)
             if viewModel.canLoadMore {
                 Button(action: { viewModel.loadMore() }) {
                     HStack(spacing: 8) {
                         ProgressView().controlSize(.small)
-                        Text(NSLocalizedString("common.load_more", comment: "Load More"))
+                        Text(AppLocalization.localized("common.load_more"))
                             .font(.footnote.weight(.semibold))
                     }
                     .frame(maxWidth: .infinity)
@@ -389,7 +389,7 @@ struct ClientsView: View {
                     Button {
                         router.navigateToClient(client)
                     } label: {
-                        Label(NSLocalizedString("clients.action.view_details", value: "View Details", comment: ""), systemImage: "person.crop.circle")
+                        Label(AppLocalization.localized("clients.action.view_details", value: "View Details"), systemImage: "person.crop.circle")
                     }
 
                     if supportsMultipleWindows && entitlements.isPremium {
@@ -397,7 +397,7 @@ struct ClientsView: View {
                             openClientWindow(client, mode: .detail)
                         } label: {
                             Label(
-                                NSLocalizedString("client.action.open_client_window", value: "Open Client Window", comment: ""),
+                                AppLocalization.localized("client.action.open_client_window", value: "Open Client Window"),
                                 systemImage: "rectangle.on.rectangle"
                             )
                         }
@@ -406,7 +406,7 @@ struct ClientsView: View {
                             openClientWindow(client, mode: .loyalty)
                         } label: {
                             Label(
-                                NSLocalizedString("client.action.open_loyalty_window", value: "Open Loyalty Window", comment: ""),
+                                AppLocalization.localized("client.action.open_loyalty_window", value: "Open Loyalty Window"),
                                 systemImage: "star.circle"
                             )
                         }
@@ -419,7 +419,7 @@ struct ClientsView: View {
                             UIApplication.shared.open(url)
                             HapticManager.selectionChanged()
                         } label: {
-                            Label(NSLocalizedString("clients.action.call", value: "Call", comment: ""), systemImage: "phone")
+                            Label(AppLocalization.localized("clients.action.call", value: "Call"), systemImage: "phone")
                         }
                     }
                     
@@ -429,7 +429,7 @@ struct ClientsView: View {
                             UIApplication.shared.open(url)
                             HapticManager.selectionChanged()
                         } label: {
-                            Label(NSLocalizedString("clients.action.message", value: "Message", comment: ""), systemImage: "message")
+                            Label(AppLocalization.localized("clients.action.message", value: "Message"), systemImage: "message")
                         }
                     }
 
@@ -438,7 +438,7 @@ struct ClientsView: View {
                             UIApplication.shared.open(url)
                             HapticManager.selectionChanged()
                         } label: {
-                            Label(NSLocalizedString("clients.action.email", value: "Email", comment: ""), systemImage: "envelope")
+                            Label(AppLocalization.localized("clients.action.email", value: "Email"), systemImage: "envelope")
                         }
                     }
                     #endif
@@ -448,7 +448,7 @@ struct ClientsView: View {
                     Button(role: .destructive) {
                         clientToDelete = client
                     } label: {
-                        Label(NSLocalizedString("common.delete", comment: ""), systemImage: "trash")
+                        Label(AppLocalization.localized("common.delete"), systemImage: "trash")
                     }
                 }
                 .onAppear {
@@ -468,26 +468,26 @@ struct ClientsView: View {
     private func emptyState(_ viewModel: ClientsViewModel) -> some View {
         let isSearching = !viewModel.searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         var title = isSearching
-            ? NSLocalizedString("clients.no_results_title", comment: "")
-            : NSLocalizedString("clients.empty_title", comment: "")
+            ? AppLocalization.localized("clients.no_results_title")
+            : AppLocalization.localized("clients.empty_title")
         var description = isSearching
-            ? String(format: NSLocalizedString("clients.no_results_desc_fmt", comment: ""), viewModel.searchText)
-            : NSLocalizedString("clients.empty_desc", comment: "")
+            ? String(format: AppLocalization.localized("clients.no_results_desc_fmt"), viewModel.searchText)
+            : AppLocalization.localized("clients.empty_desc")
         var icon = isSearching ? "magnifyingglass" : "person.3.sequence.fill"
 
         if !isSearching {
             switch viewModel.selectedFilter {
             case .active:
-                title = NSLocalizedString("clients.empty.active_title", value: "No Active Sessions", comment: "")
-                description = NSLocalizedString("clients.empty.active_desc", value: "There are no pets currently checked in.", comment: "")
+                title = AppLocalization.localized("clients.empty.active_title", value: "No Active Sessions")
+                description = AppLocalization.localized("clients.empty.active_desc", value: "There are no pets currently checked in.")
                 icon = "hourglass.badge.plus"
             case .overdue:
-                title = NSLocalizedString("clients.empty.overdue_title", value: "No Attention Needed", comment: "")
-                description = NSLocalizedString("clients.empty.overdue_desc", value: "No client outreach is pending right now.", comment: "")
+                title = AppLocalization.localized("clients.empty.overdue_title", value: "No Attention Needed")
+                description = AppLocalization.localized("clients.empty.overdue_desc", value: "No client outreach is pending right now.")
                 icon = "checkmark.seal.fill"
             case .missingInfo:
-                title = NSLocalizedString("clients.empty.missing_info_title", value: "Data looks great!", comment: "")
-                description = NSLocalizedString("clients.empty.missing_info_desc", value: "Every client has a phone, an email and an emergency contact on file.", comment: "")
+                title = AppLocalization.localized("clients.empty.missing_info_title", value: "Data looks great!")
+                description = AppLocalization.localized("clients.empty.missing_info_desc", value: "Every client has a phone, an email and an emergency contact on file.")
                 icon = "vial.viewfinder"
             default:
                 break
@@ -529,7 +529,7 @@ struct ClientsView: View {
 
     private var notificationsAccessibilityLabel: String {
         String.localizedStringWithFormat(
-            NSLocalizedString("clients.notifications_unread_fmt", value: "Notifications, %d unread", comment: ""),
+            AppLocalization.localized("clients.notifications_unread_fmt", value: "Notifications, %d unread"),
             notificationsCount
         )
     }
@@ -589,7 +589,7 @@ struct ClientsView: View {
 
     private var clientToDeleteTitle: String {
         guard let client = clientToDelete else { return "" }
-        return String(format: NSLocalizedString("clients.delete_confirm_title_fmt", comment: ""), client.fullName)
+        return String(format: AppLocalization.localized("clients.delete_confirm_title_fmt"), client.fullName)
     }
 
     private var clientToDeletePresented: Binding<Bool> {
@@ -601,14 +601,14 @@ struct ClientsView: View {
 
     @ViewBuilder
     private func clientDeleteActions(_ client: Client) -> some View {
-        Button(NSLocalizedString("common.delete", comment: ""), role: .destructive) {
+        Button(AppLocalization.localized("common.delete"), role: .destructive) {
             viewModel?.deleteClient(client)
         }
-        Button(NSLocalizedString("common.cancel", comment: ""), role: .cancel) { }
+        Button(AppLocalization.localized("common.cancel"), role: .cancel) { }
     }
 
     private func clientDeleteMessage(_ client: Client) -> Text {
-        Text(NSLocalizedString("clients.delete_confirm_message", comment: ""))
+        Text(AppLocalization.localized("clients.delete_confirm_message"))
     }
 
     private var clientsSkeleton: some View {

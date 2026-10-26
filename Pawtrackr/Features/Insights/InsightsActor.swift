@@ -174,11 +174,11 @@ public final actor InsightsActor {
 
             let series = [
                 InsightsViewModel.RetentionData(
-                    label: NSLocalizedString("insights.retention.recurring", value: "Recurring", comment: ""),
+                    label: AppLocalization.localized("insights.retention.recurring", value: "Recurring"),
                     value: Double(recurring)
                 ),
                 InsightsViewModel.RetentionData(
-                    label: NSLocalizedString("insights.retention.one_time", value: "One-time", comment: ""),
+                    label: AppLocalization.localized("insights.retention.one_time", value: "One-time"),
                     value: Double(oneTime)
                 )
             ]
@@ -315,11 +315,11 @@ public final actor InsightsActor {
         let oneTime = clients.count - recurring
         let series = [
             InsightsViewModel.RetentionData(
-                label: NSLocalizedString("insights.retention.recurring", value: "Recurring", comment: ""),
+                label: AppLocalization.localized("insights.retention.recurring", value: "Recurring"),
                 value: Double(recurring)
             ),
             InsightsViewModel.RetentionData(
-                label: NSLocalizedString("insights.retention.one_time", value: "One-time", comment: ""),
+                label: AppLocalization.localized("insights.retention.one_time", value: "One-time"),
                 value: Double(oneTime)
             )
         ]

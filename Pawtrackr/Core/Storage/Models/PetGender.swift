@@ -20,9 +20,9 @@ public enum PetGender: String, CaseIterable, Codable, Identifiable, Sendable {
     public var displayName: String {
         switch self {
         case .male:
-            return NSLocalizedString("gender.male", value: "Male", comment: "")
+            return AppLocalization.localized("gender.male", value: "Male")
         case .female:
-            return NSLocalizedString("gender.female", value: "Female", comment: "")
+            return AppLocalization.localized("gender.female", value: "Female")
         }
     }
 
