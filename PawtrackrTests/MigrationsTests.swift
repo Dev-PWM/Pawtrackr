@@ -55,10 +55,63 @@ final class MigrationsTests: XCTestCase {
 
         let titles = Set(try context.fetch(FetchDescriptor<MessageTemplate>()).map(\.title))
         XCTAssertTrue(titles.contains("Custom Update"))
-        XCTAssertTrue(titles.contains("Ready for Pickup"))
-        XCTAssertTrue(titles.contains("Appointment Reminder"))
-        XCTAssertTrue(titles.contains("Running Late"))
-        XCTAssertTrue(titles.contains("Post-Visit Follow-up"))
+        // Seeded in the app's current language, whichever the test host runs in.
+        XCTAssertTrue(titles.isSuperset(of: MessageTemplate.defaults.map(\.title)))
+    }
+
+    func testEnsureMessageTemplates_CollapsesSetsSeededInTwoLanguages() throws {
+        // An install seeded in one language, then reopened in another, used to
+        // gain a second translated set because defaults were matched by title.
+        for (type, _) in MessageTemplate.builtInKeys {
+            for wording in MessageTemplate.shippedWordings(for: type) {
+                context.insert(MessageTemplate(title: wording.title, content: wording.content, type: type))
+            }
+        }
+        context.insert(MessageTemplate(title: "Custom Update", content: "Custom body"))
+        try context.save()
+
+        DataMigrations.ensureMessageTemplates(in: context)
+
+        let templates = try context.fetch(FetchDescriptor<MessageTemplate>())
+        let builtIn = templates.filter { $0.type != .custom }
+        XCTAssertEqual(builtIn.count, MessageTemplate.builtInKeys.count)
+        XCTAssertEqual(Set(builtIn.map(\.typeRaw)).count, MessageTemplate.builtInKeys.count)
+        XCTAssertEqual(Set(builtIn.map(\.title)), Set(MessageTemplate.defaults.map(\.title)))
+        XCTAssertTrue(templates.contains { $0.title == "Custom Update" && $0.type == .custom })
+    }
+
+    func testEnsureMessageTemplates_SwitchesKeptDefaultToCurrentLanguage() throws {
+        let current = try XCTUnwrap(MessageTemplate.defaults.first { $0.type == .readyForPickup })
+        let other = try XCTUnwrap(
+            MessageTemplate.shippedWordings(for: .readyForPickup).first { $0.title != current.title },
+            "Expected a second bundled language"
+        )
+        context.insert(MessageTemplate(title: other.title, content: other.content, type: .readyForPickup))
+        try context.save()
+
+        DataMigrations.ensureMessageTemplates(in: context)
+
+        let ready = try context.fetch(FetchDescriptor<MessageTemplate>()).filter { $0.type == .readyForPickup }
+        XCTAssertEqual(ready.count, 1)
+        XCTAssertEqual(ready.first?.title, current.title)
+        XCTAssertEqual(ready.first?.content, current.content)
+    }
+
+    func testEnsureMessageTemplates_AdoptsLegacyRowInsteadOfAddingAnother() throws {
+        // Older builds stored raw types such as "Reminder", which now decode as `.custom`.
+        let current = try XCTUnwrap(MessageTemplate.defaults.first { $0.type == .appointmentReminder })
+        let legacy = MessageTemplate(title: current.title, content: current.content)
+        legacy.typeRaw = "Reminder"
+        context.insert(legacy)
+        try context.save()
+
+        DataMigrations.ensureMessageTemplates(in: context)
+        DataMigrations.ensureMessageTemplates(in: context)
+
+        let templates = try context.fetch(FetchDescriptor<MessageTemplate>())
+        XCTAssertEqual(templates.count, MessageTemplate.builtInKeys.count)
+        XCTAssertEqual(templates.filter { $0.title == current.title }.count, 1)
+        XCTAssertEqual(templates.first { $0.title == current.title }?.type, .appointmentReminder)
     }
 
     func testEnsureLoyaltyDefaults_CreatesConfigAndRewardTemplates() throws {

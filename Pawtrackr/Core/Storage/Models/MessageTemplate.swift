@@ -62,6 +62,40 @@ final class MessageTemplate {
         return result
     }
     
+    /// The localization key stem of each built-in template, in display order.
+    static let builtInKeys: [(type: TemplateType, key: String)] = [
+        (.readyForPickup, "ready"),
+        (.appointmentReminder, "reminder"),
+        (.runningLate, "running_late"),
+        (.followUp, "follow_up")
+    ]
+
+    /// Every wording the app has shipped for a built-in template, one per
+    /// bundled language (English, Spanish, Latin American Spanish).
+    ///
+    /// Seeded templates are stored in the language the app had when they were
+    /// created, so recognizing a stored template means checking all of them.
+    /// - Parameter type: A built-in template type; `.custom` has no wordings.
+    /// - Returns: Distinct `(title, content)` pairs.
+    static func shippedWordings(for type: TemplateType) -> [(title: String, content: String)] {
+        guard let key = builtInKeys.first(where: { $0.type == type })?.key else { return [] }
+        let titleKey = "message_template.\(key).title"
+        let contentKey = "message_template.\(key).content"
+        var wordings: [(title: String, content: String)] = []
+        for lproj in ["en", "es", "es-419"] {
+            guard let url = Bundle.main.url(forResource: lproj, withExtension: "lproj"),
+                  let bundle = Bundle(url: url)
+            else { continue }
+            let title = bundle.localizedString(forKey: titleKey, value: nil, table: nil)
+            let content = bundle.localizedString(forKey: contentKey, value: nil, table: nil)
+            guard title != titleKey, content != contentKey,
+                  !wordings.contains(where: { $0.title == title && $0.content == content })
+            else { continue }
+            wordings.append((title, content))
+        }
+        return wordings
+    }
+
     static var defaults: [MessageTemplate] {
         [
             MessageTemplate(

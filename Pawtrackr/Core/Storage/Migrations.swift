@@ -308,22 +308,63 @@ enum DataMigrations {
         }
     }
 
+    /// Keeps exactly one of each built-in message template, in the app's language.
+    ///
+    /// Defaults used to be matched by their localized title, so changing the app
+    /// language seeded a second, translated set. Templates are now matched by
+    /// type, or by any shipped wording for legacy rows saved with an old type.
+    /// Nothing in the app creates or edits built-in templates, so extra copies
+    /// are seeded duplicates and are deleted. A kept copy that still has a
+    /// shipped wording is switched to the current language; other text is left
+    /// alone. Custom templates are never touched.
     static func ensureMessageTemplates(in context: ModelContext) {
         do {
             let existing = try context.fetch(FetchDescriptor<MessageTemplate>())
-            let existingTitles = Set(
-                existing.map { $0.title.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() }
-            )
-            var inserted = false
+            var claimed = Set<PersistentIdentifier>()
+            var removed = 0
+
             for template in MessageTemplate.defaults {
-                let key = template.title.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-                if !existingTitles.contains(key) {
+                let type = template.type
+                let wordings = MessageTemplate.shippedWordings(for: type)
+                let matches = existing.filter { candidate in
+                    guard !claimed.contains(candidate.persistentModelID) else { return false }
+                    if candidate.type == type { return true }
+                    return candidate.type == .custom && wordings.contains {
+                        $0.title == candidate.title || $0.content == candidate.content
+                    }
+                }
+
+                guard !matches.isEmpty else {
                     context.insert(template)
-                    inserted = true
+                    continue
+                }
+
+                // Deterministic, so two contexts reconciling at once keep the same row.
+                let keep = matches.min { lhs, rhs in
+                    let lhsCurrent = lhs.title == template.title
+                    let rhsCurrent = rhs.title == template.title
+                    if lhsCurrent != rhsCurrent { return lhsCurrent }
+                    return String(describing: lhs.persistentModelID) < String(describing: rhs.persistentModelID)
+                }!
+                claimed.formUnion(matches.map(\.persistentModelID))
+
+                if keep.typeRaw != type.rawValue { keep.typeRaw = type.rawValue }
+                let isShippedWording = wordings.contains { $0.title == keep.title && $0.content == keep.content }
+                if isShippedWording {
+                    if keep.title != template.title { keep.title = template.title }
+                    if keep.content != template.content { keep.content = template.content }
+                }
+                for duplicate in matches where duplicate.persistentModelID != keep.persistentModelID {
+                    context.delete(duplicate)
+                    removed += 1
                 }
             }
-            if inserted {
+
+            if context.hasChanges {
                 try context.save()
+            }
+            if removed > 0 {
+                Logger.migrations.info("Message templates: removed \(removed) duplicate default(s)")
             }
         } catch {
             Logger.migrations.error("ensureMessageTemplates failed: \(String(describing: error))")

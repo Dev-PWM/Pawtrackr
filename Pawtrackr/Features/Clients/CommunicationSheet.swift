@@ -69,8 +69,14 @@ struct CommunicationSheet: View {
     }
 
     private var availableTemplates: [MessageTemplate] {
-        let source = templates.isEmpty ? MessageTemplate.defaults : templates
-        return source.sorted { lhs, rhs in
+        // `ensureMessageTemplates` in onAppear can delete duplicate rows before
+        // @Query refreshes, and reading a deleted row's fields can trap.
+        let live = templates.filter { !$0.isDeleted && $0.modelContext != nil }
+        let source = live.isEmpty ? MessageTemplate.defaults : live
+        // One per built-in type, in case two contexts seeded at the same moment.
+        var seenTypes = Set<MessageTemplate.TemplateType>()
+        let unique = source.filter { $0.type == .custom || seenTypes.insert($0.type).inserted }
+        return unique.sorted { lhs, rhs in
             let lhsRank = templateRank(lhs)
             let rhsRank = templateRank(rhs)
             if lhsRank != rhsRank { return lhsRank < rhsRank }
